@@ -5,22 +5,22 @@ Gem::Specification.new do |spec|
   spec.version = "0.0.0"
   spec.authors = ["Raghu Betina"]
   spec.email = ["raghu@firstdraft.com"]
-  spec.homepage = "https://undefined.io/projects/ai-chat"
-  spec.summary = ""
+  spec.homepage = "https://github.com/firstdraft/ai-chat"
+  spec.summary = "A library that makes it as easy as possible to use Chat Completion endpoints in your Ruby application."
   spec.license = "Hippocratic-2.1"
 
   spec.metadata = {
-    "bug_tracker_uri" => "https://github.com/undefined/ai-chat/issues",
-    "changelog_uri" => "https://undefined.io/projects/ai-chat/versions",
-    "homepage_uri" => "https://undefined.io/projects/ai-chat",
-    "funding_uri" => "https://github.com/sponsors/undefined",
-    "label" => "Ai Chat",
-    "rubygems_mfa_required" => "true",
-    "source_code_uri" => "https://github.com/undefined/ai-chat"
+    "bug_tracker_uri" => "https://github.com/firstdraft/ai-chat/issues",
+    "changelog_uri" => "https://github.com/firstdraft/ai-chat/releases",
+    "homepage_uri" => "https://github.com/firstdraft/ai-chat",
+    # "funding_uri" => "https://github.com/sponsors/undefined",
+    "label" => "AI::Chat",
+    # "rubygems_mfa_required" => "true",
+    "source_code_uri" => "https://github.com/firstdraft/ai-chat"
   }
 
-  spec.signing_key = Gem.default_key_path
-  spec.cert_chain = [Gem.default_cert_path]
+  # spec.signing_key = Gem.default_key_path
+  # spec.cert_chain = [Gem.default_cert_path]
 
   spec.required_ruby_version = "~> 3.3"
   spec.add_dependency "refinements", "~> 12.10"
