@@ -2,8 +2,8 @@
 
 FactoryBot.define do
   factory :chat, class: AI::Chat do
-    api_token { "dummy_token" }
+    api_key { "dummy_token" }
 
-    initialize_with { new(api_token: api_token) }
+    initialize_with { new(api_key: api_key) }
   end
 end

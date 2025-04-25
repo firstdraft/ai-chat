@@ -27,7 +27,7 @@ gem install ai-chat
 - By default, the gem checks for an environment variable called `AI_TOKEN`, then falls back to `OPENAI_TOKEN` if available. You can also provide your token directly when instantiating a chat:
 
     ```ruby
-    x = AI::Chat.new(api_token: "your-token-goes-here")
+    x = AI::Chat.new(api_key: "your-token-goes-here")
     ```
 - By default, the gem uses the `gpt-4o` model. If you want something else, you can set it:
 

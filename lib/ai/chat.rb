@@ -6,8 +6,8 @@ module AI
   class Chat
     attr_accessor :messages, :schema, :model
 
-    def initialize(api_token: nil)
-      @api_token = api_token || ENV.fetch("AI_TOKEN", ENV.fetch("OPENAI_TOKEN", nil))
+    def initialize(api_key: nil)
+      @api_key = api_key || ENV.fetch("OPENAI_API_KEY")
       @messages = []
       @model = "gpt-4o"
     end
@@ -96,7 +96,7 @@ module AI
 
     def assistant!
       request_headers_hash = {
-        "Authorization" => "Bearer #{@api_token}",
+        "Authorization" => "Bearer #{@api_key}",
         "content-type" => "application/json"
       }
 
