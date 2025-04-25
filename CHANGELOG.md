@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+### Added
+- Multi-provider support for different AI chat APIs:
+  - OpenAI (default)
+  - Google's Gemini
+  - Anthropic's Claude
+- Provider-specific authentication with multiple environment variables
+- Provider-specific API endpoint handling
+- Default models for each provider
+- Provider-specific message format conversion
+
 ## [0.0.1] - 2025-02-27
 
 - Initial release

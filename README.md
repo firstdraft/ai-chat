@@ -1,6 +1,6 @@
 # AI::Chat
 
-This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's Chat Completions endpoint.
+This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use various AI chat completions APIs including OpenAI, Google's Gemini, and Anthropic's Claude.
 
 ## Installation
 
@@ -24,16 +24,52 @@ gem install ai-chat
 
 ## Configuration
 
-- By default, the gem checks for an environment variable called `AI_TOKEN`, then falls back to `OPENAI_TOKEN` if available. You can also provide your token directly when instantiating a chat:
+### Provider Selection
 
-    ```ruby
-    x = AI::Chat.new(api_token: "your-token-goes-here")
-    ```
-- By default, the gem uses the `gpt-4o` model. If you want something else, you can set it:
+By default, the gem uses OpenAI, but you can specify other providers:
 
-    ```ruby
-    x.model = "o3-mini"
-    ```
+```ruby
+# OpenAI (default)
+openai_chat = AI::Chat.new(provider: :openai)
+
+# Google's Gemini
+gemini_chat = AI::Chat.new(provider: :gemini)
+
+# Anthropic's Claude
+claude_chat = AI::Chat.new(provider: :anthropic)
+```
+
+### API Tokens
+
+Each provider looks for specific environment variables:
+
+- OpenAI: `AI_TOKEN` or `OPENAI_TOKEN`
+- Gemini: `GEMINI_TOKEN` or `GOOGLE_API_KEY`
+- Anthropic: `ANTHROPIC_API_KEY`
+
+You can also provide your token directly when instantiating a chat:
+
+```ruby
+x = AI::Chat.new(api_token: "your-token-goes-here", provider: :gemini)
+```
+
+### Models
+
+Each provider has a default model, but you can specify a different one:
+
+```ruby
+# OpenAI default: "gpt-4o"
+x = AI::Chat.new
+x.model = "gpt-3.5-turbo"
+
+# Gemini default: "gemini-1.5-pro"
+y = AI::Chat.new(provider: :gemini)
+y.model = "gemini-1.5-flash"
+
+# Anthropic default: "claude-3-opus-20240229"
+z = AI::Chat.new(provider: :anthropic)
+z.model = "claude-3-sonnet-20240229"
+```
 
 ## Simplest usage
 
@@ -125,12 +161,32 @@ Useful if you are reconstructing a chat that has already happened.
 - You can call `.messages` to get an array containing the conversation so far.
 - TODO: Setting `.messages` will replace the conversation with the provided array.
 
+## Provider-Specific Notes
+
+### OpenAI
+
+- Supports all features including structured output and images.
+- Default model is `gpt-4o`.
+
+### Gemini
+
+- Handles system messages by converting them to user messages (as Gemini doesn't have a native system role).
+- Uses a different format for structured output using `responseSchema`.
+- Default model is `gemini-1.5-pro`.
+
+### Anthropic
+
+- Supports system messages and images.
+- Handles schema generation differently by including it in the system context.
+- Default model is `claude-3-opus-20240229`.
+
 ## TODOs
 
 - Add a `reasoning_effort` parameter.
 - Add the ability to set all messages at once, ideally with an ActiveRecord Relation.
 - Add a way to access the whole API response body (rather than just the message content).
-- Add specs.
+- Add provider-specific parameters (temperature, top_p, etc.).
+- Support for streaming responses.
 
 ## Contributing
 

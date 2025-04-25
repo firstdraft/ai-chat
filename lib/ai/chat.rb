@@ -27,7 +27,7 @@ module AI
     def initialize(api_token: nil, provider: :openai, model: nil)
       @provider = provider.to_sym
       provider_config = PROVIDERS[@provider] || PROVIDERS[:openai]
-      
+
       @api_token = api_token || find_api_token(provider_config[:token_env_vars])
       @messages = []
       @model = model || provider_config[:default_model]
@@ -124,6 +124,26 @@ module AI
     end
 
     def assistant!
+      content = case @provider
+      when :openai
+        request_openai
+      when :gemini
+        request_gemini
+      when :anthropic
+        request_anthropic
+      else
+        # Default to OpenAI as fallback
+        request_openai
+      end
+
+      messages.push({role: "assistant", content: content})
+
+      schema.nil? ? content : JSON.parse(content)
+    end
+
+    private
+
+    def request_openai
       request_headers_hash = {
         "Authorization" => "Bearer #{@api_token}",
         "content-type" => "application/json"
@@ -148,7 +168,7 @@ module AI
 
       request_body_json = JSON.generate(request_body_hash)
 
-      uri = URI("https://api.openai.com/v1/chat/completions")
+      uri = URI(PROVIDERS[:openai][:api_endpoint])
       raw_response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
         request = Net::HTTP::Post.new(uri, request_headers_hash)
         request.body = request_body_json
@@ -157,18 +177,181 @@ module AI
 
       parsed_response = JSON.parse(raw_response.body)
 
-      content = parsed_response.fetch("choices").at(0).fetch("message").fetch("content")
+      if parsed_response["error"]
+        raise "OpenAI API Error: #{parsed_response["error"]["message"]}"
+      end
 
-      messages.push({role: "assistant", content: content})
+      parsed_response.fetch("choices").at(0).fetch("message").fetch("content")
+    end
 
-      schema.nil? ? content : JSON.parse(content)
+    def request_gemini
+      request_headers_hash = {
+        "x-goog-api-key" => @api_token,
+        "content-type" => "application/json"
+      }
+
+      # Convert messages to Gemini format
+      gemini_messages = messages.map do |message|
+        role = message[:role]
+        content = message[:content]
+
+        # Gemini uses "user" and "model" roles (no system)
+        role = case role
+        when "system"
+          "user" # Prepend system messages as user messages
+        when "assistant"
+          "model"
+        else
+          role
+        end
+
+        # Handle content formatting
+        if content.is_a?(Array)
+          parts = content.map do |part|
+            if part[:type] == "text"
+              {"text" => part[:text]}
+            elsif part[:type] == "image_url"
+              url = part[:image_url][:url]
+              if url.start_with?("data:")
+                mime_type = url.split(";").first.split(":").last
+                data = url.split(",").last
+                {
+                  "inline_data" => {
+                    "mime_type" => mime_type,
+                    "data" => data
+                  }
+                }
+              else
+                {"uri" => url}
+              end
+            else
+              # Skip unsupported content types
+              nil
+            end
+          end.compact
+
+          {"role" => role, "parts" => parts}
+        else
+          {"role" => role, "parts" => [{"text" => content}]}
+        end
+      end
+
+      # Gemini expects "contents" not "messages"
+      request_body_hash = {
+        "contents" => gemini_messages
+      }
+
+      # Add schema if present
+      if schema
+        request_body_hash["generationConfig"] = {
+          "responseSchema" => JSON.parse(schema)
+        }
+      end
+
+      request_body_json = JSON.generate(request_body_hash)
+
+      # Endpoint includes model name
+      uri = URI("#{PROVIDERS[:gemini][:api_endpoint]}/#{model}:generateContent")
+
+      raw_response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+        request = Net::HTTP::Post.new(uri, request_headers_hash)
+        request.body = request_body_json
+        http.request(request)
+      end
+
+      parsed_response = JSON.parse(raw_response.body)
+
+      if parsed_response["error"]
+        raise "Gemini API Error: #{parsed_response["error"]["message"]}"
+      end
+
+      # Extract content from Gemini response format
+      parsed_response.fetch("candidates").at(0).fetch("content").fetch("parts").at(0).fetch("text")
+    end
+
+    def request_anthropic
+      request_headers_hash = {
+        "x-api-key" => @api_token,
+        "anthropic-version" => "2023-06-01",
+        "content-type" => "application/json"
+      }
+
+      # Convert messages to Anthropic format
+      anthropic_messages = messages.map do |message|
+        role = message[:role]
+        content = message[:content]
+
+        # Handle content formatting
+        if content.is_a?(Array)
+          content_parts = content.map do |part|
+            if part[:type] == "text"
+              {"type" => "text", "text" => part[:text]}
+            elsif part[:type] == "image_url"
+              url = part[:image_url][:url]
+              if url.start_with?("data:")
+                mime_type = url.split(";").first.split(":").last
+                data = url.split(",").last
+                {
+                  "type" => "image",
+                  "source" => {
+                    "type" => "base64",
+                    "media_type" => mime_type,
+                    "data" => data
+                  }
+                }
+              else
+                {
+                  "type" => "image",
+                  "source" => {
+                    "type" => "url",
+                    "url" => url
+                  }
+                }
+              end
+            else
+              # Skip unsupported content types
+              nil
+            end
+          end.compact
+
+          {"role" => role, "content" => content_parts}
+        else
+          {"role" => role, "content" => content}
+        end
+      end
+
+      request_body_hash = {
+        "model" => model,
+        "messages" => anthropic_messages,
+        "max_tokens" => 4096
+      }
+
+      # Add schema if present
+      if schema
+        request_body_hash["system"] = "Follow the JSON schema for your response: #{schema}"
+      end
+
+      request_body_json = JSON.generate(request_body_hash)
+
+      uri = URI(PROVIDERS[:anthropic][:api_endpoint])
+      raw_response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+        request = Net::HTTP::Post.new(uri, request_headers_hash)
+        request.body = request_body_json
+        http.request(request)
+      end
+
+      parsed_response = JSON.parse(raw_response.body)
+
+      if parsed_response["error"]
+        raise "Anthropic API Error: #{parsed_response["error"]["message"]}"
+      end
+
+      parsed_response.fetch("content").at(0).fetch("text")
     end
 
     def inspect
-      "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect}>"
+      "#<#{self.class.name} @provider=#{@provider.inspect} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect}>"
     end
-
-    private
 
     # Custom exception class for input classification errors.
     class InputClassificationError < StandardError; end
