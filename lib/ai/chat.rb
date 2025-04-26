@@ -189,9 +189,7 @@ module AI
           content_items = output_item["content"]
           output_text_item = content_items.find { |item| item["type"] == "output_text" }
 
-          if output_text_item && output_text_item.key?("text")
-            content = output_text_item["text"]
-          end
+          content = output_text_item&.key?("text") ? output_text_item["text"] : ""
         end
       end
 
