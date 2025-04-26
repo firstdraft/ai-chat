@@ -9,20 +9,20 @@ module AI
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
 
-    def initialize(api_key: nil)
-      @api_key = api_key || ENV.fetch("OPENAI_API_KEY")
+    def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
+      @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
-      @model = "gpt-4.1-mini"
+      @model = "gpt-4.1-nano"
       @reasoning_effort = nil
     end
-    
+
     def reasoning_effort=(value)
       if value.nil?
         @reasoning_effort = nil
       else
         # Convert string to symbol if needed
         symbol_value = value.is_a?(String) ? value.to_sym : value
-        
+
         if VALID_REASONING_EFFORTS.include?(symbol_value)
           @reasoning_effort = symbol_value
         else
@@ -131,10 +131,10 @@ module AI
       if !schema.nil?
         # Parse the schema and use it with Structured Output (json_schema)
         schema_obj = JSON.parse(schema)
-        
+
         # Extract schema name from the parsed schema, or use a default
         schema_name = schema_obj["name"] || "output_object"
-        
+
         # Responses API uses proper Structured Output with schema
         request_body_hash["text"] = {
           "format" => {
@@ -165,30 +165,30 @@ module AI
       end
 
       parsed_response = JSON.parse(raw_response.body)
-      
+
       # Check for API errors
       if parsed_response.key?("error") && parsed_response["error"].is_a?(Hash)
         error_message = parsed_response["error"]["message"] || parsed_response["error"].inspect
         raise "OpenAI API Error: #{error_message}"
       end
-      
+
       # Extract the text content from the response
       content = ""
-      
+
       # Parse response according to the documented structure
       if parsed_response.key?("output") && parsed_response["output"].is_a?(Array) && !parsed_response["output"].empty?
         output_item = parsed_response["output"][0]
-        
+
         if output_item["type"] == "message" && output_item.key?("content")
           content_items = output_item["content"]
           output_text_item = content_items.find { |item| item["type"] == "output_text" }
-          
+
           if output_text_item && output_text_item.key?("text")
             content = output_text_item["text"]
           end
         end
       end
-      
+
       # If no content is found, throw an error
       if content.empty?
         raise "Failed to extract content from response: #{parsed_response.inspect}"
