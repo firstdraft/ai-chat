@@ -3,9 +3,9 @@
 require "spec_helper"
 
 RSpec.describe AI::Chat, "image support" do
-  let(:test_image1_path) { File.join(File.dirname(__FILE__), "../../fixtures/test1.jpg") }
-  let(:test_image2_path) { File.join(File.dirname(__FILE__), "../../fixtures/test2.jpg") }
-  let(:test_image3_path) { File.join(File.dirname(__FILE__), "../../fixtures/test3.jpg") }
+  let(:test_image1_path) { File.join(File.dirname(__FILE__), "../../fixtures/images/test1.jpg") }
+  let(:test_image2_path) { File.join(File.dirname(__FILE__), "../../fixtures/images/test2.jpg") }
+  let(:test_image3_path) { File.join(File.dirname(__FILE__), "../../fixtures/images/test3.jpg") }
   let(:test_image_url) { "https://example.com/image.jpg" }
   let(:chat) { build(:chat) }
 
@@ -136,10 +136,10 @@ RSpec.describe AI::Chat, "image support" do
         # All images should be base64 encoded
         expect(last_message[:content][1][:type]).to eq("image_url")
         expect(last_message[:content][1][:image_url][:url]).to start_with("data:image/jpeg;base64,")
-        
+
         expect(last_message[:content][2][:type]).to eq("image_url")
         expect(last_message[:content][2][:image_url][:url]).to start_with("data:image/jpeg;base64,")
-        
+
         expect(last_message[:content][3][:type]).to eq("image_url")
         expect(last_message[:content][3][:image_url][:url]).to start_with("data:image/jpeg;base64,")
       end
@@ -221,10 +221,10 @@ RSpec.describe AI::Chat, "image support" do
         # All images should be base64 encoded
         expect(last_message[:content][1][:type]).to eq("image_url")
         expect(last_message[:content][1][:image_url][:url]).to start_with("data:image/jpeg;base64,")
-        
+
         expect(last_message[:content][2][:type]).to eq("image_url")
         expect(last_message[:content][2][:image_url][:url]).to start_with("data:image/jpeg;base64,")
-        
+
         expect(last_message[:content][3][:type]).to eq("image_url")
         expect(last_message[:content][3][:image_url][:url]).to start_with("data:image/jpeg;base64,")
       end

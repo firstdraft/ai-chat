@@ -42,13 +42,15 @@ module AI
           if item.key?("image") || item.key?(:image)
             image_value = item.fetch("image") { item.fetch(:image) }
             {
-              type: "input_image",
-              image_url: process_image(image_value)
+              type: "image_url",
+              image_url: {
+                url: process_image(image_value)
+              }
             }
           elsif item.key?("text") || item.key?(:text)
             text_value = item.fetch("text") { item.fetch(:text) }
             {
-              type: "input_text",
+              type: "text",
               text: text_value
             }
           else
@@ -72,7 +74,7 @@ module AI
       else
         text_and_images_array = [
           {
-            type: "input_text",
+            type: "text",
             text: content
           }
         ]
@@ -80,8 +82,10 @@ module AI
         if images && !images.empty?
           images_array = images.map do |image|
             {
-              type: "input_image",
-              image_url: process_image(image)
+              type: "image_url",
+              image_url: {
+                url: process_image(image)
+              }
             }
           end
 
@@ -89,8 +93,10 @@ module AI
         else
           text_and_images_array.push(
             {
-              type: "input_image",
-              image_url: process_image(image)
+              type: "image_url",
+              image_url: {
+                url: process_image(image)
+              }
             }
           )
         end
