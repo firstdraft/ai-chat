@@ -56,11 +56,11 @@ z.user("1 slice of pizza")
 response = z.assistant!
 puts "Nutrition values: #{response.inspect}"
 
-# Test with an image (using the fixture image from the spec directory)
-puts "\nImage Support Test:"
-puts "------------------"
+# Test with a single image
+puts "\nSingle Image Support Test:"
+puts "------------------------"
 begin
-  img_path = File.expand_path("../../spec/fixtures/test_image.jpg", __FILE__)
+  img_path = File.expand_path("../../spec/fixtures/test1.jpg", __FILE__)
   if File.exist?(img_path)
     i = AI::Chat.new
     i.user("What's in this image?", image: img_path)
@@ -70,8 +70,27 @@ begin
     puts "Test image not found at #{img_path}"
   end
 rescue => e
-  puts "Image test error: #{e.message}"
-  puts "#{response}"
+  puts "Single image test error: #{e.message}"
+end
+
+# Test with multiple images
+puts "\nMultiple Images Support Test:"
+puts "--------------------------"
+begin
+  img_path1 = File.expand_path("../../spec/fixtures/test1.jpg", __FILE__)
+  img_path2 = File.expand_path("../../spec/fixtures/test2.jpg", __FILE__)
+  img_path3 = File.expand_path("../../spec/fixtures/test3.jpg", __FILE__)
+  
+  if File.exist?(img_path1) && File.exist?(img_path2) && File.exist?(img_path3)
+    i = AI::Chat.new
+    i.user("Compare these images and tell me what you see.", images: [img_path1, img_path2, img_path3])
+    response = i.assistant!
+    puts "Multiple images description: #{response}"
+  else
+    puts "One or more test images not found"
+  end
+rescue => e
+  puts "Multiple images test error: #{e.message}"
 end
 
 # Get messages example

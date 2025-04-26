@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.0.5] - 2025-04-25
+
+- Updated to use OpenAI's Responses API instead of Chat Completions API
+- Fixed image processing to work with the new API format
+- Improved error handling and response parsing
+
 ## [0.0.1] - 2025-02-27
 
 - Initial release

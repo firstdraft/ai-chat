@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Raghu Betina", "Jelani Woods"]
   spec.email = ["raghu@firstdraft.com", "jelani@firstdraft.com"]
 
-  spec.summary = "This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's Chat Completions endpoint."
-  spec.description = "This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's Chat Completions endpoint. Supports Structured Output."
+  spec.summary = "This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's Responses API."
+  spec.description = "This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's Responses API. Supports Structured Output and Image Processing."
   spec.homepage = "https://github.com/firstdraft/ai-chat"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.0.0"

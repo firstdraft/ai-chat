@@ -22,15 +22,13 @@ module AI
           if item.key?("image") || item.key?(:image)
             image_value = item.fetch("image") { item.fetch(:image) }
             {
-              type: "image_url",
-              image_url: {
-                url: process_image(image_value)
-              }
+              type: "input_image",
+              image_url: process_image(image_value)
             }
           elsif item.key?("text") || item.key?(:text)
             text_value = item.fetch("text") { item.fetch(:text) }
             {
-              type: "text",
+              type: "input_text",
               text: text_value
             }
           else
@@ -54,7 +52,7 @@ module AI
       else
         text_and_images_array = [
           {
-            type: "text",
+            type: "input_text",
             text: content
           }
         ]
@@ -62,10 +60,8 @@ module AI
         if images && !images.empty?
           images_array = images.map do |image|
             {
-              type: "image_url",
-              image_url: {
-                url: process_image(image)
-              }
+              type: "input_image",
+              image_url: process_image(image)
             }
           end
 
@@ -73,10 +69,8 @@ module AI
         else
           text_and_images_array.push(
             {
-              type: "image_url",
-              image_url: {
-                url: process_image(image)
-              }
+              type: "input_image",
+              image_url: process_image(image)
             }
           )
         end
@@ -100,35 +94,77 @@ module AI
         "content-type" => "application/json"
       }
 
-      response_format = if schema.nil?
-        {
-          "type" => "text"
-        }
-      else
-        {
-          "type" => "json_schema",
-          "json_schema" => JSON.parse(schema)
+      request_body_hash = {
+        "model" => model,
+        "input" => messages
+      }
+
+      # Handle structured output (JSON schema)
+      if !schema.nil?
+        # Parse the schema and use it with Structured Output (json_schema)
+        schema_obj = JSON.parse(schema)
+        
+        # Extract schema name from the parsed schema, or use a default
+        schema_name = schema_obj["name"] || "output_object"
+        
+        # Responses API uses proper Structured Output with schema
+        request_body_hash["text"] = {
+          "format" => {
+            "type" => "json_schema",
+            "schema" => schema_obj["schema"] || schema_obj,
+            "name" => schema_name,
+            "strict" => true
+          }
         }
       end
 
-      request_body_hash = {
-        "model" => model,
-        "response_format" => response_format,
-        "messages" => messages
-      }
-
       request_body_json = JSON.generate(request_body_hash)
 
-      uri = URI("https://api.openai.com/v1/chat/completions")
+      uri = URI("https://api.openai.com/v1/responses")
       raw_response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
         request = Net::HTTP::Post.new(uri, request_headers_hash)
         request.body = request_body_json
         http.request(request)
       end
 
-      parsed_response = JSON.parse(raw_response.body)
+      # Handle empty responses or HTTP errors
+      if raw_response.code.to_i >= 400
+        raise "HTTP Error #{raw_response.code}: #{raw_response.message}\n#{raw_response.body}"
+      end
 
-      content = parsed_response.fetch("choices").at(0).fetch("message").fetch("content")
+      if raw_response.body.nil? || raw_response.body.empty?
+        raise "Empty response received from OpenAI API"
+      end
+
+      parsed_response = JSON.parse(raw_response.body)
+      
+      # Check for API errors
+      if parsed_response.key?("error") && parsed_response["error"].is_a?(Hash)
+        error_message = parsed_response["error"]["message"] || parsed_response["error"].inspect
+        raise "OpenAI API Error: #{error_message}"
+      end
+      
+      # Extract the text content from the response
+      content = ""
+      
+      # Parse response according to the documented structure
+      if parsed_response.key?("output") && parsed_response["output"].is_a?(Array) && !parsed_response["output"].empty?
+        output_item = parsed_response["output"][0]
+        
+        if output_item["type"] == "message" && output_item.key?("content")
+          content_items = output_item["content"]
+          output_text_item = content_items.find { |item| item["type"] == "output_text" }
+          
+          if output_text_item && output_text_item.key?("text")
+            content = output_text_item["text"]
+          end
+        end
+      end
+      
+      # If no content is found, throw an error
+      if content.empty?
+        raise "Failed to extract content from response: #{parsed_response.inspect}"
+      end
 
       messages.push({role: "assistant", content: content})
 
