@@ -4,8 +4,8 @@
 
 module AI
   class Chat
-    attr_accessor :schema, :model
-    attr_reader :messages, :reasoning_effort, :attribute_mappings
+    attr_accessor :schema, :model, :messages
+    attr_reader :reasoning_effort, :attribute_mappings
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
     
