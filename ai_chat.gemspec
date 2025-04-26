@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
 
   # Register dependencies of the gem
   spec.add_runtime_dependency "mime-types", "~> 3.0"
+  spec.add_runtime_dependency "base64"  # Works for all Ruby versions
 
   # Development dependencies
   spec.add_development_dependency "rake", "~> 13.0"
