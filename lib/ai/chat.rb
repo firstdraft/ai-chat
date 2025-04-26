@@ -4,8 +4,8 @@
 
 module AI
   class Chat
-    attr_accessor :messages, :schema, :model
-    attr_reader :reasoning_effort
+    attr_accessor :schema, :model
+    attr_reader :messages, :reasoning_effort, :attribute_mappings
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
 
@@ -14,6 +14,13 @@ module AI
       @messages = []
       @model = "gpt-4.1-mini"
       @reasoning_effort = nil
+      @attribute_mappings = {
+        role: :role,
+        content: :content,
+        image: :image,
+        images: :images,
+        image_url: :image_url
+      }
     end
     
     def reasoning_effort=(value)
@@ -268,6 +275,79 @@ module AI
         base64_string = Base64.strict_encode64(image_data)
 
         "data:#{mime_type};base64,#{base64_string}"
+      end
+    end
+    
+    def messages=(new_messages)
+      # Reset the current messages array
+      @messages = []
+      
+      # Process each message in the new_messages array/relation
+      new_messages.each do |message|
+        # Extract role and content using the configured attribute names
+        role = extract_attribute(message, @attribute_mappings[:role])
+        content = extract_attribute(message, @attribute_mappings[:content])
+        
+        case role&.to_s
+        when "system"
+          system(content)
+        when "user"
+          # Handle images through various possible structures
+          if content.is_a?(Array)
+            # This is already a mixed content array with text and images
+            user(content)
+          else
+            # Extract images using configured attribute names
+            image = extract_attribute(message, @attribute_mappings[:image])
+            images = extract_attribute(message, @attribute_mappings[:images])
+            
+            # For ActiveRecord associations that return collections
+            if images.nil? && message.respond_to?(@attribute_mappings[:images])
+              collection = message.send(@attribute_mappings[:images])
+              if collection.respond_to?(:each) && !collection.is_a?(String)
+                images = collection.map { |img| extract_attribute(img, @attribute_mappings[:image_url]) || img }
+              end
+            end
+            
+            # Add the message with any found images
+            if image || (images && !images.empty?)
+              user(content, image: image, images: images)
+            else
+              user(content)
+            end
+          end
+        when "assistant"
+          assistant(content)
+        else
+          # For unknown roles, add directly but ensure symbols for keys
+          if message.is_a?(Hash)
+            @messages << message.transform_keys(&:to_sym)
+          else
+            # For ActiveRecord objects, convert to hash with symbol keys
+            hash = { role: role, content: content }
+            @messages << hash
+          end
+        end
+      end
+    end
+
+    # Configure attribute mappings
+    def configure_attributes(mappings = {})
+      mappings.each do |key, value|
+        @attribute_mappings[key.to_sym] = value.to_sym
+      end
+    end
+
+    # Helper method to extract an attribute from various object types
+    def extract_attribute(obj, attr_name)
+      if obj.respond_to?(attr_name)
+        # Method access (ActiveRecord)
+        obj.send(attr_name)
+      elsif obj.is_a?(Hash) && (obj.key?(attr_name) || obj.key?(attr_name.to_s))
+        # Hash access with symbol or string keys
+        obj[attr_name] || obj[attr_name.to_s]
+      else
+        nil
       end
     end
   end
