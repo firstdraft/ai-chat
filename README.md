@@ -169,9 +169,28 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.
 
+## Reasoning Effort
+
+When using reasoning models like `o3` or `o4-mini`, you can specify a reasoning effort level to control how much reasoning the model does before producing its final response:
+
+```ruby
+x = AI::Chat.new
+x.model = "o4-mini"
+x.reasoning_effort = "medium" # Can be "low", "medium", or "high"
+
+x.user("Write a bash script that transposes a matrix represented as '[1,2],[3,4],[5,6]'")
+x.assistant!
+```
+
+The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate before creating a response to the prompt. Options are:
+- `"low"`: Favors speed and economical token usage
+- `"medium"`: (Default) Balances speed and reasoning accuracy
+- `"high"`: Favors more complete reasoning
+
+Setting to `nil` disables the reasoning parameter.
+
 ## TODOs
 
-- Add a `reasoning_effort` parameter.
 - Add the ability to set all messages at once, ideally with an ActiveRecord Relation.
 - Add a way to access the whole API response body (rather than just the message content).
 

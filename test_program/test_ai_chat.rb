@@ -112,4 +112,46 @@ a.user("Tell me a joke.")
 response = a.assistant!
 puts "Assistant response after manual message: #{response}"
 
+# Reasoning Effort Test
+puts "\nReasoning Effort Test:"
+puts "---------------------"
+begin
+  r = AI::Chat.new
+  r.model = "o4-mini"  # Use a reasoning model
+  r.reasoning_effort = "medium"
+  r.user("Write a short bash script that counts the number of unique words in a text file.")
+  response = r.assistant!
+  puts "Response with reasoning effort 'medium': #{response}"
+rescue => e
+  puts "Reasoning effort test error: #{e.message}"
+end
+
+# Reasoning Effort Validation Test
+puts "\nReasoning Effort Validation Test:"
+puts "-------------------------------"
+begin
+  r = AI::Chat.new
+  puts "Setting valid reasoning effort string 'low'..."
+  r.reasoning_effort = "low"
+  puts "Success: reasoning_effort = #{r.reasoning_effort}"
+  
+  puts "Setting valid reasoning effort symbol :medium..."
+  r.reasoning_effort = :medium
+  puts "Success: reasoning_effort = #{r.reasoning_effort}"
+  
+  puts "Setting valid reasoning effort string 'high'..."
+  r.reasoning_effort = "high"
+  puts "Success: reasoning_effort = #{r.reasoning_effort}"
+  
+  puts "Setting nil reasoning effort..."
+  r.reasoning_effort = nil
+  puts "Success: reasoning_effort = #{r.reasoning_effort}"
+  
+  puts "Setting invalid reasoning effort 'extreme'..."
+  r.reasoning_effort = "extreme"
+  puts "This line should not be reached"
+rescue ArgumentError => e
+  puts "Expected error caught: #{e.message}"
+end
+
 puts "\nTests completed!"

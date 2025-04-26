@@ -5,11 +5,31 @@
 module AI
   class Chat
     attr_accessor :messages, :schema, :model
+    attr_reader :reasoning_effort
+
+    VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
 
     def initialize(api_key: nil)
       @api_key = api_key || ENV.fetch("OPENAI_API_KEY")
       @messages = []
       @model = "gpt-4.1-mini"
+      @reasoning_effort = nil
+    end
+    
+    def reasoning_effort=(value)
+      if value.nil?
+        @reasoning_effort = nil
+      else
+        # Convert string to symbol if needed
+        symbol_value = value.is_a?(String) ? value.to_sym : value
+        
+        if VALID_REASONING_EFFORTS.include?(symbol_value)
+          @reasoning_effort = symbol_value
+        else
+          valid_values = VALID_REASONING_EFFORTS.map { |v| ":#{v} or \"#{v}\"" }.join(", ")
+          raise ArgumentError, "Invalid reasoning_effort value: '#{value}'. Must be one of: #{valid_values}"
+        end
+      end
     end
 
     def system(content)
@@ -99,6 +119,14 @@ module AI
         "input" => messages
       }
 
+      # Add reasoning parameter if specified
+      if !@reasoning_effort.nil?
+        # Convert symbol back to string for the API request
+        request_body_hash["reasoning"] = {
+          "effort" => @reasoning_effort.to_s
+        }
+      end
+
       # Handle structured output (JSON schema)
       if !schema.nil?
         # Parse the schema and use it with Structured Output (json_schema)
@@ -172,7 +200,7 @@ module AI
     end
 
     def inspect
-      "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect}>"
+      "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
     end
 
     private
