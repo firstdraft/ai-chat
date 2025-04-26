@@ -141,13 +141,34 @@ z.assistant!
 
 ## Set assistant messages manually
 
-You can manually add assistant messages:
+You can manually add assistant messages without making API calls, which is useful when reconstructing a past conversation:
 
-```rb
-x.assistant("Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee.")
+```ruby
+# Create a new chat instance
+chat = AI::Chat.new
+
+# Set the system message to establish the context
+chat.system("You are a helpful assistant who provides information about planets.")
+
+# First exchange about Mars
+chat.user("Tell me about Mars.")
+chat.assistant("Mars is the fourth planet from the Sun and the second-smallest planet in our Solar System. It's often called the 'Red Planet' because of its reddish appearance due to iron oxide (rust) on its surface. Mars has two small moons, Phobos and Deimos.")
+
+# Second exchange about Mars' atmosphere
+chat.user("What's the atmosphere like?")
+chat.assistant("Mars has a very thin atmosphere compared to Earth. It consists of about 96% carbon dioxide, 1.9% nitrogen, 1.8% argon, and traces of oxygen and water vapor. The atmospheric pressure on Mars is only about 1% of Earth's at sea level, which means liquid water can't exist on the surface for long periods.")
+
+# Third exchange about Mars' potential for life
+chat.user("Could it support human life?")
+chat.assistant("Mars currently can't support human life without significant technological assistance. Challenges include the thin atmosphere that doesn't protect from radiation, extreme cold temperatures, lack of liquid water on the surface, and no breathable air. However, NASA and other space agencies are researching how humans might live on Mars using habitats, life support systems, and possibly terraforming in the future.")
+
+# Now continue the conversation with an API-generated response
+chat.user("Are there any current missions to go there?")
+response = chat.assistant!
+puts response
 ```
 
-Useful if you are reconstructing a chat that has already happened.
+This approach lets you recreate a conversation's history (perhaps from your database), and then continue it.
 
 ## Getting and setting messages directly
 
