@@ -1,13 +1,15 @@
 # AI::Chat
 
-This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's Chat Completions endpoint.
+This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use cutting-edge Large Language Models.
 
 ## Installation
+
+### Gemfile way (preferred)
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem "ai-chat"
+gem "ai-chat", "< 1.0.0"
 ```
 
 And then, at a command prompt:
@@ -16,37 +18,60 @@ And then, at a command prompt:
 bundle install
 ```
 
+### Direct way
+
 Or, install it directly with:
 
 ```
 gem install ai-chat
 ```
 
-## Configuration
-
-- By default, the gem checks for an environment variable called `AI_TOKEN`, then falls back to `OPENAI_TOKEN` if available. You can also provide your token directly when instantiating a chat:
-
-    ```ruby
-    x = AI::Chat.new(api_key: "your-token-goes-here")
-    ```
-- By default, the gem uses the `gpt-4o` model. If you want something else, you can set it:
-
-    ```ruby
-    x.model = "o3-mini"
-    ```
-
 ## Simplest usage
 
+In your Ruby program:
+
 ```ruby
+require "ai-chat"
+
+# Create an instance of AI::Chat
 x = AI::Chat.new
+
+# Add system-level instructions
 x.system("You are a helpful assistant that speaks like Shakespeare.")
+
+# Add a user message to the chat
 x.user("Hi there!")
+
+# Get the next message from the model
 x.assistant!
 # => "Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee."
 
+# Rinse and repeat
 x.user("What's the best pizza in Chicago?")
 x.assistant!
-# => "Ah, the fair and bustling city of Chicago, renowned for its deep-dish delight that hath captured hearts and stomachs aplenty. Amongst the many offerings of this great city, 'tis often said that Lou Malnati's and Giordano's art the titans of the deep-dish realm. Lou Malnati's crust is praised for its buttery crispness, whilst Giordano's doth boast a stuffed creation that is nigh unto legendary. Yet, I encourage thee to embark upon thine own quest and savor the offerings of these famed establishments, for in the tasting lies the truth of which thy palate prefers. Enjoy the gastronomic adventure, my friend."
+# => "Ah, the fair and bustling city of Chicago, renowned for its deep-dish delight that hath captured hearts and stomachs aplenty. Amongst the many offerings of this great city, 'tis often said that Lou Malnati's and Giordano's...."
+```
+
+## Configuration
+
+By default, the gem uses OpenAI's `gpt-4.1-mini` model. If you want to use a different model, you can set it:
+
+```ruby
+x.model = "o3"
+```
+
+The gem by default looks for an environment variable called `OPENAI_API_KEY` and uses that if it finds it.
+
+You can specify a different environment variable name:
+
+```ruby
+x = AI::Chat.new(api_key_env_var: "OPENAI_TOKEN")
+```
+
+Or, you can pass an API key in directly:
+
+```ruby
+x = AI::Chat.new(api_key: "your-api-key-goes-here")
 ```
 
 ## Structured Output
@@ -55,9 +80,13 @@ Get back Structured Output by setting the `schema` attribute (I suggest using [O
 
 ```ruby
 x = AI::Chat.new
+
 x.system("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.")
+
 x.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "object","properties": {  "fat": {    "type": "number",    "description": "The amount of fat in grams."  },  "protein": {    "type": "number",    "description": "The amount of protein in grams."  },  "carbs": {    "type": "number",    "description": "The amount of carbohydrates in grams."  },  "total_calories": {    "type": "number",    "description": "The total calories calculated based on fat, protein, and carbohydrates."  }},"required": [  "fat",  "protein",  "carbs",  "total_calories"],"additionalProperties": false}}'
+
 x.user("1 slice of pizza")
+
 x.assistant!
 # => {"fat"=>15, "protein"=>5, "carbs"=>50, "total_calories"=>350}
 ```
