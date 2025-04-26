@@ -38,7 +38,7 @@ RSpec.describe AI::Chat, "basic functionality" do
   describe "#system" do
     it "adds a system message to messages array" do
       chat.system(test_system_message)
-      
+
       expect(chat.messages.length).to eq(1)
       expect(chat.messages.first[:role]).to eq("system")
       expect(chat.messages.first[:content]).to eq(test_system_message)
@@ -49,7 +49,7 @@ RSpec.describe AI::Chat, "basic functionality" do
     context "with text-only content" do
       it "adds a user message with simple text content" do
         chat.user(test_user_message)
-        
+
         expect(chat.messages.length).to eq(1)
         expect(chat.messages.first[:role]).to eq("user")
         expect(chat.messages.first[:content]).to eq(test_user_message)
@@ -60,7 +60,7 @@ RSpec.describe AI::Chat, "basic functionality" do
   describe "#assistant" do
     it "adds an assistant message to messages array" do
       chat.assistant(test_assistant_message)
-      
+
       expect(chat.messages.length).to eq(1)
       expect(chat.messages.first[:role]).to eq("assistant")
       expect(chat.messages.first[:content]).to eq(test_assistant_message)
@@ -91,7 +91,7 @@ RSpec.describe AI::Chat, "basic functionality" do
     it "allows setting to nil" do
       chat.reasoning_effort = :medium
       expect(chat.reasoning_effort).to eq(:medium)
-      
+
       chat.reasoning_effort = nil
       expect(chat.reasoning_effort).to be_nil
     end
@@ -102,9 +102,9 @@ RSpec.describe AI::Chat, "basic functionality" do
       chat.system(test_system_message)
       chat.model = "gpt-4"
       chat.reasoning_effort = :high
-      
+
       inspect_output = chat.inspect
-      
+
       expect(inspect_output).to include("AI::Chat")
       expect(inspect_output).to include(chat.messages.inspect)
       expect(inspect_output).to include("gpt-4")

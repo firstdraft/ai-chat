@@ -183,10 +183,11 @@ module AI
 
       # Parse response according to the documented structure
       if parsed_response.key?("output") && parsed_response["output"].is_a?(Array) && !parsed_response["output"].empty?
-        output_item = parsed_response["output"][0]
-
-        if output_item["type"] == "message" && output_item.key?("content")
-          content_items = output_item["content"]
+        # Find the message output item, which may not be the first item when reasoning is used
+        message_output_item = parsed_response["output"].find { |item| item["type"] == "message" }
+        
+        if message_output_item && message_output_item.key?("content")
+          content_items = message_output_item["content"]
           output_text_item = content_items.find { |item| item["type"] == "output_text" }
 
           content = output_text_item&.key?("text") ? output_text_item["text"] : ""

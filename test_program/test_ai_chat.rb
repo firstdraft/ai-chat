@@ -3,6 +3,7 @@
 require "bundler/setup"
 require "dotenv/load"
 require "ai-chat"
+require "awesome_print"
 
 puts "Testing AI::Chat gem with examples from README"
 puts "=============================================="
@@ -80,7 +81,7 @@ begin
   img_path1 = File.expand_path("../../spec/fixtures/test1.jpg", __FILE__)
   img_path2 = File.expand_path("../../spec/fixtures/test2.jpg", __FILE__)
   img_path3 = File.expand_path("../../spec/fixtures/test3.jpg", __FILE__)
-  
+
   if File.exist?(img_path1) && File.exist?(img_path2) && File.exist?(img_path3)
     i = AI::Chat.new
     i.user("Compare these images and tell me what you see.", images: [img_path1, img_path2, img_path3])
@@ -119,8 +120,9 @@ begin
   r = AI::Chat.new
   r.model = "o4-mini"  # Use a reasoning model
   r.reasoning_effort = "medium"
-  r.user("Write a short bash script that counts the number of unique words in a text file.")
+  r.user("How much wood would a wood chuck chuck if a wood chuck could chuck wood?")
   response = r.assistant!
+
   puts "Response with reasoning effort 'medium': #{response}"
 rescue => e
   puts "Reasoning effort test error: #{e.message}"
@@ -134,19 +136,19 @@ begin
   puts "Setting valid reasoning effort string 'low'..."
   r.reasoning_effort = "low"
   puts "Success: reasoning_effort = #{r.reasoning_effort}"
-  
+
   puts "Setting valid reasoning effort symbol :medium..."
   r.reasoning_effort = :medium
   puts "Success: reasoning_effort = #{r.reasoning_effort}"
-  
+
   puts "Setting valid reasoning effort string 'high'..."
   r.reasoning_effort = "high"
   puts "Success: reasoning_effort = #{r.reasoning_effort}"
-  
+
   puts "Setting nil reasoning effort..."
   r.reasoning_effort = nil
   puts "Success: reasoning_effort = #{r.reasoning_effort}"
-  
+
   puts "Setting invalid reasoning effort 'extreme'..."
   r.reasoning_effort = "extreme"
   puts "This line should not be reached"
