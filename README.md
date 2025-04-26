@@ -173,7 +173,52 @@ This approach lets you recreate a conversation's history (perhaps from your data
 ## Getting and setting messages directly
 
 - You can call `.messages` to get an array containing the conversation so far.
-- TODO: Setting `.messages` will replace the conversation with the provided array.
+- You can set `.messages` to replace the conversation with a provided array or ActiveRecord::Relation:
+
+```ruby
+# Create a new chat instance
+chat = AI::Chat.new
+
+# Set messages from an array of hashes
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant." },
+  { role: "user", content: "Hello!" },
+  { role: "assistant", content: "How can I help you today?" }
+]
+
+# Set messages from ActiveRecord models
+chat.messages = Message.where(conversation_id: 123)
+
+# With images
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant." },
+  { role: "user", content: "What's in this image?", image: "path/to/image.jpg" },
+  { role: "assistant", content: "I see a cat in the image." }
+]
+
+# With multiple images
+chat.messages = [
+  { role: "user", content: "Compare these images", images: ["image1.jpg", "image2.jpg"] }
+]
+```
+
+### Custom attribute mappings
+
+If your database columns or object attributes have different names, you can configure custom mappings:
+
+```ruby
+# Configure custom attribute mappings
+chat = AI::Chat.new
+chat.configure_attributes(
+  role: :message_type,       # Instead of "role"
+  content: :message_body,    # Instead of "content" 
+  images: :attachments,      # For retrieving associated images
+  image_url: :url            # Column on the image model that contains the URL/path
+)
+
+# Now works with custom column names
+chat.messages = CustomMessage.where(conversation_id: 123)
+```
 
 ## Testing with Real API Calls
 
@@ -212,7 +257,6 @@ Setting to `nil` disables the reasoning parameter.
 
 ## TODOs
 
-- Add the ability to set all messages at once, ideally with an ActiveRecord Relation.
 - Add a way to access the whole API response body (rather than just the message content).
 
 ## Contributing
