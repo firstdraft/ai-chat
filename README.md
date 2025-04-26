@@ -43,18 +43,24 @@ x.system("You are a helpful assistant that speaks like Shakespeare.")
 x.user("Hi there!")
 
 # Get the next message from the model
-x.assistant!
-# => "Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee."
+x.assistant! # => "Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee."
 
-# Rinse and repeat
+# Access the messages so far
+x.messages # =>
+# [
+#   { :role => "system", :content => "You are a helpful assistant that speaks like Shakespeare." },
+#   { :role => "user", :content => "Hi there!" },
+#   { :role => "assistant", :content => "Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee." }
+# ]
+
+# Rinse and repeat!
 x.user("What's the best pizza in Chicago?")
-x.assistant!
-# => "Ah, the fair and bustling city of Chicago, renowned for its deep-dish delight that hath captured hearts and stomachs aplenty. Amongst the many offerings of this great city, 'tis often said that Lou Malnati's and Giordano's...."
+x.assistant! # => "Ah, the fair and bustling city of Chicago, renowned for its deep-dish delight that hath captured hearts and stomachs aplenty. Amongst the many offerings of this great city, 'tis often said that Lou Malnati's and Giordano's...."
 ```
 
 ## Configuration
 
-By default, the gem uses OpenAI's `gpt-4.1-mini` model. If you want to use a different model, you can set it:
+By default, the gem uses OpenAI's `gpt-4.1-nano` model. If you want to use a different model, you can set it:
 
 ```ruby
 x.model = "o3"
@@ -65,7 +71,7 @@ The gem by default looks for an environment variable called `OPENAI_API_KEY` and
 You can specify a different environment variable name:
 
 ```ruby
-x = AI::Chat.new(api_key_env_var: "OPENAI_TOKEN")
+x = AI::Chat.new(api_key_env_var: "MY_OPENAI_TOKEN")
 ```
 
 Or, you can pass an API key in directly:
@@ -73,6 +79,10 @@ Or, you can pass an API key in directly:
 ```ruby
 x = AI::Chat.new(api_key: "your-api-key-goes-here")
 ```
+
+## Get current messages
+
+You can call `.messages` to get an array containing the conversation so far.
 
 ## Structured Output
 
@@ -109,7 +119,7 @@ The gem supports three types of image inputs:
 - File paths: Pass a string with a path to a local image file.
 - File-like objects: Pass an object that responds to `read` (like `File.open("image.jpg")` or a Rails uploaded file).
 
-You can send multiple images, and place them between bits of text, in a single user message:
+You can send multiple images, and place them between bits of text, in a single complex user message:
 
 ```ruby
 z = AI::Chat.new
@@ -145,52 +155,29 @@ You can manually add assistant messages without making API calls, which is usefu
 
 ```ruby
 # Create a new chat instance
-chat = AI::Chat.new
+y = AI::Chat.new
 
-# Set the system message to establish the context
-chat.system("You are a helpful assistant who provides information about planets.")
+# Add previous messages
+y.system("You are a helpful assistant who provides information about planets.")
 
-# First exchange about Mars
-chat.user("Tell me about Mars.")
-chat.assistant("Mars is the fourth planet from the Sun and the second-smallest planet in our Solar System. It's often called the 'Red Planet' because of its reddish appearance due to iron oxide (rust) on its surface. Mars has two small moons, Phobos and Deimos.")
+y.user("Tell me about Mars.")
+y.assistant("Mars is the fourth planet from the Sun....")
 
-# Second exchange about Mars' atmosphere
-chat.user("What's the atmosphere like?")
-chat.assistant("Mars has a very thin atmosphere compared to Earth. It consists of about 96% carbon dioxide, 1.9% nitrogen, 1.8% argon, and traces of oxygen and water vapor. The atmospheric pressure on Mars is only about 1% of Earth's at sea level, which means liquid water can't exist on the surface for long periods.")
+y.user("What's the atmosphere like?")
+y.assistant("Mars has a very thin atmosphere compared to Earth....")
 
-# Third exchange about Mars' potential for life
-chat.user("Could it support human life?")
-chat.assistant("Mars currently can't support human life without significant technological assistance. Challenges include the thin atmosphere that doesn't protect from radiation, extreme cold temperatures, lack of liquid water on the surface, and no breathable air. However, NASA and other space agencies are researching how humans might live on Mars using habitats, life support systems, and possibly terraforming in the future.")
+y.user("Could it support human life?")
+y.assistant("Mars currently can't support human life without....")
 
 # Now continue the conversation with an API-generated response
-chat.user("Are there any current missions to go there?")
-response = chat.assistant!
+y.user("Are there any current missions to go there?")
+response = y.assistant!
 puts response
 ```
 
-This approach lets you recreate a conversation's history (perhaps from your database), and then continue it.
+With this, you can loop through any conversation's history (perhaps after retrieving it from your database), recreate an `AI::Chat`, and then continue it.
 
-## Getting and setting messages directly
-
-- You can call `.messages` to get an array containing the conversation so far.
-- TODO: Setting `.messages` will replace the conversation with the provided array.
-
-## Testing with Real API Calls
-
-While this gem includes specs, they use mocked API responses. To test with real API calls:
-
-1. Navigate to the test program directory: `cd test_program`
-2. Create a `.env` file in the test_program directory with your API credentials:
-```
-# Your OpenAI API key
-OPENAI_API_KEY=your_openai_api_key_here
-```
-3. Install dependencies: `bundle install`
-4. Run the test program: `ruby test_ai_chat.rb`
-
-This test program runs through all the major features of the gem, making real API calls to OpenAI.
-
-## Reasoning Effort
+### Reasoning Effort
 
 When using reasoning models like `o3` or `o4-mini`, you can specify a reasoning effort level to control how much reasoning the model does before producing its final response:
 
@@ -210,9 +197,118 @@ The `reasoning_effort` parameter guides the model on how many reasoning tokens t
 
 Setting to `nil` disables the reasoning parameter.
 
+## Advanced usage (TODO - NOT YET IMPLEMENTED)
+
+Combined with loops and conditionals, you can do everything you need to with the above techniques. But, below are some advanced shortcuts.
+
+### Setting messages directly
+
+You can use `.messages=()` to assign an `Array` of `Hashes`. Each `Hash` must have keys `:role` and `:content`, and optionally `:image` or `:images`:
+
+```ruby
+# Using the planet example with array of hashes
+chat = AI::Chat.new
+
+# Set all messages at once instead of calling methods sequentially
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant who provides information about planets." },
+  { role: "user", content: "Tell me about Mars." },
+  { role: "assistant", content: "Mars is the fourth planet from the Sun...." },
+  { role: "user", content: "What's the atmosphere like?" },
+  { role: "assistant", content: "Mars has a very thin atmosphere compared to Earth...." },
+  { role: "user", content: "Could it support human life?" },
+  { role: "assistant", content: "Mars currently can't support human life without...." }
+]
+
+# Now continue the conversation with an API-generated response
+chat.user("Are there any current missions to go there?")
+response = chat.assistant!
+puts response
+```
+
+You can still include images:
+
+```ruby
+# Create a new chat instance
+chat = AI::Chat.new
+
+# With images
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant." },
+  { role: "user", content: "What's in this image?", image: "path/to/image.jpg" },
+]
+
+# With multiple images
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant." },
+  { role: "user", content: "Compare these images", images: ["image1.jpg", "image2.jpg"] }
+]
+
+# With complex messages
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant." },
+  { role: "user", content: 
+    [
+      {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
+      {"text" => "What is in the above image? What is in the below image?"},
+      {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Elephant_Diversity.jpg/305px-Elephant_Diversity.jpg"},
+      {"text" => "What are the differences between the images?"}
+    ]
+  }
+]
+```
+
+### Assigning `ActiveRecord::Relation`s
+
+If your chat history is contained in an `ActiveRecord::Relation`, you can assign it directly:
+
+```ruby
+chat = AI::Chat.new
+chat.messages = @thread.posts.order(:created_at)
+chat.assistant!
+```
+
+In order to work:
+
+- The record itself must respond to `.role` and `.content`.
+- The record could optionally respond to `.image`, which should return:
+  - A URL: an image URL starting with `http://` or `https://`.
+  - A file path: a string with a path to a local image file.
+  - A file-like object: an object that responds to `read` (like `File.open("image.jpg")` or a Rails uploaded file).
+- The record could optionally respond to `.images`, which should return another `ActiveRecord::Relation`.
+  - Each of those should respond to `.image`, similar to the above.
+
+If your database columns or object attributes have different names, you can configure custom mappings:
+
+```ruby
+# Configure custom attribute mappings
+chat = AI::Chat.new
+chat.configure_message_attributes(
+  role: :message_type,       # Method on the main model that returns "system", "user", or "assistant"
+  content: :message_body,    # Method on the main model that returns the content of the message
+  image: :image_url,         # Method on the main model that returns a URL, path, or file
+  images: :attachments,      # Method on the main model that returns a collection of associated images
+  source_image: :photo       # Method on the associated image that returns the URL, path, or file. Defaults to "image"
+)
+```
+
+## Testing with Real API Calls
+
+While this gem includes specs, they use mocked API responses. To test with real API calls:
+
+1. Navigate to the test program directory: `cd test_program`
+2. Create a `.env` file in the test_program directory with your API credentials:
+```
+# Your OpenAI API key
+OPENAI_API_KEY=your_openai_api_key_here
+```
+3. Install dependencies: `bundle install`
+4. Run the test program: `ruby test_ai_chat.rb`
+
+This test program runs through all the major features of the gem, making real API calls to OpenAI.
+
 ## TODOs
 
-- Add the ability to set all messages at once, ideally with an ActiveRecord Relation.
 - Add a way to access the whole API response body (rather than just the message content).
 
 ## Contributing
