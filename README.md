@@ -154,12 +154,26 @@ Useful if you are reconstructing a chat that has already happened.
 - You can call `.messages` to get an array containing the conversation so far.
 - TODO: Setting `.messages` will replace the conversation with the provided array.
 
+## Testing with Real API Calls
+
+While this gem includes specs, they use mocked API responses. To test with real API calls:
+
+1. Navigate to the test program directory: `cd test_program`
+2. Create a `.env` file in the test_program directory with your API credentials:
+```
+# Your OpenAI API key
+OPENAI_API_KEY=your_openai_api_key_here
+```
+3. Install dependencies: `bundle install`
+4. Run the test program: `ruby test_ai_chat.rb`
+
+This test program runs through all the major features of the gem, making real API calls to OpenAI.
+
 ## TODOs
 
 - Add a `reasoning_effort` parameter.
 - Add the ability to set all messages at once, ideally with an ActiveRecord Relation.
 - Add a way to access the whole API response body (rather than just the message content).
-- Add specs.
 
 ## Contributing
 
