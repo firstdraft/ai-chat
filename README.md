@@ -197,7 +197,7 @@ The `reasoning_effort` parameter guides the model on how many reasoning tokens t
 
 Setting to `nil` disables the reasoning parameter.
 
-## Advanced usage (TODO - NOT YET IMPLEMENTED)
+## TODO - NOT YET IMPLEMENTED
 
 Combined with loops and conditionals, you can do everything you need to with the above techniques. But, below are some advanced shortcuts.
 
@@ -292,6 +292,14 @@ chat.configure_message_attributes(
 )
 ```
 
+### Capture reasoning summaries
+
+Do stuff to capture reasoning summaries.
+
+### Store whole API response body
+
+Add a way to access the whole API response body (rather than just the message content). Useful for keepig track of tokens, etc.
+
 ## Testing with Real API Calls
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:
@@ -306,10 +314,6 @@ OPENAI_API_KEY=your_openai_api_key_here
 4. Run the test program: `ruby test_ai_chat.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.
-
-## TODOs
-
-- Add a way to access the whole API response body (rather than just the message content).
 
 ## Contributing
 
