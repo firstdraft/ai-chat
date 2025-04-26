@@ -9,7 +9,7 @@ module AI
     def initialize(api_key: nil)
       @api_key = api_key || ENV.fetch("OPENAI_API_KEY")
       @messages = []
-      @model = "gpt-4o"
+      @model = "gpt-4.1-mini"
     end
 
     def system(content)
