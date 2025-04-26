@@ -220,6 +220,28 @@ chat.configure_attributes(
 chat.messages = CustomMessage.where(conversation_id: 123)
 ```
 
+### ActionText support
+
+The gem automatically detects and processes Rails ActionText content, extracting both text and embedded images:
+
+```ruby
+# In a Rails app with ActionText
+class Message < ApplicationRecord
+  has_rich_text :content
+end
+
+# The gem will automatically extract text and images from ActionText content
+chat = AI::Chat.new
+chat.messages = Message.where(conversation_id: 123)
+```
+
+This works with:
+- ActionText content with embedded images
+- Images added via drag and drop in Trix editor
+- Images added via file uploads in Trix editor
+
+If an ActionText field contains multiple paragraphs of text with images between them, the gem will preserve this structure in the conversation.
+
 ## Testing with Real API Calls
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:

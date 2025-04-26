@@ -4,10 +4,18 @@
 
 module AI
   class Chat
-    attr_accessor :schema, :model
-    attr_reader :messages, :reasoning_effort, :attribute_mappings
+    attr_accessor :schema, :model, :messages
+    attr_reader :reasoning_effort, :attribute_mappings
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
+    
+    # Load ActionText support if available
+    begin
+      require 'ai/chat/actiontext_support'
+      include ActionTextSupport
+    rescue LoadError
+      # ActionText support is optional
+    end
 
     def initialize(api_key: nil)
       @api_key = api_key || ENV.fetch("OPENAI_API_KEY")
@@ -296,6 +304,16 @@ module AI
           if content.is_a?(Array)
             # This is already a mixed content array with text and images
             user(content)
+          # Check if content is ActionText::RichText when ActionText is available
+          elsif defined?(ActionText::RichText) && content.is_a?(ActionText::RichText)
+            # Process ActionText content if the module is available
+            if self.respond_to?(:extract_actiontext_content)
+              content_parts = extract_actiontext_content(content)
+              user(content_parts)
+            else
+              # Fallback to plain text if ActionText support not loaded
+              user(content.to_plain_text || content.to_s)
+            end
           else
             # Extract images using configured attribute names
             image = extract_attribute(message, @attribute_mappings[:image])
