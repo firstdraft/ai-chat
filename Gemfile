@@ -2,5 +2,5 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in draft_chat.gemspec
+# Specify your gem's dependencies in ai_chat.gemspec
 gemspec

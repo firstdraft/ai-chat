@@ -3,7 +3,6 @@
 require "bundler/setup"
 require "dotenv/load"
 require "ai-chat"
-require "awesome_print"
 
 puts "Testing AI::Chat gem with examples from README"
 puts "=============================================="
