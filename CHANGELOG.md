@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Always send reasoning parameter with summary=auto to enable reasoning results for all models
+
 ## [0.0.7] - 2025-04-25
 
 - Added support for reasoning effort parameter (`reasoning_effort`) with the OpenAI Responses API

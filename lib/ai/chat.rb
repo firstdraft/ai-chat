@@ -5,7 +5,7 @@
 module AI
   class Chat
     attr_accessor :messages, :schema, :model
-    attr_reader :reasoning_effort
+    attr_reader :reasoning_effort, :reasoning_output
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
 
@@ -125,13 +125,10 @@ module AI
         "input" => messages
       }
 
-      # Add reasoning parameter if specified
-      if !@reasoning_effort.nil?
-        # Convert symbol back to string for the API request
-        request_body_hash["reasoning"] = {
-          "effort" => @reasoning_effort.to_s
-        }
-      end
+      # Always add reasoning with summary=auto, and add effort if specified
+      reasoning_params = { "summary" => "auto" }
+      reasoning_params["effort"] = @reasoning_effort.to_s unless @reasoning_effort.nil?
+      request_body_hash["reasoning"] = reasoning_params
 
       # Handle structured output (JSON schema)
       if !schema.nil?
@@ -178,11 +175,18 @@ module AI
         raise "OpenAI API Error: #{error_message}"
       end
 
-      # Extract the text content from the response
+      # Extract the text content and reasoning from the response
       content = ""
+      reasoning_data = nil
 
       # Parse response according to the documented structure
       if parsed_response.key?("output") && parsed_response["output"].is_a?(Array) && !parsed_response["output"].empty?
+        # Extract reasoning data if available
+        reasoning_item = parsed_response["output"].find { |item| item["type"] == "reasoning" }
+        if reasoning_item && reasoning_item.key?("summary")
+          reasoning_data = reasoning_item["summary"]
+        end
+        
         # Find the message output item, which may not be the first item when reasoning is used
         message_output_item = parsed_response["output"].find { |item| item["type"] == "message" }
 
@@ -199,9 +203,23 @@ module AI
         raise "Failed to extract content from response: #{parsed_response.inspect}"
       end
 
-      messages.push({role: "assistant", content: content})
+      # Store the assistant message with reasoning data if available
+      message_data = {role: "assistant", content: content}
+      message_data[:reasoning] = reasoning_data if reasoning_data
+      messages.push(message_data)
 
       schema.nil? ? content : JSON.parse(content)
+    end
+
+    # Get reasoning data for the last assistant message or a specific index
+    def reasoning(index = nil)
+      if index.nil?
+        # Get reasoning from the last assistant message
+        messages.reverse.find { |msg| msg[:role] == "assistant" && msg.key?(:reasoning) }&.fetch(:reasoning)
+      else
+        # Get reasoning from a specific message index
+        messages[index][:reasoning] if messages[index] && messages[index][:role] == "assistant" && messages[index].key?(:reasoning)
+      end
     end
 
     def inspect
