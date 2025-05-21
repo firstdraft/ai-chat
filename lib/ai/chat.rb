@@ -33,88 +33,81 @@ module AI
     end
 
     def system(content)
-      messages.push({role: "system", content: content})
+      warn "The `system` method is deprecated. Use `add(content, role: \"system\")` instead."
+      add(content, role: "system")
     end
 
     def user(content, image: nil, images: nil)
-      if content.is_a?(Array)
-        processed_content = content.map do |item|
-          if item.key?("image") || item.key?(:image)
-            image_value = item.fetch("image") { item.fetch(:image) }
-            {
-              type: "image_url",
-              image_url: {
-                url: process_image(image_value)
-              }
-            }
-          elsif item.key?("text") || item.key?(:text)
-            text_value = item.fetch("text") { item.fetch(:text) }
-            {
-              type: "text",
-              text: text_value
-            }
-          else
-            item
-          end
-        end
-
-        messages.push(
-          {
-            role: "user",
-            content: processed_content
-          }
-        )
-      elsif image.nil? && images.nil?
-        messages.push(
-          {
-            role: "user",
-            content: content
-          }
-        )
-      else
-        text_and_images_array = [
-          {
-            type: "text",
-            text: content
-          }
-        ]
-
-        if images && !images.empty?
-          images_array = images.map do |image|
-            {
-              type: "image_url",
-              image_url: {
-                url: process_image(image)
-              }
-            }
-          end
-
-          text_and_images_array += images_array
-        else
-          text_and_images_array.push(
-            {
-              type: "image_url",
-              image_url: {
-                url: process_image(image)
-              }
-            }
-          )
-        end
-
-        messages.push(
-          {
-            role: "user",
-            content: text_and_images_array
-          }
-        )
-      end
+      warn "The `user` method is deprecated. Use `add(content, role: \"user\", image: image, images: images)` instead."
+      add(content, role: "user", image: image, images: images)
     end
 
     def assistant(content)
-      messages.push({role: "assistant", content: content})
+      warn "The `assistant` method is deprecated. Use `add(content, role: \"assistant\")` instead."
+      add(content, role: "assistant")
     end
 
+    def add(content, role: "user", image: nil, images: nil) # Added image and images params here to match user method's capabilities
+      if role.to_s == "user"
+        if content.is_a?(Array)
+          processed_content = content.map do |item|
+            if item.key?("image") || item.key?(:image)
+              image_value = item.fetch("image") { item.fetch(:image) }
+              {
+                type: "image_url",
+                image_url: {
+                  url: process_image(image_value)
+                }
+              }
+            elsif item.key?("text") || item.key?(:text)
+              text_value = item.fetch("text") { item.fetch(:text) }
+              {
+                type: "text",
+                text: text_value
+              }
+            else
+              item # Pass through unknown items
+            end
+          end
+          messages.push({role: "user", content: processed_content})
+        elsif image.nil? && images.nil?
+          messages.push({role: "user", content: content})
+        else
+          text_and_images_array = [{type: "text", text: content}]
+          if images && !images.empty?
+            images_array = images.map do |img|
+              {
+                type: "image_url",
+                image_url: {
+                  url: process_image(img)
+                }
+              }
+            end
+            text_and_images_array += images_array
+          elsif image # Ensure image is not nil before processing
+            text_and_images_array.push(
+              {
+                type: "image_url",
+                image_url: {
+                  url: process_image(image)
+                }
+              }
+            )
+          end
+          messages.push({role: "user", content: text_and_images_array})
+        end
+      else
+        messages.push({role: role.to_s, content: content})
+      end
+    end
+
+    # This method is now an alias for generate! and will be removed in a future version.
     def assistant!
+      warn "The `assistant!` method is deprecated. Use `generate!` instead."
+      generate!
+    end
+
+    def generate!
       request_headers_hash = {
         "Authorization" => "Bearer #{@api_key}",
         "content-type" => "application/json"
