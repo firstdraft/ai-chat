@@ -37,13 +37,13 @@ require "ai-chat"
 x = AI::Chat.new
 
 # Add system-level instructions
-x.system("You are a helpful assistant that speaks like Shakespeare.")
+x.add("You are a helpful assistant that speaks like Shakespeare.", role: "system")
 
 # Add a user message to the chat
-x.user("Hi there!")
+x.add("Hi there!", role: "user")
 
 # Get the next message from the model
-x.assistant! # => "Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee."
+x.generate! # => "Greetings, good sir or madam! How dost thou fare on this fine day? Pray, tell me how I may be of service to thee."
 
 # Access the messages so far
 x.messages # =>
@@ -54,8 +54,8 @@ x.messages # =>
 # ]
 
 # Rinse and repeat!
-x.user("What's the best pizza in Chicago?")
-x.assistant! # => "Ah, the fair and bustling city of Chicago, renowned for its deep-dish delight that hath captured hearts and stomachs aplenty. Amongst the many offerings of this great city, 'tis often said that Lou Malnati's and Giordano's...."
+x.add("What's the best pizza in Chicago?", role: "user")
+x.generate! # => "Ah, the fair and bustling city of Chicago, renowned for its deep-dish delight that hath captured hearts and stomachs aplenty. Amongst the many offerings of this great city, 'tis often said that Lou Malnati's and Giordano's...."
 ```
 
 ## Configuration
@@ -91,26 +91,26 @@ Get back Structured Output by setting the `schema` attribute (I suggest using [O
 ```ruby
 x = AI::Chat.new
 
-x.system("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.")
+x.add("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.", role: "system")
 
 x.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "object","properties": {  "fat": {    "type": "number",    "description": "The amount of fat in grams."  },  "protein": {    "type": "number",    "description": "The amount of protein in grams."  },  "carbs": {    "type": "number",    "description": "The amount of carbohydrates in grams."  },  "total_calories": {    "type": "number",    "description": "The total calories calculated based on fat, protein, and carbohydrates."  }},"required": [  "fat",  "protein",  "carbs",  "total_calories"],"additionalProperties": false}}'
 
-x.user("1 slice of pizza")
+x.add("1 slice of pizza", role: "user")
 
-x.assistant!
+x.generate!
 # => {"fat"=>15, "protein"=>5, "carbs"=>50, "total_calories"=>350}
 ```
 
 ## Include images
 
-You can include images in your chat messages using the `user` method with the `image` or `images` parameter:
+You can include images in your chat messages using the `add` method with `role: "user"` and the `image` or `images` parameter:
 
 ```ruby
 # Send a single image
-x.user("What's in this image?", image: "path/to/local/image.jpg")
+x.add("What's in this image?", role: "user", image: "path/to/local/image.jpg")
 
 # Send multiple images
-x.user("What are these images showing?", images: ["path/to/image1.jpg", "https://example.com/image2.jpg"])
+x.add("What are these images showing?", role: "user", images: ["path/to/image1.jpg", "https://example.com/image2.jpg"])
 ```
 
 The gem supports three types of image inputs:
@@ -123,30 +123,32 @@ You can send multiple images, and place them between bits of text, in a single c
 
 ```ruby
 z = AI::Chat.new
-z.user(
+z.add(
   [
     {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
     {"text" => "What is in the above image? What is in the below image?"},
     {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Elephant_Diversity.jpg/305px-Elephant_Diversity.jpg"},
     {"text" => "What are the differences between the images?"}
-  ]
+  ],
+  role: "user"
 )
-z.assistant!
+z.generate!
 ```
 
 Both string and symbol keys are supported for the hash items:
 
 ```ruby
 z = AI::Chat.new
-z.user(
+z.add(
   [
     {image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
     {text: "What is in the above image? What is in the below image?"},
     {image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Elephant_Diversity.jpg/305px-Elephant_Diversity.jpg"},
     {text: "What are the differences between the images?"}
-  ]
+  ],
+  role: "user"
 )
-z.assistant!
+z.generate!
 ```
 
 ## Set assistant messages manually
@@ -158,20 +160,20 @@ You can manually add assistant messages without making API calls, which is usefu
 y = AI::Chat.new
 
 # Add previous messages
-y.system("You are a helpful assistant who provides information about planets.")
+y.add("You are a helpful assistant who provides information about planets.", role: "system")
 
-y.user("Tell me about Mars.")
-y.assistant("Mars is the fourth planet from the Sun....")
+y.add("Tell me about Mars.", role: "user")
+y.add("Mars is the fourth planet from the Sun....", role: "assistant")
 
-y.user("What's the atmosphere like?")
-y.assistant("Mars has a very thin atmosphere compared to Earth....")
+y.add("What's the atmosphere like?", role: "user")
+y.add("Mars has a very thin atmosphere compared to Earth....", role: "assistant")
 
-y.user("Could it support human life?")
-y.assistant("Mars currently can't support human life without....")
+y.add("Could it support human life?", role: "user")
+y.add("Mars currently can't support human life without....", role: "assistant")
 
 # Now continue the conversation with an API-generated response
-y.user("Are there any current missions to go there?")
-response = y.assistant!
+y.add("Are there any current missions to go there?", role: "user")
+response = y.generate!
 puts response
 ```
 
@@ -186,8 +188,8 @@ x = AI::Chat.new
 x.model = "o4-mini"
 x.reasoning_effort = "medium" # Can be "low", "medium", or "high"
 
-x.user("Write a bash script that transposes a matrix represented as '[1,2],[3,4],[5,6]'")
-x.assistant!
+x.add("Write a bash script that transposes a matrix represented as '[1,2],[3,4],[5,6]'", role: "user")
+x.generate!
 ```
 
 The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate before creating a response to the prompt. Options are:
@@ -221,8 +223,8 @@ chat.messages = [
 ]
 
 # Now continue the conversation with an API-generated response
-chat.user("Are there any current missions to go there?")
-response = chat.assistant!
+chat.add("Are there any current missions to go there?", role: "user")
+response = chat.generate!
 puts response
 ```
 
@@ -265,7 +267,7 @@ If your chat history is contained in an `ActiveRecord::Relation`, you can assign
 ```ruby
 chat = AI::Chat.new
 chat.messages = @thread.posts.order(:created_at)
-chat.assistant!
+chat.generate!
 ```
 
 In order to work:
@@ -299,6 +301,16 @@ Do stuff to capture reasoning summaries.
 ### Store whole API response body
 
 Add a way to access the whole API response body (rather than just the message content). Useful for keepig track of tokens, etc.
+
+## Deprecated Methods
+
+The following methods are deprecated and will be removed in a future version:
+- `system(content)`: Use `add(content, role: "system")` instead.
+- `user(content, image: nil, images: nil)`: Use `add(content, role: "user", image: image, images: images)` instead.
+- `assistant(content)`: Use `add(content, role: "assistant")` instead.
+- `assistant!`: Use `generate!` instead.
+
+Please update your code to use the new API.
 
 ## Testing with Real API Calls
 

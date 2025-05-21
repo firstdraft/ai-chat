@@ -35,37 +35,160 @@ RSpec.describe AI::Chat, "basic functionality" do
     end
   end
 
-  describe "#system" do
-    it "adds a system message to messages array" do
-      chat.system(test_system_message)
+  describe "#add" do
+    context "when adding a system message" do
+      it "adds a system message to messages array" do
+        chat.add(test_system_message, role: "system")
 
-      expect(chat.messages.length).to eq(1)
-      expect(chat.messages.first[:role]).to eq("system")
-      expect(chat.messages.first[:content]).to eq(test_system_message)
+        expect(chat.messages.length).to eq(1)
+        expect(chat.messages.first[:role]).to eq("system")
+        expect(chat.messages.first[:content]).to eq(test_system_message)
+      end
     end
-  end
 
-  describe "#user" do
-    context "with text-only content" do
+    context "when adding a user message" do
       it "adds a user message with simple text content" do
-        chat.user(test_user_message)
+        chat.add(test_user_message, role: "user")
 
         expect(chat.messages.length).to eq(1)
         expect(chat.messages.first[:role]).to eq("user")
         expect(chat.messages.first[:content]).to eq(test_user_message)
       end
+
+      # Basic test for image handling with #add; more detailed tests are in image_handling_spec.rb
+      it "adds a user message with text and an image" do
+        allow(chat).to receive(:process_image).with("image.jpg").and_return("processed_image_data")
+        chat.add("User message with image", role: "user", image: "image.jpg")
+
+        expect(chat.messages.length).to eq(1)
+        expect(chat.messages.first[:role]).to eq("user")
+        expect(chat.messages.first[:content]).to be_an(Array)
+        expect(chat.messages.first[:content]).to include({type: "text", text: "User message with image"})
+        expect(chat.messages.first[:content]).to include({type: "image_url", image_url: {url: "processed_image_data"}})
+      end
+    end
+
+    context "when adding an assistant message" do
+      it "adds an assistant message to messages array" do
+        chat.add(test_assistant_message, role: "assistant")
+
+        expect(chat.messages.length).to eq(1)
+        expect(chat.messages.first[:role]).to eq("assistant")
+        expect(chat.messages.first[:content]).to eq(test_assistant_message)
+      end
     end
   end
 
-  describe "#assistant" do
-    it "adds an assistant message to messages array" do
-      chat.assistant(test_assistant_message)
+  describe "deprecated methods" do
+    describe "#system (deprecated)" do
+      it "adds a system message and prints a deprecation warning" do
+        expect { chat.system(test_system_message) }.to output(
+          "The `system` method is deprecated. Use `add(content, role: \"system\")` instead.\n"
+        ).to_stderr
 
-      expect(chat.messages.length).to eq(1)
-      expect(chat.messages.first[:role]).to eq("assistant")
-      expect(chat.messages.first[:content]).to eq(test_assistant_message)
+        expect(chat.messages.length).to eq(1)
+        expect(chat.messages.first[:role]).to eq("system")
+        expect(chat.messages.first[:content]).to eq(test_system_message)
+      end
+    end
+
+    describe "#user (deprecated)" do
+      context "with text-only content" do
+        it "adds a user message and prints a deprecation warning" do
+          expect { chat.user(test_user_message) }.to output(
+            "The `user` method is deprecated. Use `add(content, role: \"user\", image: image, images: images)` instead.\n"
+          ).to_stderr
+
+          expect(chat.messages.length).to eq(1)
+          expect(chat.messages.first[:role]).to eq("user")
+          expect(chat.messages.first[:content]).to eq(test_user_message)
+        end
+      end
+
+      context "with image content" do
+        let(:image_path) { "path/to/image.jpg" }
+        let(:processed_image_data) { "data:image/jpeg;base64,processed_data" }
+
+        before do
+          allow(chat).to receive(:process_image).with(image_path).and_return(processed_image_data)
+        end
+
+        it "adds a user message with an image and prints a deprecation warning" do
+          expect { chat.user(test_user_message, image: image_path) }.to output(
+            "The `user` method is deprecated. Use `add(content, role: \"user\", image: image, images: images)` instead.\n"
+          ).to_stderr
+
+          expect(chat.messages.length).to eq(1)
+          expect(chat.messages.first[:role]).to eq("user")
+          expect(chat.messages.first[:content]).to be_an(Array)
+          expect(chat.messages.first[:content].first[:type]).to eq("text")
+          expect(chat.messages.first[:content].first[:text]).to eq(test_user_message)
+          expect(chat.messages.first[:content].last[:type]).to eq("image_url")
+          expect(chat.messages.first[:content].last[:image_url][:url]).to eq(processed_image_data)
+        end
+      end
+    end
+
+    describe "#assistant (deprecated)" do
+      it "adds an assistant message and prints a deprecation warning" do
+        expect { chat.assistant(test_assistant_message) }.to output(
+          "The `assistant` method is deprecated. Use `add(content, role: \"assistant\")` instead.\n"
+        ).to_stderr
+
+        expect(chat.messages.length).to eq(1)
+        expect(chat.messages.first[:role]).to eq("assistant")
+        expect(chat.messages.first[:content]).to eq(test_assistant_message)
+      end
+    end
+
+    describe "#assistant! (deprecated)" do
+      before do
+        # Stub the actual API call within generate! to avoid external HTTP requests
+        allow(chat).to receive(:generate!).and_call_original # So we can check if it was called
+        allow(Net::HTTP).to receive(:start).and_return(
+          instance_double(Net::HTTPResponse, code: "200", body: {
+            "output" => [{
+              "type" => "message",
+              "content" => [{"type" => "output_text", "text" => "Generated response"}]
+            }]
+          }.to_json, message: "OK")
+        )
+      end
+
+      it "calls generate! and prints a deprecation warning" do
+        expect(chat).to receive(:generate!).and_call_original
+        expect { chat.assistant! }.to output(
+          "The `assistant!` method is deprecated. Use `generate!` instead.\n"
+        ).to_stderr
+        # Verify that a message was added by generate!
+        expect(chat.messages.last[:role]).to eq("assistant")
+        expect(chat.messages.last[:content]).to eq("Generated response")
+      end
     end
   end
+
+  describe "#generate!" do
+    # Minimal test for generate! as its core functionality is tested by the deprecated assistant! tests for now
+    # and more detailed generation tests are likely in other spec files.
+    before do
+      allow(Net::HTTP).to receive(:start).and_return(
+        instance_double(Net::HTTPResponse, code: "200", body: {
+          "output" => [{
+            "type" => "message",
+            "content" => [{"type" => "output_text", "text" => "Generated response from generate!"}]
+          }]
+        }.to_json, message: "OK")
+      )
+    end
+
+    it "makes an API call and adds an assistant message" do
+      chat.add("Prompt for generate!", role: "user")
+      chat.generate!
+      expect(chat.messages.last[:role]).to eq("assistant")
+      expect(chat.messages.last[:content]).to eq("Generated response from generate!")
+    end
+  end
+
 
   describe "#reasoning_effort=" do
     it "accepts valid reasoning effort values as symbols" do
