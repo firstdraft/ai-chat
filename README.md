@@ -228,9 +228,10 @@ j.assistant!
 
 The gem supports three types of image inputs:
 
-- URLs: Pass an image URL starting with `http://` or `https://`.
-- File paths: Pass a string with a path to a local image file.
-- File-like objects: Pass an object that responds to `read` (like `File.open("image.jpg")` or a Rails uploaded file).
+- **URLs**: Pass an image URL starting with `http://` or `https://`
+- **File paths**: Pass a string with a path to a local image file
+- **File-like objects**: Pass an object that responds to `read` (like `File.open("image.jpg")` or Rails uploaded files)
+- **Active Storage attachments**: The gem automatically handles Rails Active Storage attachments
 
 You can send multiple images, and place them between bits of text, in a single complex user message:
 
@@ -410,42 +411,67 @@ q.messages = [
 If your chat history is contained in an `ActiveRecord::Relation`, you can assign it directly:
 
 ```ruby
-r = OpenAI::Chat.new
-r.messages = @thread.posts.order(:created_at)
+# Load from ActiveRecord
+r = OpenAI::Chat.from_active_record(@thread.messages.order(:created_at))
+r.user("What should we discuss next?")
 r.assistant!
+
+# Save the response back
+r.save_last_response_to(@thread.messages)
 ```
 
-In order to work:
+##### Requirements
 
-- The record itself must respond to `.role` and `.content`.
-- The record could optionally respond to `.image`, which should return:
-  - A URL: an image URL starting with `http://` or `https://`.
-  - A file path: a string with a path to a local image file.
-  - A file-like object: an object that responds to `read` (like `File.open("image.jpg")` or a Rails uploaded file).
-- The record could optionally respond to `.images`, which should return another `ActiveRecord::Relation`.
-  - Each of those should respond to `.image`, similar to the above.
+Your ActiveRecord model must have:
+- `.role` method that returns "system", "user", or "assistant"
+- `.content` method that returns the message text
+- `.image` method (optional) for single images - can return URLs, file paths, or Active Storage attachments
+- `.images` method (optional) for multiple images
 
-If your database columns or object attributes have different names, you can configure custom mappings:
+##### Custom Column Names
+
+If your columns have different names:
 
 ```ruby
-# Configure custom attribute mappings
 s = OpenAI::Chat.new
 s.configure_message_attributes(
-  role: :message_type,       # Method on the main model that returns "system", "user", or "assistant"
-  content: :message_body,    # Method on the main model that returns the content of the message
-  image: :image_url,         # Method on the main model that returns a URL, path, or file
-  images: :attachments,      # Method on the main model that returns a collection of associated images
-  source_image: :photo       # Method on the associated image that returns the URL, path, or file. Defaults to "image"
+  role: :message_type,     # Your column for role
+  content: :message_body,  # Your column for content
+  image: :attachment       # Your column/association for images
 )
+s.messages = @conversation.messages
 ```
 
-#### Capture reasoning summaries
+##### Saving Responses with Metadata
 
-Do stuff to capture reasoning summaries.
+To preserve response metadata, add an `openai_response` column to your messages table:
 
-#### Store whole API response body
+```ruby
+# In your migration
+add_column :messages, :openai_response, :text
 
-Add a way to access the whole API response body (rather than just the message content). Useful for keepig track of tokens, etc.
+# In your model
+class Message < ApplicationRecord
+  serialize :openai_response, OpenAI::Chat::Response
+end
+
+# Usage
+t = OpenAI::Chat.from_active_record(@thread.messages)
+t.user("Hello!")
+t.assistant!
+t.save_last_response_to(@thread.messages)
+
+# The saved message will include token usage, model info, etc.
+last_message = @thread.messages.last
+last_message.openai_response.usage # => {"prompt_tokens"=>10, ...}
+```
+
+#### Other Features Being Considered
+
+- **Streaming responses**: Real-time streaming as the AI generates its response
+- **Web search**: Enable the AI to search the web for current information
+- **Cost tracking**: Automatic calculation and tracking of API costs
+- **Session management**: Save and restore conversations by ID
 
 ### Testing with Real API Calls
 

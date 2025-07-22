@@ -206,6 +206,90 @@ a.user([
    - Handle MIME type detection
    - Base64 encoding for local files
 
+## ActiveRecord Integration
+
+### Simplified Approach
+
+Based on feedback, we're simplifying the ActiveRecord integration:
+
+1. **No complex interwoven messages** - Keep the image API simple
+2. **Automatic Active Storage handling** - Detect and handle Rails attachments
+3. **Response persistence** - Use ActiveRecord serialization for Response objects
+4. **No streaming from database** - Users handle their own pagination
+
+### Implementation Details
+
+```ruby
+class OpenAI::Chat
+  def self.from_active_record(relation, **options)
+    new(**options).tap do |chat|
+      chat.messages = relation
+    end
+  end
+  
+  def save_last_response_to(relation, **options)
+    options = {
+      role_column: :role,
+      content_column: :content,
+      response_column: :openai_response
+    }.merge(options)
+    
+    relation.create!(
+      options[:role_column] => "assistant",
+      options[:content_column] => messages.last["content"],
+      options[:response_column] => last_response
+    )
+  end
+end
+```
+
+### Response Serialization
+
+```ruby
+class OpenAI::Chat::Response
+  # For ActiveRecord serialize
+  def self.load(data)
+    return nil if data.nil?
+    # Reconstruct from stored hash
+    new(OpenStruct.new(data))
+  end
+  
+  def self.dump(obj)
+    return nil if obj.nil?
+    {
+      'id' => obj.id,
+      'model' => obj.model,
+      'created' => obj.created_at.to_i,
+      'usage' => obj.usage
+    }
+  end
+end
+```
+
+### Active Storage Support
+
+```ruby
+def process_image(image_input)
+  case image_input
+  when /^https?:\/\//
+    # URL - use as-is
+    image_input
+  when ActiveStorage::Attached::One
+    # Rails Active Storage single attachment
+    process_active_storage_attachment(image_input)
+  when ActiveStorage::Blob
+    # Direct blob reference
+    rails_blob_url(image_input)
+  when String
+    # File path - read and encode
+    encode_local_file(image_input)
+  when ->(obj) { obj.respond_to?(:read) }
+    # File-like object
+    encode_file_object(image_input)
+  end
+end
+```
+
 ## Future Enhancements
 
 ### Cost Tracking
@@ -234,17 +318,13 @@ d = OpenAI::Chat.load(session_id)
 d.user("What's next?")
 ```
 
-### Conversation Forking
+### Streaming Responses
 ```ruby
+# Real-time response streaming
 e = OpenAI::Chat.new
-e.user("Plan a party")
-e.assistant!
-
-fork1 = e.fork
-fork1.user("Make it outdoors")
-
-fork2 = e.fork
-fork2.user("Make it a surprise")
+e.user("Write a long story") do |chunk|
+  print chunk # Prints as generated
+end
 ```
 
 ## Testing Strategy
@@ -252,7 +332,7 @@ fork2.user("Make it a surprise")
 1. **Unit tests** for core functionality
 2. **Integration tests** with mocked API responses
 3. **Example scripts** for manual testing
-4. **Cost tracking** in test environment
+4. **ActiveRecord integration tests** with dummy models
 
 ## Error Handling Philosophy
 
