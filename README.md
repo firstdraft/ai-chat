@@ -310,7 +310,41 @@ The `reasoning_effort` parameter guides the model on how many reasoning tokens t
 
 Setting to `nil` disables the reasoning parameter.
 
-### TODO - NOT YET IMPLEMENTED
+### Advanced: Response Details
+
+When you call `assistant!` or `generate!`, the gem stores additional information about the API response:
+
+```ruby
+t = OpenAI::Chat.new
+t.user("Hello!")
+t.assistant!
+
+# Each assistant message includes a response object
+pp t.messages.last
+# => {
+#      "role" => "assistant",
+#      "content" => "Hello! How can I help you today?",
+#      "response" => #<Response id=resp_abc... model=gpt-4.1-nano tokens=12>
+#    }
+
+# Access detailed information
+response = t.last_response
+response.id           # => "resp_abc123..."
+response.model        # => "gpt-4.1-nano"
+response.usage        # => {"prompt_tokens"=>5, "completion_tokens"=>7, "total_tokens"=>12}
+
+# Helper methods
+t.last_response_id    # => "resp_abc123..."
+t.last_usage          # => {"prompt_tokens"=>5, "completion_tokens"=>7, "total_tokens"=>12}
+t.total_tokens        # => 12
+```
+
+This information is useful for:
+- Debugging and monitoring token usage
+- Understanding which model was actually used
+- Future features like cost tracking
+
+## TODO - NOT YET IMPLEMENTED
 
 Combined with loops and conditionals, you can do everything you need to with the above techniques. But, below are some advanced shortcuts.
 
