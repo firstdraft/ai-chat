@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'simplecov'
+require "simplecov"
 
-unless ENV['NO_COVERAGE']
+unless ENV["NO_COVERAGE"]
   SimpleCov.start do
     add_filter %r{^/spec/}
     enable_coverage :branch
@@ -13,21 +13,21 @@ end
 
 Bundler.require :tools
 
-require 'openai/chat'
-require 'refinements'
+require "openai/chat"
+require "refinements"
 
 SPEC_ROOT = Pathname(__dir__).realpath.freeze
 
 using Refinements::Pathname
 
-Pathname.require_tree SPEC_ROOT.join('support/shared_contexts')
+Pathname.require_tree SPEC_ROOT.join("support/shared_contexts")
 
 RSpec.configure do |config|
   config.color = true
   config.disable_monkey_patching!
-  config.example_status_persistence_file_path = './tmp/rspec-examples.txt'
+  config.example_status_persistence_file_path = "./tmp/rspec-examples.txt"
   config.filter_run_when_matching :focus
-  config.formatter = ENV.fetch('CI', false) == 'true' ? :progress : :documentation
+  config.formatter = (ENV.fetch("CI", false) == "true") ? :progress : :documentation
   config.order = :random
   config.pending_failure_output = :no_backtrace
   config.shared_context_metadata_behavior = :apply_to_host_groups

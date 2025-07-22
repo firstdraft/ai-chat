@@ -1,0 +1,7 @@
+ruby_version: 3.4
+
+ignore:
+  - 'openai-ruby/**/*'
+  - 'ruby_llm/**/*'
+  - 'vendor/**/*'
+  - 'tmp/**/*'

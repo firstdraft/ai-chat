@@ -1,18 +1,19 @@
 # frozen_string_literal: true
 
-require 'zeitwerk'
+require "zeitwerk"
 
 Zeitwerk::Loader.new.then do |loader|
-  loader.tag = 'openai-chat'
+  loader.tag = "openai-chat"
+  loader.inflector.inflect("openai" => "OpenAI")
   loader.push_dir "#{__dir__}/.."
   loader.setup
 end
 
-module Openai
+module OpenAI
   # Main namespace.
-  module Chat
+  class Chat
     def self.loader(registry = Zeitwerk::Registry)
-      @loader ||= registry.loaders.each.find { |loader| loader.tag == 'openai-chat' }
+      @loader ||= registry.loaders.each.find { |loader| loader.tag == "openai-chat" }
     end
   end
 end

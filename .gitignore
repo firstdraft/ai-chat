@@ -3,3 +3,7 @@
 Gemfile.lock
 pkg
 tmp
+
+# Reference libraries
+/openai-ruby/
+/ruby_llm/
