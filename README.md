@@ -34,65 +34,115 @@ In your Ruby program:
 require "openai/chat"
 
 # Create an instance of OpenAI::Chat
-x = OpenAI::Chat.new
+chat = OpenAI::Chat.new
 
-# Add a user message to the chat
-x.add("If the Ruby community had an official motto, what might it be?")
+# Build up your conversation by adding messages
+chat.add("If the Ruby community had an official motto, what might it be?")
+
+# See what you've built - it's just an array of hashes!
+pp chat.messages
+# => [{"role"=>"user", "content"=>"If the Ruby community had an official motto, what might it be?"}]
 
 # Generate the next message using AI
-x.generate! # => "Optimized for developer happiness."
+chat.generate! # => "Matz is nice and so we are nice" (or similar)
 
-# Rinse and repeat!
-x.add("What about Rails?")
-x.generate! # => "Convention over configuration."
+# Your array now includes the assistant's response
+pp chat.messages
+# => [
+#      {"role"=>"user", "content"=>"If the Ruby community had an official motto, what might it be?"},
+#      {"role"=>"assistant", "content"=>"Matz is nice and so we are nice"}
+#    ]
+
+# Continue the conversation
+chat.add("What about Rails?")
+chat.generate! # => "Convention over configuration."
 ```
 
-## Add instructions
+## Understanding the Data Structure
+
+Every OpenAI chat is just an array of hashes. Each hash needs:
+- `"role"`: who's speaking ("system", "user", or "assistant")
+- `"content"`: what they're saying
+
+That's it! You're building something like this:
 
 ```ruby
-require "openai/chat"
-
-x = OpenAI::Chat.new
-
-# Add system instructions
-x.add("You are a helpful assistant that talks like Shakespeare.", role: "system")
-
-# Add a user message (role: defaults to "user")
-x.add("If the Ruby community had an official motto, what might it be?")
-
-x.generate! # => "In joy we craft, with elegance we code."
-```
-
-## See details about the chat
-
-```ruby
-require "openai/chat"
-
-x = OpenAI::Chat.new
-
-x.add("You are a helpful assistant that talks like Shakespeare.", role: "system")
-
-x.add("If the Ruby community had an official motto, what might it be?")
-
-x.generate!
-
-pp x # => Not sure how exactly this should look yet
-
-AI::Chat model reasoning_effort schema tools
-messages=[ # Should these be hashes or `AI::Chat::Message`s?
-  { "role" => "system", "content" => "stuff" },
-  { "role" => "user", "content" => [array of items] }.
-  { "role" => "assistant", "content" => "text of assistant message", "response" => AI::Chat::Response } # Should we make AI::Chat::Response or store response details as just a Hash/parsed JSON?
+[
+  {"role" => "system", "content" => "You are a helpful assistant"},
+  {"role" => "user", "content" => "Hello!"},
+  {"role" => "assistant", "content" => "Hi there! How can I help you today?"}
 ]
 ```
 
+## Adding Different Types of Messages
 
-### Configuration
+```ruby
+require "openai/chat"
+
+chat = OpenAI::Chat.new
+
+# Add system instructions
+chat.add("You are a helpful assistant that talks like Shakespeare.", role: "system")
+
+# Add a user message (role defaults to "user")
+chat.add("If the Ruby community had an official motto, what might it be?")
+
+# Check what we've built
+pp chat.messages
+# => [
+#      {"role"=>"system", "content"=>"You are a helpful assistant that talks like Shakespeare."},
+#      {"role"=>"user", "content"=>"If the Ruby community had an official motto, what might it be?"}
+#    ]
+
+# Generate a response
+chat.generate! # => "Methinks 'tis 'Ruby doth bring joy to all who craft with care'"
+```
+
+### Convenience Methods
+
+Instead of always specifying the role, you can use these shortcuts:
+
+```ruby
+chat = OpenAI::Chat.new
+
+# These are equivalent:
+chat.add("You are helpful", role: "system")
+chat.system("You are helpful")
+
+# These are equivalent:
+chat.add("Hello there!")
+chat.user("Hello there!")
+
+# These are equivalent:
+chat.add("Hi! How can I help?", role: "assistant")
+chat.assistant("Hi! How can I help?")
+```
+
+## Why This Design?
+
+We use the `add` method (and its shortcuts) to build up an array because:
+
+1. **It's educational**: You can see exactly what data structure you're building
+2. **It's debuggable**: Use `pp chat.messages` anytime to inspect your conversation
+3. **It's flexible**: The same pattern works when loading existing conversations:
+
+```ruby
+# In a Rails app, you might do:
+chat = OpenAI::Chat.new
+chat.messages = @conversation.messages  # Load existing messages
+chat.user("What should I do next?")     # Add a new question
+chat.assistant!                         # Generate a response
+```
+
+
+## Configuration
 
 By default, the gem uses OpenAI's `gpt-4.1-nano` model. If you want to use a different model, you can set it:
 
 ```ruby
-x.model = "o3"
+chat = OpenAI::Chat.new
+chat.model = "gpt-4.1"  # More capable but costs more
+chat.model = "o3-mini"  # Reasoning model for complex tasks
 ```
 
 The gem by default looks for an environment variable called `OPENAI_API_KEY` and uses that if it finds it.
@@ -100,46 +150,80 @@ The gem by default looks for an environment variable called `OPENAI_API_KEY` and
 You can specify a different environment variable name:
 
 ```ruby
-x = AI::Chat.new(api_key_env_var: "MY_OPENAI_TOKEN")
+chat = OpenAI::Chat.new(api_key_env_var: "MY_OPENAI_TOKEN")
 ```
 
 Or, you can pass an API key in directly:
 
 ```ruby
-x = AI::Chat.new(api_key: "your-api-key-goes-here")
+chat = OpenAI::Chat.new(api_key: "your-api-key-goes-here")
 ```
 
-### Get current messages
+## Inspecting Your Conversation
 
-You can call `.messages` to get an array containing the conversation so far.
+You can call `.messages` to get an array containing the conversation so far:
 
-### Structured Output
+```ruby
+chat = OpenAI::Chat.new
+chat.system("You are a helpful cooking assistant")
+chat.user("How do I boil an egg?")
+chat.assistant!
+
+# See the whole conversation
+pp chat.messages
+# => [
+#      {"role"=>"system", "content"=>"You are a helpful cooking assistant"},
+#      {"role"=>"user", "content"=>"How do I boil an egg?"},
+#      {"role"=>"assistant", "content"=>"Here's how to boil an egg..."}
+#    ]
+
+# Get just the last response
+chat.messages.last["content"]
+# => "Here's how to boil an egg..."
+```
+
+## Structured Output
 
 Get back Structured Output by setting the `schema` attribute (I suggest using [OpenAI's handy tool for generating the JSON Schema](https://platform.openai.com/docs/guides/structured-outputs)):
 
 ```ruby
-x = AI::Chat.new
+chat = OpenAI::Chat.new
 
-x.system("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.")
+chat.system("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.")
 
-x.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "object","properties": {  "fat": {    "type": "number",    "description": "The amount of fat in grams."  },  "protein": {    "type": "number",    "description": "The amount of protein in grams."  },  "carbs": {    "type": "number",    "description": "The amount of carbohydrates in grams."  },  "total_calories": {    "type": "number",    "description": "The total calories calculated based on fat, protein, and carbohydrates."  }},"required": [  "fat",  "protein",  "carbs",  "total_calories"],"additionalProperties": false}}'
+# The schema must be a JSON string (use OpenAI's tool to generate: https://platform.openai.com/docs/guides/structured-outputs)
+chat.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "object","properties": {"fat": {"type": "number","description": "The amount of fat in grams."},"protein": {"type": "number","description": "The amount of protein in grams."},"carbs": {"type": "number","description": "The amount of carbohydrates in grams."},"total_calories": {"type": "number","description": "The total calories calculated based on fat, protein, and carbohydrates."}},"required": ["fat","protein","carbs","total_calories"],"additionalProperties": false}}'
 
-x.user("1 slice of pizza")
+chat.user("1 slice of pizza")
 
-x.assistant!
-# => {"fat"=>15, "protein"=>5, "carbs"=>50, "total_calories"=>350}
+response = chat.assistant!
+# => {"fat"=>15, "protein"=>12, "carbs"=>35, "total_calories"=>285}
+
+# The response is parsed JSON, not a string!
+response["total_calories"]  # => 285
 ```
 
-### Include images
+## Including Images
 
 You can include images in your chat messages using the `user` method with the `image` or `images` parameter:
 
 ```ruby
+chat = OpenAI::Chat.new
+
 # Send a single image
-x.user("What's in this image?", image: "path/to/local/image.jpg")
+chat.user("What's in this image?", image: "path/to/local/image.jpg")
+chat.assistant!  # => "I can see a sunset over the ocean..."
 
 # Send multiple images
-x.user("What are these images showing?", images: ["path/to/image1.jpg", "https://example.com/image2.jpg"])
+chat.user("Compare these images", images: ["image1.jpg", "image2.jpg"])
+chat.assistant!  # => "The first image shows... while the second..."
+
+# Mix URLs and local files
+chat.user("What's the difference?", images: [
+  "local_photo.jpg",
+  "https://example.com/remote_photo.jpg"
+])
+chat.assistant!
 ```
 
 The gem supports three types of image inputs:
@@ -151,7 +235,7 @@ The gem supports three types of image inputs:
 You can send multiple images, and place them between bits of text, in a single complex user message:
 
 ```ruby
-z = AI::Chat.new
+z = OpenAI::Chat.new
 z.user(
   [
     {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
@@ -166,7 +250,7 @@ z.assistant!
 Both string and symbol keys are supported for the hash items:
 
 ```ruby
-z = AI::Chat.new
+z = OpenAI::Chat.new
 z.user(
   [
     {image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
@@ -178,45 +262,45 @@ z.user(
 z.assistant!
 ```
 
-### Set assistant messages manually
+## Building Conversations Without API Calls
 
 You can manually add assistant messages without making API calls, which is useful when reconstructing a past conversation:
 
 ```ruby
 # Create a new chat instance
-y = AI::Chat.new
+chat = OpenAI::Chat.new
 
 # Add previous messages
-y.system("You are a helpful assistant who provides information about planets.")
+chat.system("You are a helpful assistant who provides information about planets.")
 
-y.user("Tell me about Mars.")
-y.assistant("Mars is the fourth planet from the Sun....")
+chat.user("Tell me about Mars.")
+chat.assistant("Mars is the fourth planet from the Sun....")
 
-y.user("What's the atmosphere like?")
-y.assistant("Mars has a very thin atmosphere compared to Earth....")
+chat.user("What's the atmosphere like?")
+chat.assistant("Mars has a very thin atmosphere compared to Earth....")
 
-y.user("Could it support human life?")
-y.assistant("Mars currently can't support human life without....")
+chat.user("Could it support human life?")
+chat.assistant("Mars currently can't support human life without....")
 
 # Now continue the conversation with an API-generated response
-y.user("Are there any current missions to go there?")
-response = y.assistant!
+chat.user("Are there any current missions to go there?")
+response = chat.assistant!
 puts response
 ```
 
-With this, you can loop through any conversation's history (perhaps after retrieving it from your database), recreate an `AI::Chat`, and then continue it.
+With this, you can loop through any conversation's history (perhaps after retrieving it from your database), recreate an `OpenAI::Chat`, and then continue it.
 
-#### Reasoning Effort
+## Reasoning Models
 
 When using reasoning models like `o3` or `o4-mini`, you can specify a reasoning effort level to control how much reasoning the model does before producing its final response:
 
 ```ruby
-x = AI::Chat.new
-x.model = "o4-mini"
-x.reasoning_effort = "medium" # Can be "low", "medium", or "high"
+chat = OpenAI::Chat.new
+chat.model = "o3-mini"
+chat.reasoning_effort = "medium" # Can be "low", "medium", or "high"
 
-x.user("Write a bash script that transposes a matrix represented as '[1,2],[3,4],[5,6]'")
-x.assistant!
+chat.user("Write a bash script that transposes a matrix represented as '[1,2],[3,4],[5,6]'")
+chat.assistant!
 ```
 
 The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate before creating a response to the prompt. Options are:
@@ -236,7 +320,7 @@ You can use `.messages=()` to assign an `Array` of `Hashes`. Each `Hash` must ha
 
 ```ruby
 # Using the planet example with array of hashes
-chat = AI::Chat.new
+chat = OpenAI::Chat.new
 
 # Set all messages at once instead of calling methods sequentially
 chat.messages = [
@@ -259,7 +343,7 @@ You can still include images:
 
 ```ruby
 # Create a new chat instance
-chat = AI::Chat.new
+chat = OpenAI::Chat.new
 
 # With images
 chat.messages = [
@@ -292,7 +376,7 @@ chat.messages = [
 If your chat history is contained in an `ActiveRecord::Relation`, you can assign it directly:
 
 ```ruby
-chat = AI::Chat.new
+chat = OpenAI::Chat.new
 chat.messages = @thread.posts.order(:created_at)
 chat.assistant!
 ```
@@ -311,7 +395,7 @@ If your database columns or object attributes have different names, you can conf
 
 ```ruby
 # Configure custom attribute mappings
-chat = AI::Chat.new
+chat = OpenAI::Chat.new
 chat.configure_message_attributes(
   role: :message_type,       # Method on the main model that returns "system", "user", or "assistant"
   content: :message_body,    # Method on the main model that returns the content of the message
