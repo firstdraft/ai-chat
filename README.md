@@ -39,9 +39,9 @@ a = OpenAI::Chat.new
 # Build up your conversation by adding messages
 a.add("If the Ruby community had an official motto, what might it be?")
 
-# See what you've built - it's just an array of hashes!
+# See the convo so far - it's just an array of hashes!
 pp a.messages
-# => [{"role"=>"user", "content"=>"If the Ruby community had an official motto, what might it be?"}]
+# => [{:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"}]
 
 # Generate the next message using AI
 a.generate! # => "Matz is nice and so we are nice" (or similar)
@@ -49,8 +49,8 @@ a.generate! # => "Matz is nice and so we are nice" (or similar)
 # Your array now includes the assistant's response
 pp a.messages
 # => [
-#      {"role"=>"user", "content"=>"If the Ruby community had an official motto, what might it be?"},
-#      {"role"=>"assistant", "content"=>"Matz is nice and so we are nice"}
+#      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"},
+#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => #<OpenAI::Chat::Response id=resp_abc... model=gpt-4.1-nano tokens=12>}
 #    ]
 
 # Continue the conversation
@@ -61,18 +61,20 @@ a.generate! # => "Convention over configuration."
 ## Understanding the Data Structure
 
 Every OpenAI chat is just an array of hashes. Each hash needs:
-- `"role"`: who's speaking ("system", "user", or "assistant")
-- `"content"`: what they're saying
+- `:role`: who's speaking ("system", "user", or "assistant")
+- `:content`: what they're saying
 
 That's it! You're building something like this:
 
 ```ruby
 [
-  {"role" => "system", "content" => "You are a helpful assistant"},
-  {"role" => "user", "content" => "Hello!"},
-  {"role" => "assistant", "content" => "Hi there! How can I help you today?"}
+  {:role => "system", :content => "You are a helpful assistant"},
+  {:role => "user", :content => "Hello!"},
+  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => #<OpenAI::Chat::Response id=resp_abc... model=gpt-4.1-nano tokens=12>}
 ]
 ```
+
+That last bit, under `:response`, is an object that represents the JSON that the OpenAI API sent back to us. It contains information about the number of tokens consumed, as well as a response ID that we can use later if we want to pick up the conversation at that point. More on that later.
 
 ## Adding Different Types of Messages
 
@@ -90,8 +92,8 @@ b.add("If the Ruby community had an official motto, what might it be?")
 # Check what we've built
 pp b.messages
 # => [
-#      {"role"=>"system", "content"=>"You are a helpful assistant that talks like Shakespeare."},
-#      {"role"=>"user", "content"=>"If the Ruby community had an official motto, what might it be?"}
+#      {:role=>"system", :content=>"You are a helpful assistant that talks like Shakespeare."},
+#      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"}
 #    ]
 
 # Generate a response
@@ -131,19 +133,34 @@ We use the `add` method (and its shortcuts) to build up an array because:
 d = OpenAI::Chat.new
 d.messages = @conversation.messages  # Load existing messages
 d.user("What should I do next?")     # Add a new question
-d.assistant!                         # Generate a response
+d.generate!                         # Generate a response
 ```
 
-
 ## Configuration
+
+### Model
 
 By default, the gem uses OpenAI's `gpt-4.1-nano` model. If you want to use a different model, you can set it:
 
 ```ruby
 e = OpenAI::Chat.new
-e.model = "gpt-4.1"  # More capable but costs more
-e.model = "o3-mini"  # Reasoning model for complex tasks
+e.model = "o4-mini"
 ```
+
+As of 2025-07-29, the list of chat models that you probably want to choose from are:
+
+#### Foundation models 
+
+- gpt-4.1-nano
+- gpt-4.1-mini
+- gpt-4.1
+
+#### Reasoning models
+
+- o4-mini
+- o3
+
+### API key
 
 The gem by default looks for an environment variable called `OPENAI_API_KEY` and uses that if it finds it.
 
@@ -167,18 +184,22 @@ You can call `.messages` to get an array containing the conversation so far:
 h = OpenAI::Chat.new
 h.system("You are a helpful cooking assistant")
 h.user("How do I boil an egg?")
-h.assistant!
+h.generate!
 
 # See the whole conversation
 pp h.messages
 # => [
-#      {"role"=>"system", "content"=>"You are a helpful cooking assistant"},
-#      {"role"=>"user", "content"=>"How do I boil an egg?"},
-#      {"role"=>"assistant", "content"=>"Here's how to boil an egg..."}
+#      {:role=>"system", :content=>"You are a helpful cooking assistant"},
+#      {:role=>"user", :content=>"How do I boil an egg?"},
+#      {:role=>"assistant", :content=>"Here's how to boil an egg..."}
 #    ]
 
 # Get just the last response
-h.messages.last["content"]
+h.messages.last[:content]
+# => "Here's how to boil an egg..."
+
+# Or use the convenient shortcut
+h.last
 # => "Here's how to boil an egg..."
 ```
 
@@ -191,17 +212,41 @@ i = OpenAI::Chat.new
 
 i.system("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.")
 
-# The schema must be a JSON string (use OpenAI's tool to generate: https://platform.openai.com/docs/guides/structured-outputs)
+# The schema should be a JSON string (use OpenAI's tool to generate: https://platform.openai.com/docs/guides/structured-outputs)
 i.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "object","properties": {"fat": {"type": "number","description": "The amount of fat in grams."},"protein": {"type": "number","description": "The amount of protein in grams."},"carbs": {"type": "number","description": "The amount of carbohydrates in grams."},"total_calories": {"type": "number","description": "The total calories calculated based on fat, protein, and carbohydrates."}},"required": ["fat","protein","carbs","total_calories"],"additionalProperties": false}}'
 
 i.user("1 slice of pizza")
 
-response = i.assistant!
-# => {"fat"=>15, "protein"=>12, "carbs"=>35, "total_calories"=>285}
+response = i.generate!
+# => {:fat=>15, :protein=>12, :carbs=>35, :total_calories=>285}
 
 # The response is parsed JSON, not a string!
-response["total_calories"]  # => 285
+response[:total_calories]  # => 285
 ```
+
+You can also provide the equivalent Ruby `Hash` rather than a `String` containing JSON.
+
+```ruby
+# Equivalent to assigning the String above
+i.schema = {
+  name: "nutrition_values",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: {
+      fat: { type: "number", description: "The amount of fat in grams." },
+      protein: { type: "number", description: "The amount of protein in grams." },
+      carbs: { type: "number", description: "The amount of carbohydrates in grams." },
+      total_calories: { type: "number", description:
+        "The total calories calculated based on fat, protein, and carbohydrates." }
+    },
+    required: [:fat, :protein, :carbs, :total_calories],
+    additionalProperties: false
+  }
+}
+```
+
+The keys can be `String`s or `Symbol`s.
 
 ## Including Images
 
@@ -212,18 +257,18 @@ j = OpenAI::Chat.new
 
 # Send a single image
 j.user("What's in this image?", image: "path/to/local/image.jpg")
-j.assistant!  # => "I can see a sunset over the ocean..."
+j.generate!  # => "I can see a sunset over the ocean..."
 
 # Send multiple images
 j.user("Compare these images", images: ["image1.jpg", "image2.jpg"])
-j.assistant!  # => "The first image shows... while the second..."
+j.generate!  # => "The first image shows... while the second..."
 
 # Mix URLs and local files
 j.user("What's the difference?", images: [
   "local_photo.jpg",
   "https://example.com/remote_photo.jpg"
 ])
-j.assistant!
+j.generate!
 ```
 
 The gem supports three types of image inputs:
@@ -231,37 +276,19 @@ The gem supports three types of image inputs:
 - **URLs**: Pass an image URL starting with `http://` or `https://`
 - **File paths**: Pass a string with a path to a local image file
 - **File-like objects**: Pass an object that responds to `read` (like `File.open("image.jpg")` or Rails uploaded files)
-- **Active Storage attachments**: The gem automatically handles Rails Active Storage attachments
 
-You can send multiple images, and place them between bits of text, in a single complex user message:
+## Web Search
 
-```ruby
-z = OpenAI::Chat.new
-z.user(
-  [
-    {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
-    {"text" => "What is in the above image? What is in the below image?"},
-    {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Elephant_Diversity.jpg/305px-Elephant_Diversity.jpg"},
-    {"text" => "What are the differences between the images?"}
-  ]
-)
-z.assistant!
-```
-
-Both string and symbol keys are supported for the hash items:
+To give the model access to real-time information from the internet, you can enable the `web_search` feature. This uses OpenAI's built-in `web_search_preview` tool.
 
 ```ruby
-z = OpenAI::Chat.new
-z.user(
-  [
-    {image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
-    {text: "What is in the above image? What is in the below image?"},
-    {image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Elephant_Diversity.jpg/305px-Elephant_Diversity.jpg"},
-    {text: "What are the differences between the images?"}
-  ]
-)
-z.assistant!
+m = OpenAI::Chat.new
+m.web_search = true
+m.user("What are the latest developments in the Ruby language?")
+m.generate! # This may use web search to find current information
 ```
+
+**Note:** This feature requires a model that supports the `web_search_preview` tool, such as `gpt-4o` or `gpt-4o-mini`. The gem will attempt to use a compatible model if you have `web_search` enabled.
 
 ## Building Conversations Without API Calls
 
@@ -285,7 +312,7 @@ k.assistant("Mars currently can't support human life without....")
 
 # Now continue the conversation with an API-generated response
 k.user("Are there any current missions to go there?")
-response = k.assistant!
+response = k.generate!
 puts response
 ```
 
@@ -300,56 +327,74 @@ l = OpenAI::Chat.new
 l.model = "o3-mini"
 l.reasoning_effort = "medium" # Can be "low", "medium", or "high"
 
-l.user("Write a bash script that transposes a matrix represented as '[1,2],[3,4],[5,6]'")
-l.assistant!
+l.user("What does this error message mean? <insert error message>")
+l.generate!
 ```
 
 The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate before creating a response to the prompt. Options are:
-- `"low"`: Favors speed and economical token usage
-- `"medium"`: (Default) Balances speed and reasoning accuracy
-- `"high"`: Favors more complete reasoning
+- `"low"`: Favors speed and economical token usage.
+- `"medium"`: (Default) Balances speed and reasoning accuracy.
+- `"high"`: Favors more complete reasoning.
 
 Setting to `nil` disables the reasoning parameter.
 
-### Advanced: Response Details
+## Advanced: Response Details
 
-When you call `assistant!` or `generate!`, the gem stores additional information about the API response:
+When you call `generate!` or `generate!`, the gem stores additional information about the API response:
 
 ```ruby
 t = OpenAI::Chat.new
 t.user("Hello!")
-t.assistant!
+t.generate!
 
 # Each assistant message includes a response object
 pp t.messages.last
 # => {
-#      "role" => "assistant",
-#      "content" => "Hello! How can I help you today?",
-#      "response" => #<Response id=resp_abc... model=gpt-4.1-nano tokens=12>
+#      :role => "assistant",
+#      :content => "Hello! How can I help you today?",
+#      :response => #<OpenAI::Chat::Response id=resp_abc... model=gpt-4.1-nano tokens=12>
 #    }
 
 # Access detailed information
 response = t.last_response
 response.id           # => "resp_abc123..."
 response.model        # => "gpt-4.1-nano"
-response.usage        # => {"prompt_tokens"=>5, "completion_tokens"=>7, "total_tokens"=>12}
+response.usage        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
 
 # Helper methods
 t.last_response_id    # => "resp_abc123..."
-t.last_usage          # => {"prompt_tokens"=>5, "completion_tokens"=>7, "total_tokens"=>12}
+t.last_usage          # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
 t.total_tokens        # => 12
 ```
 
 This information is useful for:
-- Debugging and monitoring token usage
-- Understanding which model was actually used
-- Future features like cost tracking
 
-## TODO - NOT YET IMPLEMENTED
+- Debugging and monitoring token usage.
+- Understanding which model was actually used.
+- Future features like cost tracking.
 
-Combined with loops and conditionals, you can do everything you need to with the above techniques. But, below are some advanced shortcuts.
+You can also, if you know a response ID, pick up an old conversation at that point in time:
 
-#### Setting messages directly
+```ruby
+t = OpenAI::Chat.new
+t.user("Hello!")
+t.generate!
+old_id = t.last_response_id # => "resp_abc123..."
+
+# Some time in the future...
+
+u = OpenAI::Chat.new
+u.pick_up_from("resp_abc123...")
+u.messages # => [
+#      {:role=>"assistant", :response => #<OpenAI::Chat::Response id=resp_abc...}
+#    ]
+u.user("What should we do next?")
+u.generate!
+```
+
+Unless you've stored the previous messages somewhere yourself, this technique won't bring them back. But OpenAI remembers what they were, so that you can at least continue the conversation. (If you're using a reasoning model, this technique also preserves all of the model's reasoning.)
+
+## Setting messages directly
 
 You can use `.messages=()` to assign an `Array` of `Hashes`. Each `Hash` must have keys `:role` and `:content`, and optionally `:image` or `:images`:
 
@@ -370,7 +415,7 @@ p.messages = [
 
 # Now continue the conversation with an API-generated response
 p.user("Are there any current missions to go there?")
-response = p.assistant!
+response = p.generate!
 puts response
 ```
 
@@ -391,44 +436,32 @@ q.messages = [
   { role: "system", content: "You are a helpful assistant." },
   { role: "user", content: "Compare these images", images: ["image1.jpg", "image2.jpg"] }
 ]
-
-# With complex messages
-q.messages = [
-  { role: "system", content: "You are a helpful assistant." },
-  { role: "user", content: 
-    [
-      {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Eubalaena_glacialis_with_calf.jpg/215px-Eubalaena_glacialis_with_calf.jpg"},
-      {"text" => "What is in the above image? What is in the below image?"},
-      {"image" => "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Elephant_Diversity.jpg/305px-Elephant_Diversity.jpg"},
-      {"text" => "What are the differences between the images?"}
-    ]
-  }
-]
 ```
 
-#### Assigning `ActiveRecord::Relation`s
+## Assigning `ActiveRecord::Relation`s
 
 If your chat history is contained in an `ActiveRecord::Relation`, you can assign it directly:
 
 ```ruby
 # Load from ActiveRecord
-r = OpenAI::Chat.from_active_record(@thread.messages.order(:created_at))
-r.user("What should we discuss next?")
-r.assistant!
+@thread = Thread.find(42)
 
-# Save the response back
-r.save_last_response_to(@thread.messages)
+r = OpenAI::Chat.new
+r.messages = @thread.posts.order(:created_at)
+r.user("What should we discuss next?")
+r.generate! # Creates a new post record, too
 ```
 
-##### Requirements
+### Requirements
 
-Your ActiveRecord model must have:
+In order for the above to "magically" work, there are a few requirements. Your ActiveRecord model must have:
+
 - `.role` method that returns "system", "user", or "assistant"
 - `.content` method that returns the message text
 - `.image` method (optional) for single images - can return URLs, file paths, or Active Storage attachments
 - `.images` method (optional) for multiple images
 
-##### Custom Column Names
+### Custom Column Names
 
 If your columns have different names:
 
@@ -442,7 +475,7 @@ s.configure_message_attributes(
 s.messages = @conversation.messages
 ```
 
-##### Saving Responses with Metadata
+### Saving Responses with Metadata
 
 To preserve response metadata, add an `openai_response` column to your messages table:
 
@@ -456,48 +489,35 @@ class Message < ApplicationRecord
 end
 
 # Usage
-t = OpenAI::Chat.from_active_record(@thread.messages)
+@thread = Thread.find(42)
+
+t = OpenAI::Chat.new
+t.posts = @thread.messages
 t.user("Hello!")
-t.assistant!
-t.save_last_response_to(@thread.messages)
+t.generate!
 
 # The saved message will include token usage, model info, etc.
 last_message = @thread.messages.last
-last_message.openai_response.usage # => {"prompt_tokens"=>10, ...}
+last_message.openai_response.usage # => {:prompt_tokens=>10, ...}
 ```
 
-#### Other Features Being Considered
+## Other Features Being Considered
 
-- **Streaming responses**: Real-time streaming as the AI generates its response
-- **Web search**: Enable the AI to search the web for current information
-- **Cost tracking**: Automatic calculation and tracking of API costs
 - **Session management**: Save and restore conversations by ID
+- **Streaming responses**: Real-time streaming as the AI generates its response
+- **Cost tracking**: Automatic calculation and tracking of API costs
 
-### Testing with Real API Calls
+## Testing with Real API Calls
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:
 
-1. Navigate to the test program directory: `cd test_program`
+1. Navigate to the test program directory: `cd demo`
 2. Create a `.env` file in the test_program directory with your API credentials:
-```
-# Your OpenAI API key
-OPENAI_API_KEY=your_openai_api_key_here
-```
+    ```
+    # Your OpenAI API key
+    OPENAI_API_KEY=your_openai_api_key_here
+    ```
 3. Install dependencies: `bundle install`
-4. Run the test program: `ruby test_ai_chat.rb`
+4. Run the test program: `ruby demo.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.
-
-## Development
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bin/rake` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/firstdraft/openai-chat.
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
