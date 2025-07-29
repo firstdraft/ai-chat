@@ -273,6 +273,7 @@ module AI
     def strip_responses(messages)
       messages.each do |message|
         message.delete(:response) if message.key?(:response)
+        message[:content] = message[:content].to_s if message[:content].is_a?(Hash)
       end
     end
 

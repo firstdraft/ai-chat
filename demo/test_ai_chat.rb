@@ -347,7 +347,7 @@ begin
 
   g.user("Get this data", file: pdf_path)
   response = g.generate!
-  
+
   puts "Response with structured output: #{response}"
   puts "Last message data-type: #{g.last.class}"
 rescue => e
