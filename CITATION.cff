@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: Please use the following metadata when citing this project in your work.
-title: Openai Chat
+title: AI Chat
 abstract:
 version: 0.0.0
 license: Hippocratic-2.1
@@ -12,6 +12,6 @@ authors:
     orcid: https://orcid.org/
 keywords:
  - ruby
-repository-code: https://github.com/undefined/openai-chat
-repository-artifact: https://rubygems.org/gems/openai-chat
-url: https://undefined.io/projects/openai-chat
+repository-code: https://github.com/undefined/ai-chat
+repository-artifact: https://rubygems.org/gems/ai-chat
+url: https://undefined.io/projects/ai-chat
