@@ -15,14 +15,14 @@ Gem::Specification.new do |spec|
     "homepage_uri" => "https://github.com/firstdraft/ai-chat",
     "label" => "AI Chat",
     "rubygems_mfa_required" => "true",
-    "source_code_uri" => "https://github.com/firstdraft/openai-chat"
+    "source_code_uri" => "https://github.com/firstdraft/ai-chat"
   }
 
   spec.signing_key = Gem.default_key_path
   spec.cert_chain = [Gem.default_cert_path]
 
-  spec.required_ruby_version = "~> 3.4"
-  spec.add_dependency "refinements", "~> 13.3"
+  spec.required_ruby_version = "~> 3.2"
+  spec.add_dependency "refinements", "~> 11.1"
   spec.add_dependency "zeitwerk", "~> 2.7"
   spec.add_dependency "openai", "~> 0.14"
   spec.add_runtime_dependency "mime-types", "~> 3.0"
