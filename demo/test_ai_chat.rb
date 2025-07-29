@@ -169,8 +169,8 @@ rescue => e
   puts "Web Search test error: #{e.message}"
 end
 
-# Structured Output Data Extraction Test
-puts "\nStructured Output Data Extraction:"
+# Structured Output (Hash, Format) Data Extraction Test
+puts "\nStructured Output Data Extraction (Hash, Format):"
 puts "---------------------"
 begin
   pdf_path = File.expand_path("../../spec/fixtures/test.pdf", __FILE__)
@@ -210,6 +210,146 @@ begin
   response = j.generate!
 
   puts "Response with structured output: #{response}"
+rescue => e
+  puts "Structured Output Data Extraction test error: #{e.message}"
+end
+
+# Structured Output (String, Format) Data Extraction Test
+puts "\nStructured Output Data Extraction (String, Format):"
+puts "---------------------"
+begin
+  pdf_path = File.expand_path("../../spec/fixtures/test.pdf", __FILE__)
+  schema = <<~JSON
+    {
+      "format": {
+        "type": "json_schema",
+        "name": "InvoiceData",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "item_code": { "type": "number"},
+                  "item_desc": {"type": "string"},
+                  "unit_price": {"type": "number"},
+                  "quantity": {"type": "integer"},
+                  "total": {"type": "number"}
+                },
+                "required": ["item_code","item_desc","unit_price","quantity", "total"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["items"],
+          "additionalProperties": false
+        }
+      }
+    }
+  JSON
+  j = AI::Chat.new
+  j.schema = schema
+
+  j.user("Get this data", file: pdf_path)
+  response = j.generate!
+
+  puts "Response with structured output: #{response}"
+  puts "Last message data-type: #{j.last.class}"
+rescue => e
+  puts "Structured Output Data Extraction test error: #{e.message}"
+end
+exit 1
+
+# Structured Output (String, Generated) Data Extraction Test
+puts "\nStructured Output Data Extraction (String, Generated):"
+puts "---------------------"
+begin
+  pdf_path = File.expand_path("../../spec/fixtures/test.pdf", __FILE__)
+  schema =  <<~JSON
+    {
+      "type": "json_schema",
+      "name": "InvoiceData",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "item_code": { "type": "number"},
+                "item_desc": {"type": "string"},
+                "unit_price": {"type": "number"},
+                "quantity": {"type": "integer"},
+                "total": {"type": "number"}
+              },
+              "required": ["item_code","item_desc","unit_price","quantity", "total"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["items"],
+        "additionalProperties": false
+      }
+    }
+  JSON
+  g = AI::Chat.new
+  g.schema = schema
+  p g.schema
+  p g.schema.class
+  g.user("Get this data", file: pdf_path)
+  response = g.generate!
+  
+  puts "Response with structured output: #{response}"
+  puts "Last message data-type: #{g.last.class}"
+rescue => e
+  puts "Structured Output Data Extraction test error: #{e.message}"
+end
+
+# Structured Output (Hash, Generated) Data Extraction Test
+puts "\nStructured Output Data Extraction (Hash, Generated):"
+puts "---------------------"
+begin
+  pdf_path = File.expand_path("../../spec/fixtures/test.pdf", __FILE__)
+  schema =  {
+    type: "json_schema",
+    name: "InvoiceData",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              item_code: { type: "number"},
+              item_desc: {type: "string"},
+              unit_price: {type: "number"},
+              quantity: {type: "integer"},
+              total: {type: "number"}
+            },
+            required: ["item_code","item_desc","unit_price","quantity", "total"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["items"],
+      additionalProperties: false
+    }
+  }
+  g = AI::Chat.new
+  g.schema = schema
+
+  g.user("Get this data", file: pdf_path)
+  response = g.generate!
+  
+  puts "Response with structured output: #{response}"
+  puts "Last message data-type: #{g.last.class}"
 rescue => e
   puts "Structured Output Data Extraction test error: #{e.message}"
 end

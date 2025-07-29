@@ -120,8 +120,8 @@ module AI
         # filtering out refusals...
         json_response = response.output.flat_map { _1.content }.select { _1.is_a?(OpenAI::Models::Responses::ResponseOutputText)}.first.text
         chat_response = Response.new(response)
-        assistant(json_response, response: chat_response)
         message = JSON.parse(json_response, symbolize_names: true)
+        assistant(message, response: chat_response)
       else
         message = response.output.last.content.first.text
         chat_response = Response.new(response)
@@ -158,8 +158,15 @@ module AI
     def schema=(value)
       if value.is_a?(String)
         @schema = JSON.parse(value, symbolize_names: true)
+        unless @schema.key?(:format) || @schema.key?("format")
+          @schema = { format: @schema }
+        end
       elsif value.is_a?(Hash)
-        @schema = value
+        if value.key?(:format) || value.key?("format")
+          @schema = value
+        else
+          @schema = { format: value }
+        end
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
       end
