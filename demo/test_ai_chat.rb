@@ -261,7 +261,6 @@ begin
 rescue => e
   puts "Structured Output Data Extraction test error: #{e.message}"
 end
-exit 1
 
 # Structured Output (String, Generated) Data Extraction Test
 puts "\nStructured Output Data Extraction (String, Generated):"
@@ -299,8 +298,6 @@ begin
   JSON
   g = AI::Chat.new
   g.schema = schema
-  p g.schema
-  p g.schema.class
   g.user("Get this data", file: pdf_path)
   response = g.generate!
   
