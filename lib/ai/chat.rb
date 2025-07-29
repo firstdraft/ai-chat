@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-require "zeitwerk"
-require "openai"
+require "base64"
 require "mime-types"
+require "openai"
+require "zeitwerk"
 require_relative "response"
 
 Zeitwerk::Loader.new.then do |loader|
@@ -30,7 +31,6 @@ module AI
       @reasoning_effort = nil
       @model = "gpt-4.1-nano"
       @client = OpenAI::Client.new(api_key: @api_key)
-      inspect
     end
 
     def add(content, role: "user", response: nil, image: nil, images: nil, file: nil, files: nil)
