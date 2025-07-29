@@ -20,13 +20,13 @@ Gem::Specification.new do |spec|
 
 
   spec.required_ruby_version = "~> 3.2"
-  spec.add_dependency "refinements", "~> 11.1"
   spec.add_dependency "zeitwerk", "~> 2.7"
   spec.add_dependency "openai", "~> 0.14"
   spec.add_runtime_dependency "mime-types", "~> 3.0"
   spec.add_runtime_dependency "base64", "~> 0.1"  # Works for all Ruby versions
 
   spec.add_development_dependency "dotenv"
+  spec.add_development_dependency "refinements", "~> 11.1"
 
   spec.extra_rdoc_files = Dir["README*", "LICENSE*"]
   spec.files = Dir["*.gemspec", "lib/**/*"]
