@@ -7,9 +7,6 @@ require "zeitwerk"
 require_relative "response"
 
 Zeitwerk::Loader.new.then do |loader|
-  loader.tag = "ai-chat"
-  loader.inflector.inflect("ai" => "AI")
-  loader.push_dir "#{__dir__}/.."
   loader.setup
 end
 
