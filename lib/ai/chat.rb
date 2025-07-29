@@ -33,14 +33,6 @@ module AI
       inspect
     end
 
-    # TODO needs
-    # - content (String)
-    # - role ("user", "system", "assistant")
-    # - response (Nil, Chat::Response)
-    # - object (Array, URL, File, File-like, Nil)
-    # - object_type (:image, :other, Nil)
-    # different structure for files depending on Chat Completions and Reasoning
-    # returns: ?
     def add(content, role: "user", response: nil, image: nil, images: nil, file: nil, files: nil)
       if image.nil? && images.nil? && file.nil? && files.nil?
         messages.push(
@@ -63,7 +55,7 @@ module AI
           images_array = images.map do |image|
             {
               type: "input_image",
-              image_url: process_image(image)
+              image_url: process_file(image)
             }
           end
 
@@ -72,7 +64,7 @@ module AI
           text_and_files_array.push(
             {
               type: "input_image",
-              image_url: process_image(image)
+              image_url: process_file(image)
             }
           )
         elsif files && !files.empty?
@@ -80,7 +72,7 @@ module AI
             {
               type: "input_file",
               filename: "test",
-              file_data: process_image(file)
+              file_data: process_file(file)
             }
           end
 
@@ -90,7 +82,7 @@ module AI
             {
               type: "input_file",
               filename: "test",
-              file_data: process_image(file)
+              file_data: process_file(file)
             }
           )
 
@@ -109,11 +101,7 @@ module AI
       add(message, role: "system")
     end
 
-    # valid attachment keys
-    #   image: URLs, File paths, File-like objects (Rails uploaded images or File.open(...) objects)
-    #   images: Array of any valid :image types
     def user(message, image: nil, images: nil, file: nil, files: nil)
-      # TODO - determine exactly which param should be passed to add. Pass value (URL, File, File-like) and type (Image, Other)
       add(message, role: "user", image: image, images: images, file: file, files: files)
     end
     
@@ -121,43 +109,25 @@ module AI
       add(message, role: "assistant", response: response)
     end
 
-    # create Chat::Response and add to messages
-    # returns String: generated message content
-    # Dynamically determine if Responses or Chat Completions API should be used
-    # - Responses, when "reasoning" or "web_search" enabled (reasoning not required in documentation)
-    # - Chat Completion by default
     def generate!
+      response = create_response
+
       if web_search
-        response = client.responses.create(
-          model: model,
-          input: strip_responses(messages),
-          tools: tools
-        )
         message = response.output.last.content.first.text
         chat_response = Response.new(response)
         assistant(message, response: chat_response)
       elsif schema
-        # TODO determine which API (Chat Completions or Responses)
-        response = client.responses.create(
-          model: model,
-          input: strip_responses(messages),
-          text: schema
-        )
         # filtering out refusals...
-        # TODO Is there always only one output message?
         json_response = response.output.flat_map { _1.content }.select { _1.is_a?(OpenAI::Models::Responses::ResponseOutputText)}.first.text
         chat_response = Response.new(response)
         assistant(json_response, response: chat_response)
         message = JSON.parse(json_response, symbolize_names: true)
       else
-        response = client.responses.create(
-          model: model,
-          input: strip_responses(messages)
-        )
         message = response.output.last.content.first.text
         chat_response = Response.new(response)
         assistant(message, response: chat_response)
       end
+
       message
     end
 
@@ -216,6 +186,20 @@ module AI
     # Custom exception class for input classification errors.
     class InputClassificationError < StandardError; end
 
+    def create_response
+      parameters = {
+        model: model,
+        input: strip_responses(messages),
+        tools: tools,
+        text: schema,
+        reasoning: {
+          effort: reasoning_effort
+        }.compact
+      }.compact
+      parameters = parameters.delete_if { |k, v| v.empty? }
+      client.responses.create(**parameters)
+    end
+
     def classify_obj(obj)
       if obj.is_a?(String)
         # Attempt to parse as a URL.
@@ -244,7 +228,7 @@ module AI
       end
     end
 
-    def process_image(obj)
+    def process_file(obj)
       case classify_obj(obj)
       when :url
         obj
@@ -270,10 +254,10 @@ module AI
         mime_type = MIME::Types.type_for(filename).first.to_s
         mime_type = "image/jpeg" if mime_type.empty?
 
-        image_data = obj.read
+        file_data = obj.read
         obj.rewind if obj.respond_to?(:rewind)
 
-        base64_string = Base64.strict_encode64(image_data)
+        base64_string = Base64.strict_encode64(file_data)
 
         "data:#{mime_type};base64,#{base64_string}"
       end
