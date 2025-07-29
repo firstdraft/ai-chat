@@ -3,12 +3,8 @@
 require "base64"
 require "mime-types"
 require "openai"
-require "zeitwerk"
-require_relative "response"
 
-Zeitwerk::Loader.new.then do |loader|
-  loader.setup
-end
+require_relative "response"
 
 module AI
   # Main namespace.
