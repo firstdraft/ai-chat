@@ -13,7 +13,7 @@ end
 
 Bundler.require :tools
 
-require "openai/chat"
+require "ai/chat"
 require "refinements"
 
 SPEC_ROOT = Pathname(__dir__).realpath.freeze
