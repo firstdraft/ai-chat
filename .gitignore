@@ -1,11 +1,23 @@
+# Gem build artifacts
 *.gem
-.bundle
-Gemfile.lock
-pkg
-tmp
-.env
+pkg/
 
-# Reference libraries
-/openai-ruby/
-/ruby_llm/
-/amazing_print/
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+
+# RSpec examples persistence file
+.rspec-examples.txt
+
+# Bundler
+.bundle/
+vendor/bundle/
+
+# Development dependencies cloned locally
+amazing_print/
+openai-ruby/
+
+# OS files
+.DS_Store
