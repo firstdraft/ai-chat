@@ -1,12 +1,13 @@
 PATH
   remote: .
   specs:
-    ai-chat (0.1.0)
+    ai-chat (0.1.1)
       base64 (~> 0.1)
       mime-types (~> 3.0)
-      openai (~> 0.14)
-      refinements (~> 11.1)
+      openai (~> 0.16)
       zeitwerk (~> 2.7)
+    openai (0.16.0)
+      connection_pool
 
 GEM
   remote: https://rubygems.org/
@@ -67,8 +68,6 @@ GEM
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2025.0729)
-    openai (0.15.0)
-      connection_pool
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -169,6 +168,7 @@ DEPENDENCIES
   dotenv
   rake (~> 13.3)
   reek (~> 6.5)
+  refinements (~> 11.1)
   repl_type_completor (~> 0.1)
   rspec (~> 3.13)
   simplecov (~> 0.22)

@@ -13,7 +13,7 @@ module AI
       @loader ||= registry.loaders.each.find { |loader| loader.tag == "ai-chat" }
     end
 
-    attr_accessor :messages, :schema, :model, :web_search
+    attr_accessor :messages, :schema, :model, :web_search, :background
     attr_reader :reasoning_effort, :client
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -102,8 +102,14 @@ module AI
       add(message, role: "assistant", response: response)
     end
 
-    def generate!
-      response = create_response
+    def generate!(show_progress: false)
+      # For background requests, create and wait for completion
+      if background
+        initial_response = create_response
+        response = wait_for_response(initial_response.id, show_progress: show_progress)
+      else
+        response = create_response
+      end
 
       if web_search
         message = response.output.last.content.first.text
@@ -194,9 +200,10 @@ module AI
         text: schema,
         reasoning: {
           effort: reasoning_effort
-        }.compact
+        }.compact,
+        background: background
       }.compact
-      parameters = parameters.delete_if { |k, v| v.empty? }
+      parameters = parameters.delete_if { |k, v| v.respond_to?(:empty?) && v.empty? }
       client.responses.create(**parameters)
     end
 
@@ -279,6 +286,35 @@ module AI
 
     def extract_message(response)
       response.output.flat_map { _1.content }.select { _1.is_a?(OpenAI::Models::Responses::ResponseOutputText)}.first.text
+    end
+
+    def wait_for_response(response_id, poll_interval: 15, show_progress: false)
+      dots = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+      dot_index = 0
+      
+      loop do
+        response = client.responses.retrieve(response_id)
+        
+        # Check if response is complete
+        case response.status
+        when :completed
+          puts "\r✓ Response ready!                    " if show_progress
+          return response
+        when :failed, :cancelled
+          puts "\r✗ Request #{response.status}         " if show_progress
+          raise "Background request #{response.status}: #{response.error&.message || 'Unknown error'}"
+        when :in_progress, :queued
+          # Show progress
+          if show_progress
+            print "\r#{dots[dot_index % dots.length]} Thinking deeply... (#{response.status})"
+            dot_index += 1
+          end
+          sleep poll_interval
+        else
+          # Handle unexpected status
+          raise "Unexpected response status: #{response.status}"
+        end
+      end
     end
   end
 end
