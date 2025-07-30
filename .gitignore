@@ -19,5 +19,8 @@ vendor/bundle/
 amazing_print/
 openai-ruby/
 
+# Temp demo scripts
+demo2/
+
 # OS files
 .DS_Store
