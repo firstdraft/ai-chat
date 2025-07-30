@@ -17,7 +17,7 @@ module AI
     attr_reader :reasoning_effort, :client
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
-    
+
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
@@ -97,7 +97,7 @@ module AI
     def user(message, image: nil, images: nil, file: nil, files: nil)
       add(message, role: "user", image: image, images: images, file: file, files: files)
     end
-    
+
     def assistant(message, response: nil)
       add(message, role: "assistant", response: response)
     end
@@ -147,7 +147,7 @@ module AI
         end
       end
     end
-  
+
     def schema=(value)
       if value.is_a?(String)
         @schema = JSON.parse(value, symbolize_names: true)
@@ -181,34 +181,6 @@ module AI
       "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
     end
 
-    def to_hash
-      hash = { "#{self.class.name}" => {} }
-      
-      # Define which instance variables to skip
-      skip_vars = [:@api_key, :@client]
-      
-      instance_variables.sort.each do |var|
-        next if skip_vars.include?(var)
-        
-        value = instance_variable_get(var)
-        
-        # Special handling for @messages to truncate content
-        if var == :@messages
-          value = value.map do |msg|
-            truncated_msg = msg.dup
-            if msg[:content].is_a?(String) && msg[:content].length > 80
-              truncated_msg[:content] = msg[:content][0..77] + "..."
-            end
-            truncated_msg
-          end
-        end
-        
-        # Skip nil values for cleaner output
-        hash["#{self.class.name}"][var.to_s] = value unless value.nil?
-      end
-      
-      hash
-    end
 
     private
 
@@ -302,7 +274,7 @@ module AI
     def tools
       tools_list = []
       if web_search
-        tools_list << { type: "web_search_preview" } 
+        tools_list << { type: "web_search_preview" }
       end
     end
 
