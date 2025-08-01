@@ -13,7 +13,7 @@ module AI
       @loader ||= registry.loaders.each.find { |loader| loader.tag == "ai-chat" }
     end
 
-    attr_accessor :messages, :schema, :model, :web_search
+    attr_accessor :messages, :schema, :model, :web_search, :previous_response_id
     attr_reader :reasoning_effort, :client
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -24,6 +24,7 @@ module AI
       @reasoning_effort = nil
       @model = "gpt-4.1-nano"
       @client = OpenAI::Client.new(api_key: @api_key)
+      @previous_response_id = nil
     end
 
     def add(content, role: "user", response: nil, image: nil, images: nil, file: nil, files: nil)
@@ -121,6 +122,9 @@ module AI
         assistant(message, response: chat_response)
       end
 
+      # Update previous_response_id for next request
+      self.previous_response_id = response.id
+
       message
     end
 
@@ -189,13 +193,32 @@ module AI
     def create_response
       parameters = {
         model: model,
-        input: strip_responses(messages),
         tools: tools,
         text: schema,
         reasoning: {
           effort: reasoning_effort
-        }.compact
+        }.compact,
+        previous_response_id: previous_response_id
       }.compact
+      
+      # Determine which messages to send based on whether we're using previous_response_id
+      if previous_response_id
+        # Find the index of the message with the matching response_id
+        previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
+        
+        if previous_response_index
+          # Only send messages after the previous response
+          new_messages = messages[(previous_response_index + 1)..-1]
+          parameters[:input] = strip_responses(new_messages) unless new_messages.empty?
+        else
+          # If we can't find the previous response, send all messages
+          parameters[:input] = strip_responses(messages)
+        end
+      else
+        # Send full message history when not using previous_response_id
+        parameters[:input] = strip_responses(messages)
+      end
+      
       parameters = parameters.delete_if { |k, v| v.empty? }
       client.responses.create(**parameters)
     end
