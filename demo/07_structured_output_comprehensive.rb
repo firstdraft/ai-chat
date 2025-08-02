@@ -251,7 +251,7 @@ begin
             industry: {type: "string"},
             founded: {type: "integer"}
           },
-          required: ["name", "industry"],
+          required: ["name", "industry", "founded"],
           additionalProperties: false
         },
         employees: {
@@ -263,13 +263,13 @@ begin
               role: {type: "string"},
               years_experience: {type: "integer"}
             },
-            required: ["name", "role"],
+            required: ["name", "role", "years_experience"],
             additionalProperties: false
           }
         },
         total_employees: {type: "integer"}
       },
-      required: ["company", "employees"],
+      required: ["company", "employees", "total_employees"],
       additionalProperties: false
     }
   }

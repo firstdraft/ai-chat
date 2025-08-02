@@ -3,6 +3,7 @@
 require "base64"
 require "marcel"
 require "openai"
+require "pathname"
 
 require_relative "response"
 
@@ -63,11 +64,10 @@ module AI
           end
 
           text_and_files_array += files_array
-        else
+        elsif file
           text_and_files_array.push(
             process_file_input(file)
           )
-
         end
 
         messages.push(
@@ -232,11 +232,13 @@ module AI
         else
           begin
             content = File.read(obj, encoding: "UTF-8")
+            # Verify the content can be encoded as JSON
+            JSON.generate({text: content})
             {
               type: "input_text",
               text: content
             }
-          rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+          rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError, JSON::GeneratorError
             raise InputClassificationError,
               "Unable to read #{File.basename(obj)} as text. Only PDF and text files are supported."
           end
@@ -258,11 +260,13 @@ module AI
         else
           begin
             text_content = content.force_encoding("UTF-8")
+            # Verify the content can be encoded as JSON
+            JSON.generate({text: text_content})
             {
               type: "input_text",
               text: text_content
             }
-          rescue
+          rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError, JSON::GeneratorError
             raise InputClassificationError,
               "Unable to read #{filename} as text. Only PDF and text files are supported."
           end

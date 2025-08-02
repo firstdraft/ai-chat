@@ -19,7 +19,7 @@ begin
   begin
     AI::Chat.new
     puts "✗ Should have failed with missing API key"
-  rescue ArgumentError => e
+  rescue KeyError => e
     puts "✓ Missing API key correctly caught:"
     puts "  #{e.message}"
   end
