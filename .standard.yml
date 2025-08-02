@@ -1,6 +1,7 @@
 ruby_version: 3.4
 
 ignore:
+  - 'amazing_print/**/*'
   - 'openai-ruby/**/*'
   - 'ruby_llm/**/*'
   - 'vendor/**/*'

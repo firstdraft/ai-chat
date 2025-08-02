@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "base64"
+require "marcel"
 require "mime-types"
 require "openai"
 
@@ -59,21 +60,13 @@ module AI
           )
         elsif files && !files.empty?
           files_array = files.map do |file|
-            {
-              type: "input_file",
-              filename: "test",
-              file_data: process_file(file)
-            }
+            process_file_input(file)
           end
 
           text_and_files_array += files_array
         else
           text_and_files_array.push(
-            {
-              type: "input_file",
-              filename: "test",
-              file_data: process_file(file)
-            }
+            process_file_input(file)
           )
 
         end
@@ -220,6 +213,77 @@ module AI
       else
         raise InputClassificationError,
           "Object provided is neither a String nor file-like (missing :read method). Received value: #{obj.inspect}"
+      end
+    end
+
+    def process_file_input(obj)
+      case classify_obj(obj)
+      when :url
+        # For URLs, pass them directly to the API
+        {
+          type: "input_file",
+          file_url: obj
+        }
+      when :file_path
+        # Use Marcel to detect MIME type by content
+        mime_type = Marcel::MimeType.for(Pathname.new(obj))
+
+        if mime_type == "application/pdf"
+          {
+            type: "input_file",
+            filename: File.basename(obj),
+            file_data: process_file(obj)
+          }
+        else
+          # Everything else gets read as text
+          begin
+            content = File.read(obj, encoding: "UTF-8")
+            {
+              type: "input_text",
+              text: content
+            }
+          rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+            raise InputClassificationError,
+              "Unable to read #{File.basename(obj)} as text. Only PDF and text files are supported."
+          end
+        end
+      when :file_like
+        # Handle file-like objects (e.g., from form uploads)
+        filename = if obj.respond_to?(:original_filename)
+          obj.original_filename
+        elsif obj.respond_to?(:path)
+          File.basename(obj.path)
+        else
+          raise InputClassificationError,
+            "Unable to determine filename from file object. File objects must respond to :original_filename or :path"
+        end
+
+        # Read content once
+        content = obj.read
+        obj.rewind if obj.respond_to?(:rewind)
+
+        # Use Marcel to detect MIME type by content
+        mime_type = Marcel::MimeType.for(StringIO.new(content), name: filename)
+
+        if mime_type == "application/pdf"
+          {
+            type: "input_file",
+            filename: filename,
+            file_data: "data:application/pdf;base64,#{Base64.strict_encode64(content)}"
+          }
+        else
+          # Try to treat as text
+          begin
+            text_content = content.force_encoding("UTF-8")
+            {
+              type: "input_text",
+              text: text_content
+            }
+          rescue
+            raise InputClassificationError,
+              "Unable to read #{filename} as text. Only PDF and text files are supported."
+          end
+        end
       end
     end
 

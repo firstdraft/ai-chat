@@ -70,14 +70,20 @@ rescue => e
 end
 puts
 
-# Test 3: Single file handling
-puts "Test 3: Single file handling"
+# Test 3: Single file handling (non-PDF text files)
+puts "Test 3: Single file handling (non-PDF text files)"
 puts "-" * 30
 begin
   file_path = File.expand_path("../README.md", __dir__)
+  puts "Testing with: #{File.basename(file_path)} (Markdown file)"
 
   chat3 = AI::Chat.new
-  chat3.user("Summarize this file in one sentence", file: file_path)
+  chat3.user("What is the first line of this file?", file: file_path)
+  response = chat3.generate!
+  puts "✓ AI correctly read file content: #{response}"
+
+  # Also test file summarization
+  chat3.user("Now summarize this same file in one sentence", file: file_path)
   response = chat3.generate!
   puts "✓ File summary: #{response}"
 rescue => e
