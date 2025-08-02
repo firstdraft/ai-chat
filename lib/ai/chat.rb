@@ -2,7 +2,6 @@
 
 require "base64"
 require "marcel"
-require "mime-types"
 require "openai"
 
 require_relative "response"
@@ -46,7 +45,7 @@ module AI
           images_array = images.map do |image|
             {
               type: "input_image",
-              image_url: process_file(image)
+              image_url: process_image_input(image)
             }
           end
 
@@ -55,7 +54,7 @@ module AI
           text_and_files_array.push(
             {
               type: "input_image",
-              image_url: process_file(image)
+              image_url: process_image_input(image)
             }
           )
         elsif files && !files.empty?
@@ -100,7 +99,6 @@ module AI
       message = if web_search
         response.output.last.content.first.text
       elsif schema
-        # filtering out refusals...
         json_response = extract_text_from_response(response)
         JSON.parse(json_response, symbolize_names: true)
       else
@@ -109,7 +107,6 @@ module AI
 
       assistant(message, response: chat_response)
 
-      # Update previous_response_id for next request
       self.previous_response_id = response.id
 
       message
@@ -119,7 +116,6 @@ module AI
       if value.nil?
         @reasoning_effort = nil
       else
-        # Convert string to symbol if needed
         symbol_value = value.is_a?(String) ? value.to_sym : value
 
         if VALID_REASONING_EFFORTS.include?(symbol_value)
@@ -152,8 +148,18 @@ module AI
 
     private
 
-    # Custom exception class for input classification errors.
     class InputClassificationError < StandardError; end
+
+    def extract_filename(obj)
+      if obj.respond_to?(:original_filename)
+        obj.original_filename
+      elsif obj.respond_to?(:path)
+        File.basename(obj.path)
+      else
+        raise InputClassificationError,
+          "Unable to determine filename from file object. File objects must respond to :original_filename or :path"
+      end
+    end
 
     def create_response
       parameters = {
@@ -166,21 +172,16 @@ module AI
         previous_response_id: previous_response_id
       }.compact
 
-      # Determine which messages to send based on whether we're using previous_response_id
       if previous_response_id
-        # Find the index of the message with the matching response_id
         previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
 
         if previous_response_index
-          # Only send messages after the previous response
           new_messages = messages[(previous_response_index + 1)..]
           parameters[:input] = strip_responses(new_messages) unless new_messages.empty?
         else
-          # If we can't find the previous response, send all messages
           parameters[:input] = strip_responses(messages)
         end
       else
-        # Send full message history when not using previous_response_id
         parameters[:input] = strip_responses(messages)
       end
 
@@ -190,17 +191,14 @@ module AI
 
     def classify_obj(obj)
       if obj.is_a?(String)
-        # Attempt to parse as a URL.
         begin
           uri = URI.parse(obj)
           if uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
             return :url
           end
         rescue URI::InvalidURIError
-          # Not a valid URL; continue to check if it's a file path.
         end
 
-        # Check if the string represents a local file path (must exist on disk).
         if File.exist?(obj)
           :file_path
         else
@@ -208,7 +206,6 @@ module AI
             "String provided is neither a valid URL (must start with http:// or https://) nor an existing file path on disk. Received value: #{obj.inspect}"
         end
       elsif obj.respond_to?(:read)
-        # For non-String objects, check if it behaves like a file.
         :file_like
       else
         raise InputClassificationError,
@@ -219,23 +216,20 @@ module AI
     def process_file_input(obj)
       case classify_obj(obj)
       when :url
-        # For URLs, pass them directly to the API
         {
           type: "input_file",
           file_url: obj
         }
       when :file_path
-        # Use Marcel to detect MIME type by content
         mime_type = Marcel::MimeType.for(Pathname.new(obj))
 
         if mime_type == "application/pdf"
           {
             type: "input_file",
             filename: File.basename(obj),
-            file_data: process_file(obj)
+            file_data: process_image_input(obj)
           }
         else
-          # Everything else gets read as text
           begin
             content = File.read(obj, encoding: "UTF-8")
             {
@@ -248,21 +242,11 @@ module AI
           end
         end
       when :file_like
-        # Handle file-like objects (e.g., from form uploads)
-        filename = if obj.respond_to?(:original_filename)
-          obj.original_filename
-        elsif obj.respond_to?(:path)
-          File.basename(obj.path)
-        else
-          raise InputClassificationError,
-            "Unable to determine filename from file object. File objects must respond to :original_filename or :path"
-        end
+        filename = extract_filename(obj)
 
-        # Read content once
         content = obj.read
         obj.rewind if obj.respond_to?(:rewind)
 
-        # Use Marcel to detect MIME type by content
         mime_type = Marcel::MimeType.for(StringIO.new(content), name: filename)
 
         if mime_type == "application/pdf"
@@ -272,7 +256,6 @@ module AI
             file_data: "data:application/pdf;base64,#{Base64.strict_encode64(content)}"
           }
         else
-          # Try to treat as text
           begin
             text_content = content.force_encoding("UTF-8")
             {
@@ -287,14 +270,14 @@ module AI
       end
     end
 
-    def process_file(obj)
+    def process_image_input(obj)
       case classify_obj(obj)
       when :url
         obj
       when :file_path
         file_path = obj
 
-        mime_type = MIME::Types.type_for(file_path).first.to_s
+        mime_type = Marcel::MimeType.for(Pathname.new(file_path))
 
         image_data = File.binread(file_path)
 
@@ -302,19 +285,12 @@ module AI
 
         "data:#{mime_type};base64,#{base64_string}"
       when :file_like
-        filename = if obj.respond_to?(:path)
-          obj.path
-        elsif obj.respond_to?(:original_filename)
-          obj.original_filename
-        else
-          "unknown"
-        end
-
-        mime_type = MIME::Types.type_for(filename).first.to_s
-        mime_type = "image/jpeg" if mime_type.empty?
+        filename = extract_filename(obj)
 
         file_data = obj.read
         obj.rewind if obj.respond_to?(:rewind)
+
+        mime_type = Marcel::MimeType.for(StringIO.new(file_data), name: filename)
 
         base64_string = Base64.strict_encode64(file_data)
 
@@ -342,17 +318,14 @@ module AI
     end
 
     def wrap_schema_if_needed(schema)
-      # If it already has the full format structure, use as-is
       if schema.key?(:format) || schema.key?("format")
         schema
-      # If it has the OpenAI generator structure (name, schema, strict), use directly as format
       elsif (schema.key?(:name) || schema.key?("name")) &&
           (schema.key?(:schema) || schema.key?("schema")) &&
           (schema.key?(:strict) || schema.key?("strict"))
         {
           format: schema.merge(type: :json_schema)
         }
-      # Otherwise, it's just a raw schema that needs full wrapping
       else
         {
           format: {

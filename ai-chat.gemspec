@@ -22,7 +22,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "zeitwerk", "~> 2.7"
   spec.add_dependency "openai", "~> 0.16"
   spec.add_runtime_dependency "marcel", "~> 1.0"
-  spec.add_runtime_dependency "mime-types", "~> 3.0"
   spec.add_runtime_dependency "base64", "~> 0.1"  # Works for all Ruby versions
 
   spec.add_development_dependency "dotenv"
