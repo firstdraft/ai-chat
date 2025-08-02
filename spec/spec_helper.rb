@@ -14,13 +14,10 @@ end
 Bundler.require :tools
 
 require "ai/chat"
-require "refinements"
 
 SPEC_ROOT = Pathname(__dir__).realpath.freeze
 
-using Refinements::Pathname
-
-Pathname.require_tree SPEC_ROOT.join("support/shared_contexts")
+Dir[SPEC_ROOT.join("support/shared_contexts/**/*.rb")].each { |f| require f }
 
 RSpec.configure do |config|
   config.color = true

@@ -9,10 +9,6 @@ require_relative "response"
 module AI
   # Main namespace.
   class Chat
-    def self.loader(registry = Zeitwerk::Registry)
-      @loader ||= registry.loaders.each.find { |loader| loader.tag == "ai-chat" }
-    end
-
     attr_accessor :messages, :model, :web_search, :previous_response_id
     attr_reader :reasoning_effort, :client, :schema
 
