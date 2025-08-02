@@ -140,16 +140,10 @@ module AI
 
     def schema=(value)
       if value.is_a?(String)
-        @schema = JSON.parse(value, symbolize_names: true)
-        unless @schema.key?(:format) || @schema.key?("format")
-          @schema = {format: @schema}
-        end
+        parsed = JSON.parse(value, symbolize_names: true)
+        @schema = wrap_schema_if_needed(parsed)
       elsif value.is_a?(Hash)
-        @schema = if value.key?(:format) || value.key?("format")
-          value
-        else
-          {format: value}
-        end
+        @schema = wrap_schema_if_needed(value)
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
       end
@@ -172,7 +166,7 @@ module AI
       parameters = {
         model: model,
         tools: tools,
-        text: schema,
+        text: schema ? {format: schema[:format]} : nil,
         reasoning: {
           effort: reasoning_effort
         }.compact,
@@ -280,7 +274,31 @@ module AI
     end
 
     def extract_text_from_response(response)
-      response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
+      response.output.flat_map { |output| output.content }.find { |content| content.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.text
+    end
+
+    def wrap_schema_if_needed(schema)
+      # If it already has the full format structure, use as-is
+      if schema.key?(:format) || schema.key?("format")
+        schema
+      # If it has the OpenAI generator structure (name, schema, strict), use directly as format
+      elsif (schema.key?(:name) || schema.key?("name")) &&
+          (schema.key?(:schema) || schema.key?("schema")) &&
+          (schema.key?(:strict) || schema.key?("strict"))
+        {
+          format: schema.merge(type: :json_schema)
+        }
+      # Otherwise, it's just a raw schema that needs full wrapping
+      else
+        {
+          format: {
+            type: :json_schema,
+            name: "response",
+            schema: schema,
+            strict: true
+          }
+        }
+      end
     end
   end
 end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "simplecov"
+require "dotenv/load"
 
 unless ENV["NO_COVERAGE"]
   SimpleCov.start do

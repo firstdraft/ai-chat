@@ -4,7 +4,7 @@ PATH
     ai-chat (0.1.1)
       base64 (~> 0.1)
       mime-types (~> 3.0)
-      openai (~> 0.14)
+      openai (~> 0.16)
       zeitwerk (~> 2.7)
     openai (0.16.0)
       connection_pool
