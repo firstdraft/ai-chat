@@ -13,11 +13,11 @@ module AI
       @loader ||= registry.loaders.each.find { |loader| loader.tag == "ai-chat" }
     end
 
-    attr_accessor :messages, :schema, :model, :web_search, :previous_response_id
-    attr_reader :reasoning_effort, :client
+    attr_accessor :messages, :model, :web_search, :previous_response_id
+    attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
-    
+
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
@@ -98,7 +98,7 @@ module AI
     def user(message, image: nil, images: nil, file: nil, files: nil)
       add(message, role: "user", image: image, images: images, file: file, files: files)
     end
-    
+
     def assistant(message, response: nil)
       add(message, role: "assistant", response: response)
     end
@@ -106,21 +106,19 @@ module AI
     def generate!
       response = create_response
 
-      if web_search
-        message = response.output.last.content.first.text
-        chat_response = Response.new(response)
-        assistant(message, response: chat_response)
+      chat_response = Response.new(response)
+
+      message = if web_search
+        response.output.last.content.first.text
       elsif schema
         # filtering out refusals...
-        json_response = response.output.flat_map { _1.content }.select { _1.is_a?(OpenAI::Models::Responses::ResponseOutputText)}.first.text
-        chat_response = Response.new(response)
-        message = JSON.parse(json_response, symbolize_names: true)
-        assistant(message, response: chat_response)
+        json_response = response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
+        JSON.parse(json_response, symbolize_names: true)
       else
-        message = response.output.last.content.first.text
-        chat_response = Response.new(response)
-        assistant(message, response: chat_response)
+        response.output.last.content.first.text
       end
+
+      assistant(message, response: chat_response)
 
       # Update previous_response_id for next request
       self.previous_response_id = response.id
@@ -131,7 +129,7 @@ module AI
     def pick_up_from(response_id)
       response = client.responses.retrieve(response_id)
       chat_response = Response.new(response)
-      message = response.output.flat_map { _1.content }.select { _1.is_a?(OpenAI::Models::Responses::ResponseOutputText)}.first.text
+      message = response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
       assistant(message, response: chat_response)
       message
     end
@@ -151,18 +149,18 @@ module AI
         end
       end
     end
-  
+
     def schema=(value)
       if value.is_a?(String)
         @schema = JSON.parse(value, symbolize_names: true)
         unless @schema.key?(:format) || @schema.key?("format")
-          @schema = { format: @schema }
+          @schema = {format: @schema}
         end
       elsif value.is_a?(Hash)
-        if value.key?(:format) || value.key?("format")
-          @schema = value
+        @schema = if value.key?(:format) || value.key?("format")
+          value
         else
-          @schema = { format: value }
+          {format: value}
         end
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
@@ -200,15 +198,15 @@ module AI
         }.compact,
         previous_response_id: previous_response_id
       }.compact
-      
+
       # Determine which messages to send based on whether we're using previous_response_id
       if previous_response_id
         # Find the index of the message with the matching response_id
         previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
-        
+
         if previous_response_index
           # Only send messages after the previous response
-          new_messages = messages[(previous_response_index + 1)..-1]
+          new_messages = messages[(previous_response_index + 1)..]
           parameters[:input] = strip_responses(new_messages) unless new_messages.empty?
         else
           # If we can't find the previous response, send all messages
@@ -218,7 +216,7 @@ module AI
         # Send full message history when not using previous_response_id
         parameters[:input] = strip_responses(messages)
       end
-      
+
       parameters = parameters.delete_if { |k, v| v.empty? }
       client.responses.create(**parameters)
     end
@@ -296,12 +294,12 @@ module AI
     def tools
       tools_list = []
       if web_search
-        tools_list << { type: "web_search_preview" } 
+        tools_list << {type: "web_search_preview"}
       end
     end
 
     def extract_message(response)
-      response.output.flat_map { _1.content }.select { _1.is_a?(OpenAI::Models::Responses::ResponseOutputText)}.first.text
+      response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
     end
   end
 end
