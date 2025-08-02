@@ -36,6 +36,9 @@ require_relative "08_advanced_usage"
 # Edge cases and error handling
 require_relative "09_edge_cases"
 
+# Additional usage patterns
+require_relative "10_additional_patterns"
+
 puts "\n=== All AI::Chat examples completed ==="
 puts
 puts "Summary:"

@@ -30,6 +30,7 @@ The `examples/` directory contains focused examples for specific features:
 - `07_structured_output_comprehensive.rb` - All 6 supported schema formats
 - `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
 - `09_edge_cases.rb` - Error handling and edge cases
+- `10_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
 
 Each example is self-contained and can be run individually:
 ```bash
