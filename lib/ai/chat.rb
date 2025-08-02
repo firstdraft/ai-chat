@@ -112,7 +112,7 @@ module AI
         response.output.last.content.first.text
       elsif schema
         # filtering out refusals...
-        json_response = response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
+        json_response = extract_text_from_response(response)
         JSON.parse(json_response, symbolize_names: true)
       else
         response.output.last.content.first.text
@@ -129,7 +129,7 @@ module AI
     def pick_up_from(response_id)
       response = client.responses.retrieve(response_id)
       chat_response = Response.new(response)
-      message = response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
+      message = extract_text_from_response(response)
       assistant(message, response: chat_response)
       message
     end
@@ -296,9 +296,10 @@ module AI
       if web_search
         tools_list << {type: "web_search_preview"}
       end
+      tools_list
     end
 
-    def extract_message(response)
+    def extract_text_from_response(response)
       response.output.flat_map { it.content }.select { it.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.first.text
     end
   end
