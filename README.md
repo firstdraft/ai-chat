@@ -356,15 +356,10 @@ pp t.messages.last
 #    }
 
 # Access detailed information
-response = t.last_response
+response = t.last[:response]
 response.id           # => "resp_abc123..."
 response.model        # => "gpt-4.1-nano"
 response.usage        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
-
-# Helper methods
-t.last_response_id    # => "resp_abc123..."
-t.last_usage          # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
-t.total_tokens        # => 12
 ```
 
 This information is useful for:
@@ -373,20 +368,20 @@ This information is useful for:
 - Understanding which model was actually used.
 - Future features like cost tracking.
 
-You can also, if you know a response ID, pick up an old conversation at that point in time:
+You can also, if you know a response ID, continue an old conversation by setting the `previous_response_id`:
 
 ```ruby
 t = AI::Chat.new
 t.user("Hello!")
 t.generate!
-old_id = t.last_response_id # => "resp_abc123..."
+old_id = t.last[:response].id # => "resp_abc123..."
 
 # Some time in the future...
 
 u = AI::Chat.new
-u.pick_up_from("resp_abc123...")
-u.messages # => [
-#      {:role=>"assistant", :response => #<AI::Chat::Response id=resp_abc...}
+u.previous_response_id = "resp_abc123..."
+u.user("What did I just say?")
+u.generate! # Will have context from the previous conversation}
 #    ]
 u.user("What should we do next?")
 u.generate!

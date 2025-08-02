@@ -126,14 +126,6 @@ module AI
       message
     end
 
-    def pick_up_from(response_id)
-      response = client.responses.retrieve(response_id)
-      chat_response = Response.new(response)
-      message = extract_text_from_response(response)
-      assistant(message, response: chat_response)
-      message
-    end
-
     def reasoning_effort=(value)
       if value.nil?
         @reasoning_effort = nil
@@ -169,14 +161,6 @@ module AI
 
     def last
       messages.last
-    end
-
-    def last_response
-      last[:response]
-    end
-
-    def last_response_id
-      last_response&.id
     end
 
     def inspect
