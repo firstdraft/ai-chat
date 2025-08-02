@@ -2,6 +2,40 @@
 
 This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's cutting-edge generative AI models.
 
+## Demos
+
+This gem includes comprehensive demo scripts that showcase all features and serve as both documentation and validation tests. To explore the capabilities:
+
+### Quick Start
+```bash
+# Run a quick overview of key features (takes ~1 minute)
+bundle exec ruby demo/01_quick.rb
+```
+
+### Run All Demos
+```bash
+# Run the complete test suite demonstrating all features
+bundle exec ruby demo/all.rb
+```
+
+### Individual Feature Demos
+The `demo/` directory contains focused examples for specific features:
+
+- `01_quick.rb` - Quick overview of key features
+- `02_core.rb` - Core functionality (basic chat, messages, responses)
+- `03_configuration.rb` - Configuration options (API keys, models, reasoning effort)
+- `04_multimodal.rb` - Basic file and image handling
+- `05_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
+- `06_structured_output.rb` - Basic structured output with schemas
+- `07_structured_output_comprehensive.rb` - All 6 supported schema formats
+- `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
+- `09_edge_cases.rb` - Error handling and edge cases
+
+Each demo is self-contained and can be run individually:
+```bash
+bundle exec ruby demo/[filename]
+```
+
 ## Installation
 
 ### Gemfile way (preferred)
