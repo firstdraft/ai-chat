@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 
-# Main demo runner - executes all test suites
+# Main example runner - executes all test suites
 #
 # This comprehensive test suite demonstrates and validates all features
 # of the AI::Chat gem, serving as both documentation and verification.
 
 puts "=== AI::Chat Comprehensive Test Suite ==="
-puts "Running all demo scripts to validate functionality..."
+puts "Running all example scripts to validate functionality..."
 puts
 
 # Quick overview
@@ -36,7 +36,7 @@ require_relative "08_advanced_usage"
 # Edge cases and error handling
 require_relative "09_edge_cases"
 
-puts "\n=== All AI::Chat demos completed ==="
+puts "\n=== All AI::Chat examples completed ==="
 puts
 puts "Summary:"
 puts "- Core functionality: Basic chat, messages, responses"

@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Quick demo showcasing key features of AI::Chat
+# Quick example showcasing key features of AI::Chat
 # Run this for a fast overview of capabilities
 
 require_relative "../lib/ai-chat"
@@ -8,7 +8,7 @@ require "dotenv"
 Dotenv.load(File.expand_path("../.env", __dir__))
 require "amazing_print"
 
-puts "\n=== AI::Chat Quick Demo ==="
+puts "\n=== AI::Chat Quick Example ==="
 puts "Showcasing key features in under a minute..."
 puts
 
@@ -78,7 +78,7 @@ puts "5. Different models:"
 end
 puts
 
-puts "=== Quick Demo Complete ==="
+puts "=== Quick Example Complete ==="
 puts
-puts "For comprehensive tests, run: bundle exec ruby demo/all.rb"
-puts "For specific features, see demo/*.rb files"
+puts "For comprehensive tests, run: bundle exec ruby examples/all.rb"
+puts "For specific features, see examples/*.rb files"

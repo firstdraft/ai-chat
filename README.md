@@ -2,24 +2,24 @@
 
 This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's cutting-edge generative AI models.
 
-## Demos
+## Examples
 
-This gem includes comprehensive demo scripts that showcase all features and serve as both documentation and validation tests. To explore the capabilities:
+This gem includes comprehensive example scripts that showcase all features and serve as both documentation and validation tests. To explore the capabilities:
 
 ### Quick Start
 ```bash
 # Run a quick overview of key features (takes ~1 minute)
-bundle exec ruby demo/01_quick.rb
+bundle exec ruby examples/01_quick.rb
 ```
 
-### Run All Demos
+### Run All Examples
 ```bash
 # Run the complete test suite demonstrating all features
-bundle exec ruby demo/all.rb
+bundle exec ruby examples/all.rb
 ```
 
-### Individual Feature Demos
-The `demo/` directory contains focused examples for specific features:
+### Individual Feature Examples
+The `examples/` directory contains focused examples for specific features:
 
 - `01_quick.rb` - Quick overview of key features
 - `02_core.rb` - Core functionality (basic chat, messages, responses)
@@ -31,9 +31,9 @@ The `demo/` directory contains focused examples for specific features:
 - `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
 - `09_edge_cases.rb` - Error handling and edge cases
 
-Each demo is self-contained and can be run individually:
+Each example is self-contained and can be run individually:
 ```bash
-bundle exec ruby demo/[filename]
+bundle exec ruby examples/[filename]
 ```
 
 ## Installation
@@ -540,13 +540,13 @@ last_message.openai_response.usage # => {:prompt_tokens=>10, ...}
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:
 
-1. Navigate to the test program directory: `cd demo`
-2. Create a `.env` file in the test_program directory with your API credentials:
+1. Navigate to the examples directory: `cd examples`
+2. Create a `.env` file in the examples directory with your API credentials:
     ```
     # Your OpenAI API key
     OPENAI_API_KEY=your_openai_api_key_here
     ```
 3. Install dependencies: `bundle install`
-4. Run the test program: `ruby demo.rb`
+4. Run the examples: `ruby all.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.
