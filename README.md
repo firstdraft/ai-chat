@@ -7,18 +7,21 @@ This gem provides a class called `AI::Chat` that is intended to make it as easy 
 This gem includes comprehensive example scripts that showcase all features and serve as both documentation and validation tests. To explore the capabilities:
 
 ### Quick Start
+
 ```bash
 # Run a quick overview of key features (takes ~1 minute)
 bundle exec ruby examples/01_quick.rb
 ```
 
 ### Run All Examples
+
 ```bash
 # Run the complete test suite demonstrating all features
 bundle exec ruby examples/all.rb
 ```
 
 ### Individual Feature Examples
+
 The `examples/` directory contains focused examples for specific features:
 
 - `01_quick.rb` - Quick overview of key features
