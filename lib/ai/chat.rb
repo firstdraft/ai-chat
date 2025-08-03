@@ -96,13 +96,12 @@ module AI
 
       chat_response = Response.new(response)
 
-      message = if web_search
-        response.output.last.content.first.text
-      elsif schema
-        json_response = extract_text_from_response(response)
-        JSON.parse(json_response, symbolize_names: true)
+      text_response = extract_text_from_response(response)
+      
+      message = if schema
+        JSON.parse(text_response, symbolize_names: true)
       else
-        response.output.last.content.first.text
+        text_response
       end
 
       assistant(message, response: chat_response)
@@ -318,7 +317,12 @@ module AI
     end
 
     def extract_text_from_response(response)
-      response.output.flat_map { |output| output.content }.find { |content| content.is_a?(OpenAI::Models::Responses::ResponseOutputText) }.text
+      response.output.flat_map { |output| 
+        # Only try to access content if the output has that method
+        output.respond_to?(:content) ? output.content : []
+      }.compact.find { |content| 
+        content.is_a?(OpenAI::Models::Responses::ResponseOutputText) 
+      }&.text
     end
 
     def wrap_schema_if_needed(schema)
