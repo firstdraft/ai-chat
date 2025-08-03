@@ -541,13 +541,12 @@ last_message.openai_response.usage # => {:prompt_tokens=>10, ...}
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:
 
-1. Navigate to the examples directory: `cd examples`
-2. Create a `.env` file in the examples directory with your API credentials:
+1. Create a `.env` file at the project root with your API credentials:
     ```
     # Your OpenAI API key
     OPENAI_API_KEY=your_openai_api_key_here
     ```
-3. Install dependencies: `bundle install`
-4. Run the examples: `ruby all.rb`
+2. Install dependencies: `bundle install`
+3. Run the examples: `bundle exec ruby examples/all.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.

@@ -24,3 +24,7 @@ openai-ruby/
 
 # Project-specific files
 CLAUDE.md
+
+# Environment variables
+.env
+.env.*
