@@ -26,16 +26,16 @@ chat2 = AI::Chat.new
 chat2.user("My name is Alice and I live in Boston.")
 chat2.generate!
 response_id = chat2.previous_response_id
-puts "✓ Response ID: #{response_id}"
-puts "✓ Automatically set previous_response_id: #{response_id.start_with?("resp_")}"
+puts "✓ Response ID: #{chat2.last[:response].id}"
+puts "✓ Automatically set previous_response_id: #{response_id == chat2.last[:response].id}"
 
 # Create new chat with previous_response_id
 chat3 = AI::Chat.new
 chat3.previous_response_id = response_id
 chat3.user("What is my name?")
 response = chat3.generate!
-puts "✓ New chat remembers context: #{response.include?("Alice")}"
 puts "✓ Response: #{response}"
+puts "✓ New chat remembers context: #{response.include?("Alice")}"
 puts
 
 # Test 3: Message handling
