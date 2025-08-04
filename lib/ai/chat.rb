@@ -164,7 +164,7 @@ module AI
       parameters = {
         model: model,
         tools: tools,
-        text: schema ? {format: schema[:format]} : nil,
+        text: schema,
         reasoning: {
           effort: reasoning_effort
         }.compact,
