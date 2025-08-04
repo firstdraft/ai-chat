@@ -14,7 +14,7 @@ end
 
 Bundler.require :tools
 
-require "ai/chat"
+require "ai-chat"
 
 SPEC_ROOT = Pathname(__dir__).realpath.freeze
 
