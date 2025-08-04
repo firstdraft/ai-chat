@@ -28,3 +28,7 @@ CLAUDE.md
 # Environment variables
 .env
 .env.*
+
+# Ruby version management
+.ruby-version
+.rvmrc
