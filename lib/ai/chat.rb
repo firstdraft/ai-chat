@@ -99,7 +99,7 @@ module AI
 
       message = if schema
         if text_response.nil? || text_response.empty?
-          raise "No text content in response to parse as JSON"
+          raise ArgumentError, "No text content in response to parse as JSON for schema: #{schema.inspect}"
         end
         JSON.parse(text_response, symbolize_names: true)
       else
@@ -234,7 +234,7 @@ module AI
         else
           begin
             content = File.read(obj, encoding: "UTF-8")
-            # Verify the content can be encoded as JSON
+            # Verify the content can be encoded as JSON (will raise if not)
             JSON.generate({text: content})
             {
               type: "input_text",
@@ -305,9 +305,11 @@ module AI
     end
 
     def strip_responses(messages)
-      messages.each do |message|
-        message.delete(:response) if message.key?(:response)
-        message[:content] = JSON.generate(message[:content]) if message[:content].is_a?(Hash)
+      messages.map do |message|
+        stripped = message.dup
+        stripped.delete(:response)
+        stripped[:content] = JSON.generate(stripped[:content]) if stripped[:content].is_a?(Hash)
+        stripped
       end
     end
 
