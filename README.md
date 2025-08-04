@@ -262,10 +262,34 @@ response = i.generate!
 response[:total_calories]  # => 285
 ```
 
-You can also provide the equivalent Ruby `Hash` rather than a `String` containing JSON.
+### Schema Formats
 
+The gem supports multiple schema formats to accommodate different preferences and use cases. The gem will automatically wrap your schema in the correct format for the API.
+
+#### 1. Full Schema with `format` Key (Most Explicit)
 ```ruby
-# Equivalent to assigning the String above
+# When you need complete control over the schema structure
+i.schema = {
+  format: {
+    type: :json_schema,
+    name: "nutrition_values",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        fat: { type: "number", description: "The amount of fat in grams." },
+        protein: { type: "number", description: "The amount of protein in grams." }
+      },
+      required: ["fat", "protein"],
+      additionalProperties: false
+    }
+  }
+}
+```
+
+#### 2. Schema with `name`, `strict`, and `schema` Keys
+```ruby
+# The format shown in OpenAI's documentation
 i.schema = {
   name: "nutrition_values",
   strict: true,
@@ -273,18 +297,48 @@ i.schema = {
     type: "object",
     properties: {
       fat: { type: "number", description: "The amount of fat in grams." },
-      protein: { type: "number", description: "The amount of protein in grams." },
-      carbs: { type: "number", description: "The amount of carbohydrates in grams." },
-      total_calories: { type: "number", description:
-        "The total calories calculated based on fat, protein, and carbohydrates." }
+      protein: { type: "number", description: "The amount of protein in grams." }
     },
-    required: [:fat, :protein, :carbs, :total_calories],
+    required: [:fat, :protein],
     additionalProperties: false
   }
 }
 ```
 
-The keys can be `String`s or `Symbol`s.
+#### 3. Simple JSON Schema Object
+```ruby
+# The simplest format - just provide the schema itself
+# The gem will wrap it with sensible defaults (name: "response", strict: true)
+i.schema = {
+  type: "object",
+  properties: {
+    fat: { type: "number", description: "The amount of fat in grams." },
+    protein: { type: "number", description: "The amount of protein in grams." }
+  },
+  required: ["fat", "protein"],
+  additionalProperties: false
+}
+```
+
+#### 4. JSON String Formats
+All the above formats also work as JSON strings:
+
+```ruby
+# As a JSON string with full format
+i.schema = '{"format":{"type":"json_schema","name":"nutrition_values","strict":true,"schema":{...}}}'
+
+# As a JSON string with name/strict/schema
+i.schema = '{"name":"nutrition_values","strict":true,"schema":{...}}'
+
+# As a simple JSON schema string
+i.schema = '{"type":"object","properties":{...}}'
+```
+
+### Schema Notes
+
+- The keys can be `String`s or `Symbol`s.
+- The gem automatically converts your schema to the format expected by the API.
+- When a schema is set, `generate!` returns a parsed Ruby Hash with symbolized keys, not a string.
 
 ## Including Images
 

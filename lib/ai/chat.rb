@@ -116,15 +116,16 @@ module AI
     def reasoning_effort=(value)
       if value.nil?
         @reasoning_effort = nil
-      else
-        symbol_value = value.is_a?(String) ? value.to_sym : value
+        return
+      end
 
-        if VALID_REASONING_EFFORTS.include?(symbol_value)
-          @reasoning_effort = symbol_value
-        else
-          valid_values = VALID_REASONING_EFFORTS.map { |v| ":#{v} or \"#{v}\"" }.join(", ")
-          raise ArgumentError, "Invalid reasoning_effort value: '#{value}'. Must be one of: #{valid_values}"
-        end
+      normalized_value = value.to_sym
+
+      if VALID_REASONING_EFFORTS.include?(normalized_value)
+        @reasoning_effort = normalized_value
+      else
+        valid_values = VALID_REASONING_EFFORTS.map { |v| ":#{v} or \"#{v}\"" }.join(", ")
+        raise ArgumentError, "Invalid reasoning_effort value: '#{value}'. Must be one of: #{valid_values}"
       end
     end
 
@@ -167,27 +168,28 @@ module AI
         model: model
       }
 
-      # Only add optional parameters if they have meaningful values
       parameters[:tools] = tools unless tools.empty?
       parameters[:text] = schema if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
       parameters[:previous_response_id] = previous_response_id if previous_response_id
 
-      # Handle message input based on previous_response_id
-      if previous_response_id
-        previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
-
-        if previous_response_index
-          new_messages = messages[(previous_response_index + 1)..]
-          parameters[:input] = strip_responses(new_messages) unless new_messages.empty?
-        else
-          parameters[:input] = strip_responses(messages)
-        end
-      else
-        parameters[:input] = strip_responses(messages) unless messages.empty?
-      end
+      messages_to_send = prepare_messages_for_api
+      parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
 
       client.responses.create(**parameters)
+    end
+
+    def prepare_messages_for_api
+      return messages unless previous_response_id
+
+      previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
+
+      if previous_response_index
+        # Only send messages after the previous response
+        messages[(previous_response_index + 1)..] || []
+      else
+        messages
+      end
     end
 
     def classify_obj(obj)
