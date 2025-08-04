@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require "base64"
+require "json"
 require "marcel"
 require "openai"
 require "pathname"
+require "stringio"
 
 require_relative "response"
 
@@ -96,6 +98,9 @@ module AI
       text_response = extract_text_from_response(response)
       
       message = if schema
+        if text_response.nil? || text_response.empty?
+          raise "No text content in response to parse as JSON"
+        end
         JSON.parse(text_response, symbolize_names: true)
       else
         text_response
@@ -181,7 +186,7 @@ module AI
         parameters[:input] = strip_responses(messages)
       end
 
-      parameters = parameters.delete_if { |k, v| v.empty? }
+      parameters = parameters.delete_if { |k, v| v.respond_to?(:empty?) && v.empty? }
       client.responses.create(**parameters)
     end
 
@@ -220,10 +225,11 @@ module AI
         mime_type = Marcel::MimeType.for(Pathname.new(obj))
 
         if mime_type == "application/pdf"
+          pdf_data = File.binread(obj)
           {
             type: "input_file",
             filename: File.basename(obj),
-            file_data: process_image_input(obj)
+            file_data: "data:application/pdf;base64,#{Base64.strict_encode64(pdf_data)}"
           }
         else
           begin
