@@ -48,7 +48,7 @@ module AI
         all_images = []
         all_images << image if image
         all_images.concat(Array(images)) if images
-        
+
         # Add all images to the content array
         all_images.each do |img|
           text_and_files_array.push(
@@ -63,7 +63,7 @@ module AI
         all_files = []
         all_files << file if file
         all_files.concat(Array(files)) if files
-        
+
         # Add all files to the content array
         all_files.each do |f|
           text_and_files_array.push(process_file_input(f))
@@ -96,7 +96,7 @@ module AI
       chat_response = Response.new(response)
 
       text_response = extract_text_from_response(response)
-      
+
       message = if schema
         if text_response.nil? || text_response.empty?
           raise "No text content in response to parse as JSON"
@@ -320,11 +320,11 @@ module AI
     end
 
     def extract_text_from_response(response)
-      response.output.flat_map { |output| 
+      response.output.flat_map { |output|
         # Only try to access content if the output has that method
         output.respond_to?(:content) ? output.content : []
-      }.compact.find { |content| 
-        content.is_a?(OpenAI::Models::Responses::ResponseOutputText) 
+      }.compact.find { |content|
+        content.is_a?(OpenAI::Models::Responses::ResponseOutputText)
       }&.text
     end
 
