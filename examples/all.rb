@@ -39,6 +39,9 @@ require_relative "09_edge_cases"
 # Additional usage patterns
 require_relative "10_additional_patterns"
 
+# Mixed content types (images + files in single message)
+require_relative "11_mixed_content"
+
 puts "\n=== All AI::Chat examples completed ==="
 puts
 puts "Summary:"

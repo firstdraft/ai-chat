@@ -315,6 +315,49 @@ The gem supports three types of image inputs:
 - **File paths**: Pass a string with a path to a local image file
 - **File-like objects**: Pass an object that responds to `read` (like `File.open("image.jpg")` or Rails uploaded files)
 
+## Including Files
+
+You can include files (PDFs, text files, etc.) in your messages using the `file` or `files` parameter:
+
+```ruby
+k = AI::Chat.new
+
+# Send a single file
+k.user("Summarize this document", file: "report.pdf")
+k.generate!
+
+# Send multiple files
+k.user("Compare these documents", files: ["doc1.pdf", "doc2.txt", "data.json"])
+k.generate!
+```
+
+Files are handled intelligently based on their type:
+- **PDFs**: Sent as file attachments for the model to analyze
+- **Text files**: Content is automatically extracted and sent as text
+- **Other formats**: The gem attempts to read them as text if possible
+
+## Mixed Content (Images + Files)
+
+You can send images and files together in a single message:
+
+```ruby
+l = AI::Chat.new
+
+# Mix image and file in one message
+l.user("Compare this photo with the document", 
+       image: "photo.jpg", 
+       file: "document.pdf")
+l.generate!
+
+# Mix multiple images and files
+l.user("Analyze all these materials",
+       images: ["chart1.png", "chart2.png"],
+       files: ["report.pdf", "data.csv"])
+l.generate!
+```
+
+**Note**: Images should use `image:`/`images:` parameters, while documents should use `file:`/`files:` parameters.
+
 ## Web Search
 
 To give the model access to real-time information from the internet, you can enable the `web_search` feature. This uses OpenAI's built-in `web_search_preview` tool.

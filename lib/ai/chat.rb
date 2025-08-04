@@ -42,32 +42,29 @@ module AI
           }
         ]
 
-        if images && !images.empty?
-          images_array = images.map do |image|
-            {
-              type: "input_image",
-              image_url: process_image_input(image)
-            }
-          end
-
-          text_and_files_array += images_array
-        elsif image
+        # Combine singular and plural image parameters
+        all_images = []
+        all_images << image if image
+        all_images.concat(Array(images)) if images
+        
+        # Add all images to the content array
+        all_images.each do |img|
           text_and_files_array.push(
             {
               type: "input_image",
-              image_url: process_image_input(image)
+              image_url: process_image_input(img)
             }
           )
-        elsif files && !files.empty?
-          files_array = files.map do |file|
-            process_file_input(file)
-          end
+        end
 
-          text_and_files_array += files_array
-        elsif file
-          text_and_files_array.push(
-            process_file_input(file)
-          )
+        # Combine singular and plural file parameters
+        all_files = []
+        all_files << file if file
+        all_files.concat(Array(files)) if files
+        
+        # Add all files to the content array
+        all_files.each do |f|
+          text_and_files_array.push(process_file_input(f))
         end
 
         messages.push(
