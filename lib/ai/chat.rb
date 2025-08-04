@@ -164,15 +164,16 @@ module AI
 
     def create_response
       parameters = {
-        model: model,
-        tools: tools,
-        text: schema,
-        reasoning: {
-          effort: reasoning_effort
-        }.compact,
-        previous_response_id: previous_response_id
-      }.compact
+        model: model
+      }
 
+      # Only add optional parameters if they have meaningful values
+      parameters[:tools] = tools unless tools.empty?
+      parameters[:text] = schema if schema
+      parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
+      parameters[:previous_response_id] = previous_response_id if previous_response_id
+
+      # Handle message input based on previous_response_id
       if previous_response_id
         previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
 
@@ -183,10 +184,9 @@ module AI
           parameters[:input] = strip_responses(messages)
         end
       else
-        parameters[:input] = strip_responses(messages)
+        parameters[:input] = strip_responses(messages) unless messages.empty?
       end
 
-      parameters = parameters.delete_if { |k, v| v.respond_to?(:empty?) && v.empty? }
       client.responses.create(**parameters)
     end
 
