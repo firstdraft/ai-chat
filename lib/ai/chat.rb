@@ -6,12 +6,13 @@ require "marcel"
 require "openai"
 require "pathname"
 require "stringio"
+require "fileutils"
 
 require_relative "response"
 
 module AI
   class Chat
-    attr_accessor :messages, :model, :web_search, :previous_response_id
+    attr_accessor :messages, :model, :web_search, :previous_response_id, :image_generation, :image_folder
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -23,6 +24,8 @@ module AI
       @model = "gpt-4.1-nano"
       @client = OpenAI::Client.new(api_key: api_key)
       @previous_response_id = nil
+      @image_generation = false
+      @image_folder = "./images"
     end
 
     def add(content, role: "user", response: nil, image: nil, images: nil, file: nil, files: nil)
@@ -91,6 +94,9 @@ module AI
       chat_response = Response.new(response)
 
       text_response = extract_text_from_response(response)
+      image_filenames = extract_and_save_images(response)
+
+      chat_response.images = image_filenames
 
       message = if schema
         if text_response.nil? || text_response.empty?
@@ -101,7 +107,18 @@ module AI
         text_response
       end
 
-      assistant(message, response: chat_response)
+      if image_filenames.empty?
+        assistant(message, response: chat_response)
+      else
+        messages.push(
+          {
+            role: "assistant",
+            content: message,
+            images: image_filenames,
+            response: chat_response
+          }.compact
+        )
+      end
 
       self.previous_response_id = response.id
 
@@ -306,6 +323,9 @@ module AI
       if web_search
         tools_list << {type: "web_search_preview"}
       end
+      if image_generation
+        tools_list << {type: "image_generation"}
+      end
       tools_list
     end
 
@@ -336,6 +356,42 @@ module AI
           }
         }
       end
+    end
+
+    def extract_and_save_images(response)
+      image_filenames = []
+
+      image_outputs = response.output.select { |output|
+        output.respond_to?(:type) && output.type == :image_generation_call
+      }
+
+      return image_filenames if image_outputs.empty?
+
+      # ISO 8601 basic format with centisecond precision
+      timestamp = Time.now.strftime("%Y%m%dT%H%M%S%2N")
+
+      subfolder_name = "#{timestamp}_#{response.id}"
+      subfolder_path = File.join(image_folder || "./images", subfolder_name)
+      FileUtils.mkdir_p(subfolder_path)
+
+      image_outputs.each_with_index do |output, index|
+        next unless output.respond_to?(:result) && output.result
+
+        begin
+          image_data = Base64.strict_decode64(output.result)
+
+          filename = "#{(index + 1).to_s.rjust(3, "0")}.png"
+          filepath = File.join(subfolder_path, filename)
+
+          File.binwrite(filepath, image_data)
+
+          image_filenames << filepath
+        rescue => e
+          warn "Failed to save image: #{e.message}"
+        end
+      end
+
+      image_filenames
     end
   end
 end
