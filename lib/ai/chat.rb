@@ -10,7 +10,6 @@ require "stringio"
 require_relative "response"
 
 module AI
-  # Main namespace.
   class Chat
     attr_accessor :messages, :model, :web_search, :previous_response_id
     attr_reader :reasoning_effort, :client, :schema
@@ -18,11 +17,11 @@ module AI
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
-      @api_key = api_key || ENV.fetch(api_key_env_var)
+      api_key ||= ENV.fetch(api_key_env_var)
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-4.1-nano"
-      @client = OpenAI::Client.new(api_key: @api_key)
+      @client = OpenAI::Client.new(api_key: api_key)
       @previous_response_id = nil
     end
 
@@ -44,12 +43,10 @@ module AI
           }
         ]
 
-        # Combine singular and plural image parameters
         all_images = []
         all_images << image if image
         all_images.concat(Array(images)) if images
 
-        # Add all images to the content array
         all_images.each do |img|
           text_and_files_array.push(
             {
@@ -59,12 +56,10 @@ module AI
           )
         end
 
-        # Combine singular and plural file parameters
         all_files = []
         all_files << file if file
         all_files.concat(Array(files)) if files
 
-        # Add all files to the content array
         all_files.each do |f|
           text_and_files_array.push(process_file_input(f))
         end
@@ -185,7 +180,6 @@ module AI
       previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
 
       if previous_response_index
-        # Only send messages after the previous response
         messages[(previous_response_index + 1)..] || []
       else
         messages
@@ -231,7 +225,7 @@ module AI
           {
             type: "input_file",
             filename: File.basename(obj),
-            file_data: "data:application/pdf;base64,#{Base64.strict_encode64(pdf_data)}"
+            file_data: encode_as_data_uri(pdf_data, mime_type)
           }
         else
           begin
@@ -259,12 +253,11 @@ module AI
           {
             type: "input_file",
             filename: filename,
-            file_data: "data:application/pdf;base64,#{Base64.strict_encode64(content)}"
+            file_data: encode_as_data_uri(content, mime_type)
           }
         else
           begin
             text_content = content.force_encoding("UTF-8")
-            # Verify the content can be encoded as JSON
             JSON.generate({text: text_content})
             {
               type: "input_text",
@@ -283,27 +276,20 @@ module AI
       when :url
         obj
       when :file_path
-        file_path = obj
-
-        mime_type = Marcel::MimeType.for(Pathname.new(file_path))
-
-        image_data = File.binread(file_path)
-
-        base64_string = Base64.strict_encode64(image_data)
-
-        "data:#{mime_type};base64,#{base64_string}"
+        mime_type = Marcel::MimeType.for(Pathname.new(obj))
+        image_data = File.binread(obj)
+        encode_as_data_uri(image_data, mime_type)
       when :file_like
         filename = extract_filename(obj)
-
         file_data = obj.read
         obj.rewind if obj.respond_to?(:rewind)
-
         mime_type = Marcel::MimeType.for(StringIO.new(file_data), name: filename)
-
-        base64_string = Base64.strict_encode64(file_data)
-
-        "data:#{mime_type};base64,#{base64_string}"
+        encode_as_data_uri(file_data, mime_type)
       end
+    end
+
+    def encode_as_data_uri(data, mime_type)
+      "data:#{mime_type};base64,#{Base64.strict_encode64(data)}"
     end
 
     def strip_responses(messages)
@@ -325,7 +311,6 @@ module AI
 
     def extract_text_from_response(response)
       response.output.flat_map { |output|
-        # Only try to access content if the output has that method
         output.respond_to?(:content) ? output.content : []
       }.compact.find { |content|
         content.is_a?(OpenAI::Models::Responses::ResponseOutputText)
