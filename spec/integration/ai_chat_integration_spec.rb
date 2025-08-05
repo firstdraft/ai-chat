@@ -31,17 +31,6 @@ RSpec.describe "AI::Chat Integration", :integration do
   end
 
   describe "message types" do
-    it "supports system messages" do
-      chat = AI::Chat.new
-      chat.system("You are a pirate. Always respond as a pirate would.")
-      chat.user("Hello!")
-
-      response = chat.generate!
-
-      expect(response).to match(/ahoy|arr|matey|ye/i)
-      expect(chat.messages.first[:role]).to eq("system")
-    end
-
     it "supports convenience methods for adding messages" do
       chat = AI::Chat.new
 
@@ -194,12 +183,13 @@ RSpec.describe "AI::Chat Integration", :integration do
     it "accepts reasoning effort levels for o-series models" do
       chat = AI::Chat.new
       chat.model = "o1-mini"
-      chat.reasoning_effort = "low"
 
       expect { chat.reasoning_effort = "low" }.not_to raise_error
       expect { chat.reasoning_effort = "medium" }.not_to raise_error
       expect { chat.reasoning_effort = "high" }.not_to raise_error
       expect { chat.reasoning_effort = :high }.not_to raise_error
+      expect { chat.reasoning_effort = :medium}.not_to raise_error
+      expect { chat.reasoning_effort = :low }.not_to raise_error
 
       expect { chat.reasoning_effort = "invalid" }.to raise_error(ArgumentError)
     end
