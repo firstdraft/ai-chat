@@ -32,3 +32,9 @@ CLAUDE.md
 # Ruby version management
 .ruby-version
 .rvmrc
+
+# Generated images from examples and tests
+images/
+my_generated_images/
+examples/images/
+examples/my_generated_images/
