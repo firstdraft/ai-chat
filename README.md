@@ -338,7 +338,7 @@ i.schema = '{"type":"object","properties":{...}}'
 
 - The keys can be `String`s or `Symbol`s.
 - The gem automatically converts your schema to the format expected by the API.
-- When a schema is set, `generate!` returns a parsed Ruby Hash with symbolized keys, not a string.
+- When a schema is set, `generate!` returns a parsed Ruby Hash with symbolized keys, not a String.
 
 ## Including Images
 
