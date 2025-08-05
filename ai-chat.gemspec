@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "ai-chat"
-  spec.version = "0.1.1"
+  spec.version = "0.2.0"
   spec.authors = ["Raghu Betina"]
   spec.email = ["raghu@firstdraft.com"]
   spec.homepage = "https://github.com/firstdraft/ai-chat"
@@ -18,12 +18,11 @@ Gem::Specification.new do |spec|
     "source_code_uri" => "https://github.com/firstdraft/ai-chat"
   }
 
-
   spec.required_ruby_version = "~> 3.2"
-  spec.add_dependency "zeitwerk", "~> 2.7"
-  spec.add_dependency "openai", "~> 0.14"
-  spec.add_runtime_dependency "mime-types", "~> 3.0"
-  spec.add_runtime_dependency "base64", "~> 0.1"  # Works for all Ruby versions
+  spec.add_runtime_dependency "openai", "~> 0.16"
+  spec.add_runtime_dependency "marcel", "~> 1.0"
+  spec.add_runtime_dependency "base64", "> 0.1.1"
+  spec.add_runtime_dependency "json", "~> 2.0"
 
   spec.add_development_dependency "dotenv"
   spec.add_development_dependency "refinements", "~> 11.1"

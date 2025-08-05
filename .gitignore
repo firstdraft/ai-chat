@@ -21,3 +21,14 @@ openai-ruby/
 
 # OS files
 .DS_Store
+
+# Project-specific files
+CLAUDE.md
+
+# Environment variables
+.env
+.env.*
+
+# Ruby version management
+.ruby-version
+.rvmrc

@@ -2,6 +2,44 @@
 
 This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's cutting-edge generative AI models.
 
+## Examples
+
+This gem includes comprehensive example scripts that showcase all features and serve as both documentation and validation tests. To explore the capabilities:
+
+### Quick Start
+
+```bash
+# Run a quick overview of key features (takes ~1 minute)
+bundle exec ruby examples/01_quick.rb
+```
+
+### Run All Examples
+
+```bash
+# Run the complete test suite demonstrating all features
+bundle exec ruby examples/all.rb
+```
+
+### Individual Feature Examples
+
+The `examples/` directory contains focused examples for specific features:
+
+- `01_quick.rb` - Quick overview of key features
+- `02_core.rb` - Core functionality (basic chat, messages, responses)
+- `03_configuration.rb` - Configuration options (API keys, models, reasoning effort)
+- `04_multimodal.rb` - Basic file and image handling
+- `05_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
+- `06_structured_output.rb` - Basic structured output with schemas
+- `07_structured_output_comprehensive.rb` - All 6 supported schema formats
+- `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
+- `09_edge_cases.rb` - Error handling and edge cases
+- `10_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
+
+Each example is self-contained and can be run individually:
+```bash
+bundle exec ruby examples/[filename]
+```
+
 ## Installation
 
 ### Gemfile way (preferred)
@@ -224,10 +262,34 @@ response = i.generate!
 response[:total_calories]  # => 285
 ```
 
-You can also provide the equivalent Ruby `Hash` rather than a `String` containing JSON.
+### Schema Formats
 
+The gem supports multiple schema formats to accommodate different preferences and use cases. The gem will automatically wrap your schema in the correct format for the API.
+
+#### 1. Full Schema with `format` Key (Most Explicit)
 ```ruby
-# Equivalent to assigning the String above
+# When you need complete control over the schema structure
+i.schema = {
+  format: {
+    type: :json_schema,
+    name: "nutrition_values",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        fat: { type: "number", description: "The amount of fat in grams." },
+        protein: { type: "number", description: "The amount of protein in grams." }
+      },
+      required: ["fat", "protein"],
+      additionalProperties: false
+    }
+  }
+}
+```
+
+#### 2. Schema with `name`, `strict`, and `schema` Keys
+```ruby
+# The format shown in OpenAI's documentation
 i.schema = {
   name: "nutrition_values",
   strict: true,
@@ -235,18 +297,48 @@ i.schema = {
     type: "object",
     properties: {
       fat: { type: "number", description: "The amount of fat in grams." },
-      protein: { type: "number", description: "The amount of protein in grams." },
-      carbs: { type: "number", description: "The amount of carbohydrates in grams." },
-      total_calories: { type: "number", description:
-        "The total calories calculated based on fat, protein, and carbohydrates." }
+      protein: { type: "number", description: "The amount of protein in grams." }
     },
-    required: [:fat, :protein, :carbs, :total_calories],
+    required: [:fat, :protein],
     additionalProperties: false
   }
 }
 ```
 
-The keys can be `String`s or `Symbol`s.
+#### 3. Simple JSON Schema Object
+```ruby
+# The simplest format - just provide the schema itself
+# The gem will wrap it with sensible defaults (name: "response", strict: true)
+i.schema = {
+  type: "object",
+  properties: {
+    fat: { type: "number", description: "The amount of fat in grams." },
+    protein: { type: "number", description: "The amount of protein in grams." }
+  },
+  required: ["fat", "protein"],
+  additionalProperties: false
+}
+```
+
+#### 4. JSON String Formats
+All the above formats also work as JSON strings:
+
+```ruby
+# As a JSON string with full format
+i.schema = '{"format":{"type":"json_schema","name":"nutrition_values","strict":true,"schema":{...}}}'
+
+# As a JSON string with name/strict/schema
+i.schema = '{"name":"nutrition_values","strict":true,"schema":{...}}'
+
+# As a simple JSON schema string
+i.schema = '{"type":"object","properties":{...}}'
+```
+
+### Schema Notes
+
+- The keys can be `String`s or `Symbol`s.
+- The gem automatically converts your schema to the format expected by the API.
+- When a schema is set, `generate!` returns a parsed Ruby Hash with symbolized keys, not a String.
 
 ## Including Images
 
@@ -276,6 +368,49 @@ The gem supports three types of image inputs:
 - **URLs**: Pass an image URL starting with `http://` or `https://`
 - **File paths**: Pass a string with a path to a local image file
 - **File-like objects**: Pass an object that responds to `read` (like `File.open("image.jpg")` or Rails uploaded files)
+
+## Including Files
+
+You can include files (PDFs, text files, etc.) in your messages using the `file` or `files` parameter:
+
+```ruby
+k = AI::Chat.new
+
+# Send a single file
+k.user("Summarize this document", file: "report.pdf")
+k.generate!
+
+# Send multiple files
+k.user("Compare these documents", files: ["doc1.pdf", "doc2.txt", "data.json"])
+k.generate!
+```
+
+Files are handled intelligently based on their type:
+- **PDFs**: Sent as file attachments for the model to analyze
+- **Text files**: Content is automatically extracted and sent as text
+- **Other formats**: The gem attempts to read them as text if possible
+
+## Mixed Content (Images + Files)
+
+You can send images and files together in a single message:
+
+```ruby
+l = AI::Chat.new
+
+# Mix image and file in one message
+l.user("Compare this photo with the document", 
+       image: "photo.jpg", 
+       file: "document.pdf")
+l.generate!
+
+# Mix multiple images and files
+l.user("Analyze all these materials",
+       images: ["chart1.png", "chart2.png"],
+       files: ["report.pdf", "data.csv"])
+l.generate!
+```
+
+**Note**: Images should use `image:`/`images:` parameters, while documents should use `file:`/`files:` parameters.
 
 ## Web Search
 
@@ -356,15 +491,10 @@ pp t.messages.last
 #    }
 
 # Access detailed information
-response = t.last_response
+response = t.last[:response]
 response.id           # => "resp_abc123..."
 response.model        # => "gpt-4.1-nano"
 response.usage        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
-
-# Helper methods
-t.last_response_id    # => "resp_abc123..."
-t.last_usage          # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
-t.total_tokens        # => 12
 ```
 
 This information is useful for:
@@ -373,20 +503,20 @@ This information is useful for:
 - Understanding which model was actually used.
 - Future features like cost tracking.
 
-You can also, if you know a response ID, pick up an old conversation at that point in time:
+You can also, if you know a response ID, continue an old conversation by setting the `previous_response_id`:
 
 ```ruby
 t = AI::Chat.new
 t.user("Hello!")
 t.generate!
-old_id = t.last_response_id # => "resp_abc123..."
+old_id = t.last[:response].id # => "resp_abc123..."
 
 # Some time in the future...
 
 u = AI::Chat.new
-u.pick_up_from("resp_abc123...")
-u.messages # => [
-#      {:role=>"assistant", :response => #<AI::Chat::Response id=resp_abc...}
+u.previous_response_id = "resp_abc123..."
+u.user("What did I just say?")
+u.generate! # Will have context from the previous conversation}
 #    ]
 u.user("What should we do next?")
 u.generate!
@@ -511,13 +641,12 @@ last_message.openai_response.usage # => {:prompt_tokens=>10, ...}
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:
 
-1. Navigate to the test program directory: `cd demo`
-2. Create a `.env` file in the test_program directory with your API credentials:
+1. Create a `.env` file at the project root with your API credentials:
     ```
     # Your OpenAI API key
     OPENAI_API_KEY=your_openai_api_key_here
     ```
-3. Install dependencies: `bundle install`
-4. Run the test program: `ruby demo.rb`
+2. Install dependencies: `bundle install`
+3. Run the examples: `bundle exec ruby examples/all.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.

@@ -1,4 +1,5 @@
 module AI
+  # :reek:IrresponsibleModule
   class Response
     attr_reader :id, :model, :usage, :total_tokens
 
