@@ -10,7 +10,13 @@ require "stringio"
 require_relative "response"
 
 module AI
+  # :reek:MissingSafeMethod { exclude: [ generate! ] }
+  # :reek:TooManyMethods
+  # :reek:TooManyInstanceVariables
+  # :reek:InstanceVariableAssumption
+  # :reek:IrresponsibleModule
   class Chat
+    # :reek:Attribute
     attr_accessor :messages, :model, :web_search, :previous_response_id
     attr_reader :reasoning_effort, :client, :schema
 
@@ -25,6 +31,8 @@ module AI
       @previous_response_id = nil
     end
 
+    # :reek:TooManyStatements
+    # :reek:NilCheck
     def add(content, role: "user", response: nil, image: nil, images: nil, file: nil, files: nil)
       if image.nil? && images.nil? && file.nil? && files.nil?
         messages.push(
@@ -60,8 +68,8 @@ module AI
         all_files << file if file
         all_files.concat(Array(files)) if files
 
-        all_files.each do |f|
-          text_and_files_array.push(process_file_input(f))
+        all_files.each do |file|
+          text_and_files_array.push(process_file_input(file))
         end
 
         messages.push(
@@ -85,6 +93,8 @@ module AI
       add(message, role: "assistant", response: response)
     end
 
+    # :reek:NilCheck
+    # :reek:TooManyStatements
     def generate!
       response = create_response
 
@@ -108,6 +118,8 @@ module AI
       message
     end
 
+    # :reek:NilCheck
+    # :reek:TooManyStatements
     def reasoning_effort=(value)
       if value.nil?
         @reasoning_effort = nil
@@ -119,7 +131,7 @@ module AI
       if VALID_REASONING_EFFORTS.include?(normalized_value)
         @reasoning_effort = normalized_value
       else
-        valid_values = VALID_REASONING_EFFORTS.map { |v| ":#{v} or \"#{v}\"" }.join(", ")
+        valid_values = VALID_REASONING_EFFORTS.map { |valid_value| ":#{valid_value} or \"#{valid_value}\"" }.join(", ")
         raise ArgumentError, "Invalid reasoning_effort value: '#{value}'. Must be one of: #{valid_values}"
       end
     end
@@ -147,6 +159,8 @@ module AI
 
     class InputClassificationError < StandardError; end
 
+    # :reek:FeatureEnvy
+    # :reek:ManualDispatch
     def extract_filename(obj)
       if obj.respond_to?(:original_filename)
         obj.original_filename
@@ -158,6 +172,7 @@ module AI
       end
     end
 
+    # :reek:TooManyStatements
     def create_response
       parameters = {
         model: model
@@ -177,7 +192,7 @@ module AI
     def prepare_messages_for_api
       return messages unless previous_response_id
 
-      previous_response_index = messages.find_index { |m| m[:response]&.id == previous_response_id }
+      previous_response_index = messages.find_index { |message| message[:response]&.id == previous_response_id }
 
       if previous_response_index
         messages[(previous_response_index + 1)..] || []
@@ -186,6 +201,10 @@ module AI
       end
     end
 
+    # :reek:DuplicateMethodCall
+    # :reek:FeatureEnvy
+    # :reek:ManualDispatch
+    # :reek:TooManyStatements
     def classify_obj(obj)
       if obj.is_a?(String)
         begin
@@ -210,6 +229,9 @@ module AI
       end
     end
 
+    # :reek:DuplicateMethodCall
+    # :reek:ManualDispatch
+    # :reek:TooManyStatements
     def process_file_input(obj)
       case classify_obj(obj)
       when :url
@@ -271,6 +293,8 @@ module AI
       end
     end
 
+    # :reek:ManualDispatch
+    # :reek:TooManyStatements
     def process_image_input(obj)
       case classify_obj(obj)
       when :url
@@ -288,10 +312,13 @@ module AI
       end
     end
 
+    # :reek:UtilityFunction
     def encode_as_data_uri(data, mime_type)
       "data:#{mime_type};base64,#{Base64.strict_encode64(data)}"
     end
 
+    # :reek:DuplicateMethodCall
+    # :reek:UtilityFunction
     def strip_responses(messages)
       messages.map do |message|
         stripped = message.dup
@@ -309,6 +336,8 @@ module AI
       tools_list
     end
 
+    # :reek:UtilityFunction
+    # :reek:ManualDispatch
     def extract_text_from_response(response)
       response.output.flat_map { |output|
         output.respond_to?(:content) ? output.content : []
@@ -317,6 +346,7 @@ module AI
       }&.text
     end
 
+    # :reek:UtilityFunction
     def wrap_schema_if_needed(schema)
       if schema.key?(:format) || schema.key?("format")
         schema
