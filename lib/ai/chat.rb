@@ -116,7 +116,6 @@ module AI
         JSON.parse(text_response, symbolize_names: true)
       else
         text_response
-
       end
 
       if image_filenames.empty?
@@ -151,7 +150,6 @@ module AI
         @reasoning_effort = normalized_value
       else
         valid_values = VALID_REASONING_EFFORTS.map { |valid_value| ":#{valid_value} or \"#{valid_value}\"" }.join(", ")
-
         raise ArgumentError, "Invalid reasoning_effort value: '#{value}'. Must be one of: #{valid_values}"
       end
     end
@@ -367,6 +365,7 @@ module AI
       }&.text
     end
 
+    # :reek:FeatureEnvy
     def wrap_schema_if_needed(schema)
       if schema.key?(:format) || schema.key?("format")
         schema
@@ -389,6 +388,10 @@ module AI
       tools_list
     end
 
+    # :reek:DuplicateMethodCall
+    # :reek:FeatureEnvy
+    # :reek:ManualDispatch
+    # :reek:TooManyStatements
     def extract_and_save_images(response)
       image_filenames = []
 
@@ -417,12 +420,13 @@ module AI
           File.binwrite(filepath, image_data)
 
           image_filenames << filepath
-        rescue => e
-          warn "Failed to save image: #{e.message}"
+        rescue => error
+          warn "Failed to save image: #{error.message}"
         end
       end
 
       image_filenames
+    end
 
     # :reek:UtilityFunction
     # :reek:ManualDispatch

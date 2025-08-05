@@ -1,7 +1,9 @@
 module AI
   # :reek:IrresponsibleModule
+  # :reek:TooManyInstanceVariables
   class Response
     attr_reader :id, :model, :usage, :total_tokens
+    # :reek:Attribute
     attr_accessor :images
 
     def initialize(response)
