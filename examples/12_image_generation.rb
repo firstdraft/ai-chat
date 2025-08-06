@@ -39,15 +39,19 @@ b.generate!
 puts "Second image: #{b.messages.last[:images]}"
 puts
 
-puts "Example 3: Ghiblify - Transform an image to Studio Ghibli style"
+puts "Example 3: Multiturn image editing"
 puts "-" * 50
 c = AI::Chat.new
 c.image_generation = true
 image_path = File.expand_path("../spec/fixtures/thing.jpg", __dir__)
-puts "User: #{c.user("Transform this image into Studio Ghibli animation style", image: image_path)}"
+puts "User: #{c.user("Transform this image to look like watercolor", image: image_path)}"
 c.generate!
 puts "Assistant: #{c.messages.last[:content]}"
-puts "Ghiblified image: #{c.messages.last[:images]}"
+puts "Watercolor image: #{c.messages.last[:images]}"
+puts "User: #{c.user("Now make it black & white")}"
+c.generate!
+puts "Assistant: #{c.messages.last[:content]}"
+puts "Black and white image: #{c.messages.last[:images]}"
 puts
 
 puts "=== Image Generation Examples Complete ==="
