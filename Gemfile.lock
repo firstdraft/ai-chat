@@ -1,11 +1,13 @@
 PATH
   remote: .
   specs:
-    ai-chat (0.2.0)
+    ai-chat (0.2.1)
       base64 (> 0.1.1)
       json (~> 2.0)
       marcel (~> 1.0)
       openai (~> 0.16)
+    openai (0.16.0)
+      connection_pool
 
 GEM
   remote: https://rubygems.org/
@@ -63,8 +65,6 @@ GEM
     lint_roller (1.1.0)
     logger (1.7.0)
     marcel (1.0.4)
-    openai (0.16.0)
-      connection_pool
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -91,7 +91,7 @@ GEM
       rainbow (>= 2.0, < 4.0)
       rexml (~> 3.1)
     refinements (11.1.1)
-    regexp_parser (2.10.0)
+    regexp_parser (2.11.0)
     reline (0.6.2)
       io-console (~> 0.5)
     repl_type_completor (0.1.11)
@@ -155,8 +155,7 @@ GEM
     zeitwerk (2.7.3)
 
 PLATFORMS
-  arm64-darwin-23
-  ruby
+  arm64-darwin-24
 
 DEPENDENCIES
   ai-chat!
