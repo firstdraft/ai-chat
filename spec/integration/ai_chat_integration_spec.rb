@@ -188,7 +188,7 @@ RSpec.describe "AI::Chat Integration", :integration do
       expect { chat.reasoning_effort = "medium" }.not_to raise_error
       expect { chat.reasoning_effort = "high" }.not_to raise_error
       expect { chat.reasoning_effort = :high }.not_to raise_error
-      expect { chat.reasoning_effort = :medium}.not_to raise_error
+      expect { chat.reasoning_effort = :medium }.not_to raise_error
       expect { chat.reasoning_effort = :low }.not_to raise_error
 
       expect { chat.reasoning_effort = "invalid" }.to raise_error(ArgumentError)

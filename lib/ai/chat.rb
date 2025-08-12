@@ -385,7 +385,6 @@ module AI
           }
         }
       end
-      tools_list
     end
 
     # :reek:DuplicateMethodCall
@@ -426,38 +425,6 @@ module AI
       end
 
       image_filenames
-    end
-
-    # :reek:UtilityFunction
-    # :reek:ManualDispatch
-    def extract_text_from_response(response)
-      response.output.flat_map { |output|
-        output.respond_to?(:content) ? output.content : []
-      }.compact.find { |content|
-        content.is_a?(OpenAI::Models::Responses::ResponseOutputText)
-      }&.text
-    end
-
-    # :reek:UtilityFunction
-    def wrap_schema_if_needed(schema)
-      if schema.key?(:format) || schema.key?("format")
-        schema
-      elsif (schema.key?(:name) || schema.key?("name")) &&
-          (schema.key?(:schema) || schema.key?("schema")) &&
-          (schema.key?(:strict) || schema.key?("strict"))
-        {
-          format: schema.merge(type: :json_schema)
-        }
-      else
-        {
-          format: {
-            type: :json_schema,
-            name: "response",
-            schema: schema,
-            strict: true
-          }
-        }
-      end
     end
   end
 end
