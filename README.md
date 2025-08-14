@@ -582,9 +582,9 @@ pp t.messages.last
 
 # Access detailed information
 response = t.last[:response]
-response.id           # => "resp_abc123..."
-response.model        # => "gpt-4.1-nano"
-response.usage        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
+response[:id]           # => "resp_abc123..."
+response[:model]        # => "gpt-4.1-nano"
+response[:usage]        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
 ```
 
 This information is useful for:

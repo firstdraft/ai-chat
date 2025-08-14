@@ -102,13 +102,11 @@ module AI
       text_response = extract_text_from_response(response)
 
       image_filenames = extract_and_save_images(response)
-      response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
 
       chat_response = {
         id: response.id,
         model: response.model,
-        usage: response_usage,
-        total_tokens: response_usage[:total_tokens],
+        usage: response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens),
         images: image_filenames
       }
 
