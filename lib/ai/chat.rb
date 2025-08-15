@@ -8,8 +8,6 @@ require "pathname"
 require "stringio"
 require "fileutils"
 
-require_relative "response"
-
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
   # :reek:TooManyMethods
@@ -101,13 +99,18 @@ module AI
     def generate!
       response = create_response
 
-      chat_response = Response.new(response)
-
       text_response = extract_text_from_response(response)
 
       image_filenames = extract_and_save_images(response)
+      response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
 
-      chat_response.images = image_filenames
+      chat_response = {
+        id: response.id,
+        model: response.model,
+        usage: response_usage,
+        total_tokens: response_usage[:total_tokens],
+        images: image_filenames
+      }
 
       message = if schema
         if text_response.nil? || text_response.empty?
@@ -131,7 +134,7 @@ module AI
         )
       end
 
-      self.previous_response_id = response.id
+      self.previous_response_id = chat_response[:id]
 
       message
     end
@@ -357,6 +360,8 @@ module AI
       tools_list
     end
 
+    # :reek:UtilityFunction
+    # :reek:ManualDispatch
     def extract_text_from_response(response)
       response.output.flat_map { |output|
         output.respond_to?(:content) ? output.content : []
@@ -366,6 +371,7 @@ module AI
     end
 
     # :reek:FeatureEnvy
+    # :reek:UtilityFunction
     def wrap_schema_if_needed(schema)
       if schema.key?(:format) || schema.key?("format")
         schema

@@ -16,7 +16,7 @@ chat1.user("What is 2 + 2?")
 response = chat1.generate!
 puts "✓ Response: #{response}"
 puts "✓ Response is a String: #{response.is_a?(String)}"
-puts "✓ Response object exists: #{chat1.last[:response].is_a?(AI::Response)}"
+puts "✓ Response Hash exists: #{chat1.last[:response].is_a?(Hash)}"
 puts
 
 # Test 2: previous_response_id functionality
@@ -26,8 +26,8 @@ chat2 = AI::Chat.new
 chat2.user("My name is Alice and I live in Boston.")
 chat2.generate!
 response_id = chat2.previous_response_id
-puts "✓ Response ID: #{chat2.last[:response].id}"
-puts "✓ Automatically set previous_response_id: #{response_id == chat2.last[:response].id}"
+puts "✓ Response ID: #{chat2.last[:response][:id]}"
+puts "✓ Automatically set previous_response_id: #{response_id == chat2.last[:response][:id]}"
 
 # Create new chat with previous_response_id
 chat3 = AI::Chat.new
@@ -59,10 +59,10 @@ chat5 = AI::Chat.new
 chat5.user("Say hello")
 chat5.generate!
 response_obj = chat5.last[:response]
-puts "✓ Response ID: #{response_obj.id}"
-puts "✓ Model: #{response_obj.model}"
-puts "✓ Usage: #{response_obj.usage}"
-puts "✓ Total tokens: #{response_obj.total_tokens}"
+puts "✓ Response ID: #{response_obj[:id]}"
+puts "✓ Model: #{response_obj[:model]}"
+puts "✓ Usage: #{response_obj[:usage]}"
+puts "✓ Total tokens: #{response_obj[:total_tokens]}"
 puts
 
 puts "=== Core tests completed successfully! ==="
