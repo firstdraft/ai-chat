@@ -599,7 +599,7 @@ You can also, if you know a response ID, continue an old conversation by setting
 t = AI::Chat.new
 t.user("Hello!")
 t.generate!
-old_id = t.last[:response].id # => "resp_abc123..."
+old_id = t.last[:response][:id] # => "resp_abc123..."
 
 # Some time in the future...
 

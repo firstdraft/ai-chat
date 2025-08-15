@@ -22,8 +22,8 @@ puts "Images saved to: #{a.messages.last[:images]}"
 
 # Access images through the response object
 response_obj = a.messages.last[:response]
-puts "Response ID: #{response_obj.id}"
-puts "Images via response object: #{response_obj.images}"
+puts "Response ID: #{response_obj[:id]}"
+puts "Images via response object: #{response_obj[:images]}"
 puts
 
 puts "Example 2: Model remembers previously generated images"

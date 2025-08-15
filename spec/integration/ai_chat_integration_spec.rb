@@ -254,7 +254,7 @@ RSpec.describe "AI::Chat Integration", :integration do
       response_obj = chat.last[:response]
 
       expect(response_obj).to be_a(Hash)
-      expect(response_obj.id).to match(/^resp_/)
+      expect(response_obj[:id]).to match(/^resp_/)
       expect(response_obj[:model]).to be_a(String)
       expect(response_obj[:usage]).to be_a(Hash)
       expect(response_obj[:usage][:total_tokens]).to be_a(Integer)
