@@ -19,6 +19,7 @@ jobs:
       - name: Ruby Setup
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: "3.2.1"
           bundler-cache: true
 
       - name: Build

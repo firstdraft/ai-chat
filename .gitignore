@@ -24,3 +24,20 @@ demo2/
 
 # OS files
 .DS_Store
+
+# Project-specific files
+CLAUDE.md
+
+# Environment variables
+.env
+.env.*
+
+# Ruby version management
+.ruby-version
+.rvmrc
+
+# Generated images from examples and tests
+images/
+my_generated_images/
+examples/images/
+examples/my_generated_images/

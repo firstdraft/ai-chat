@@ -9,7 +9,7 @@ module AmazingPrint
 
     def cast_with_ai(object, type)
       case object
-      when ::AI::Chat, ::AI::Response
+      when ::AI::Chat
         :ai_object
       else
         cast_without_ai(object, type)
@@ -22,8 +22,6 @@ module AmazingPrint
       case object
       when ::AI::Chat
         format_ai_chat(object)
-      when ::AI::Response
-        format_ai_response(object)
       else
         awesome_object(object)
       end
@@ -53,14 +51,6 @@ module AmazingPrint
       end
 
       format_object(chat, vars)
-    end
-
-    def format_ai_response(response)
-      vars = response.instance_variables.sort.map do |var|
-        [var.to_s, response.instance_variable_get(var)]
-      end
-      
-      format_object(response, vars)
     end
 
     def format_object(object, vars)

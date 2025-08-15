@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "simplecov"
+require "dotenv/load"
 
 unless ENV["NO_COVERAGE"]
   SimpleCov.start do
@@ -13,14 +14,11 @@ end
 
 Bundler.require :tools
 
-require "ai/chat"
-require "refinements"
+require "ai-chat"
 
 SPEC_ROOT = Pathname(__dir__).realpath.freeze
 
-using Refinements::Pathname
-
-Pathname.require_tree SPEC_ROOT.join("support/shared_contexts")
+Dir[SPEC_ROOT.join("support/shared_contexts/**/*.rb")].each { |f| require f }
 
 RSpec.configure do |config|
   config.color = true
