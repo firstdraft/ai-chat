@@ -176,6 +176,38 @@ module AI
       "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
     end
 
+    # Support for Ruby's pp (pretty print)
+    def pretty_print(q)
+      q.group(1, "#<#{self.class}", '>') do
+        q.breakable
+        
+        # Show messages with truncation
+        q.text "@messages="
+        truncated_messages = @messages.map do |msg|
+          truncated_msg = msg.dup
+          if msg[:content].is_a?(String) && msg[:content].length > 80
+            truncated_msg[:content] = msg[:content][0..77] + "..."
+          end
+          truncated_msg
+        end
+        q.pp truncated_messages
+        
+        # Show other instance variables (except sensitive ones)
+        skip_vars = [:@messages, :@api_key, :@client]
+        instance_variables.sort.each do |var|
+          next if skip_vars.include?(var)
+          value = instance_variable_get(var)
+          unless value.nil?
+            q.text ","
+            q.breakable
+            q.text "#{var}="
+            q.pp value
+          end
+        end
+      end
+    end
+
+
     private
 
     class InputClassificationError < StandardError; end
@@ -213,7 +245,7 @@ module AI
     def prepare_messages_for_api
       return messages unless previous_response_id
 
-      previous_response_index = messages.find_index { |message| message[:response]&.id == previous_response_id }
+      previous_response_index = messages.find_index { |message| message.dig(:response, :id) == previous_response_id }
 
       if previous_response_index
         messages[(previous_response_index + 1)..] || []

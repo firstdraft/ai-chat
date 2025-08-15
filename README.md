@@ -88,7 +88,7 @@ a.generate! # => "Matz is nice and so we are nice" (or similar)
 pp a.messages
 # => [
 #      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"},
-#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => #<AI::Chat::Response id=resp_abc... model=gpt-4.1-nano tokens=12>}
+#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 } }
 #    ]
 
 # Continue the conversation
@@ -108,7 +108,7 @@ That's it! You're building something like this:
 [
   {:role => "system", :content => "You are a helpful assistant"},
   {:role => "user", :content => "Hello!"},
-  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => #<AI::Chat::Response id=resp_abc... model=gpt-4.1-nano tokens=12>}
+  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 } }
 ]
 ```
 
@@ -577,7 +577,7 @@ pp t.messages.last
 # => {
 #      :role => "assistant",
 #      :content => "Hello! How can I help you today?",
-#      :response => #<AI::Response id=resp_abc... model=gpt-4.1-nano tokens=12>
+#      :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 }
 #    }
 
 # Access detailed information
