@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ai-chat (0.2.2)
+    ai-chat (0.2.3)
       base64 (> 0.1.1)
       json (~> 2.0)
       marcel (~> 1.0)
