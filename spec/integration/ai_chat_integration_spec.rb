@@ -14,7 +14,7 @@ RSpec.describe "AI::Chat Integration", :integration do
       expect(response).to match(/4|four/i)
       expect(chat.messages.count).to eq(2)
       expect(chat.messages.last[:role]).to eq("assistant")
-      expect(chat.messages.last[:response]).to be_a(AI::Response)
+      expect(chat.messages.last[:response]).to be_a(Hash)
     end
 
     it "maintains conversation context across multiple turns" do
@@ -253,12 +253,12 @@ RSpec.describe "AI::Chat Integration", :integration do
 
       response_obj = chat.last[:response]
 
-      expect(response_obj).to be_a(AI::Response)
-      expect(response_obj.id).to match(/^resp_/)
-      expect(response_obj.model).to be_a(String)
-      expect(response_obj.usage).to be_a(Hash)
-      expect(response_obj.usage[:total_tokens]).to be_a(Integer)
-      expect(response_obj.total_tokens).to eq(response_obj.usage[:total_tokens])
+      expect(response_obj).to be_a(Hash)
+      expect(response_obj[:id]).to match(/^resp_/)
+      expect(response_obj[:model]).to be_a(String)
+      expect(response_obj[:usage]).to be_a(Hash)
+      expect(response_obj[:usage][:total_tokens]).to be_a(Integer)
+      expect(response_obj[:total_tokens]).to eq(response_obj[:usage][:total_tokens])
     end
   end
 

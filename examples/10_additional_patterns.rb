@@ -79,7 +79,7 @@ begin
   puts "✓ First chat with web search: #{response[0..100]}..."
 
   # Chain to second chat
-  response_id = chat4a.last[:response].id
+  response_id = chat4a.last.dig(:response, :id)
   chat4b = AI::Chat.new
   chat4b.model = "gpt-4o"
   chat4b.previous_response_id = response_id
