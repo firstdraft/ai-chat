@@ -455,7 +455,7 @@ module AI
       image_outputs.each_with_index do |output, index|
         next unless output.respond_to?(:result) && output.result
 
-        begin
+        warn_if_file_fails_to_save do
           image_data = Base64.strict_decode64(output.result)
 
           filename = "#{(index + 1).to_s.rjust(3, "0")}.png"
@@ -464,8 +464,6 @@ module AI
           File.binwrite(file_path, image_data)
 
           image_filenames << file_path
-        rescue => error
-          warn "Failed to save image: #{error.message}"
         end
       end
 
@@ -480,6 +478,14 @@ module AI
       subfolder_path = File.join(image_folder || "./images", subfolder_name)
       FileUtils.mkdir_p(subfolder_path)
       subfolder_path
+    end
+
+    def warn_if_file_fails_to_save
+      begin
+        yield
+      rescue => error
+        warn "Failed to save image: #{error.message}"
+      end
     end
 
     # :reek:FeatureEnvy
@@ -512,13 +518,16 @@ module AI
         container_id = annotation.container_id
         file_id = annotation.file_id
         filename = annotation.filename
-        file_content = client.containers.files.content.retrieve(file_id, container_id: container_id)
 
-        filepath = File.join(subfolder_path, filename)
-        File.open(filepath, "w") do |file|
-          file.write(file_content.read)
+        warn_if_file_fails_to_save do
+          container_content = client.containers.files.content
+          file_content = container_content.retrieve(file_id, container_id: container_id)
+          file_path = File.join(subfolder_path, filename)
+          File.open(file_path, "wb") do |file|
+            file.write(file_content.read)
+          end
+          filenames << file_path
         end
-        filenames << filename
       end
 
       filenames
