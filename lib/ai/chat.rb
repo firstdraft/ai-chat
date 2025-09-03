@@ -445,7 +445,7 @@ module AI
 
       return image_filenames if image_outputs.empty?
 
-      subfolder_path = create_images_folder
+      subfolder_path = create_images_folder(response.id)
 
       image_outputs.each_with_index do |output, index|
         next unless output.respond_to?(:result) && output.result
@@ -454,11 +454,11 @@ module AI
           image_data = Base64.strict_decode64(output.result)
 
           filename = "#{(index + 1).to_s.rjust(3, "0")}.png"
-          filepath = File.join(subfolder_path, filename)
+          file_path = File.join(subfolder_path, filename)
 
-          File.binwrite(filepath, image_data)
+          File.binwrite(file_path, image_data)
 
-          image_filenames << filepath
+          image_filenames << file_path
         rescue => error
           warn "Failed to save image: #{error.message}"
         end
@@ -467,11 +467,11 @@ module AI
       image_filenames
     end
 
-    def create_images_folder
+    def create_images_folder(response_id)
       # ISO 8601 basic format with centisecond precision
       timestamp = Time.now.strftime("%Y%m%dT%H%M%S%2N")
 
-      subfolder_name = "#{timestamp}_#{response.id}"
+      subfolder_name = "#{timestamp}_#{response_id}"
       subfolder_path = File.join(image_folder || "./images", subfolder_name)
       FileUtils.mkdir_p(subfolder_path)
       subfolder_path
@@ -496,7 +496,7 @@ module AI
 
       return filenames if outputs_with_annotations.empty?
 
-      subfolder_path = create_images_folder
+      subfolder_path = create_images_folder(response.id)
       annotations = outputs_with_annotations.map do |output|
         output.annotations.find do |annotation|
           annotation.respond_to?(:filename)
