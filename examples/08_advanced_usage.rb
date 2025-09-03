@@ -14,16 +14,16 @@ puts "-" * 30
 chat1 = AI::Chat.new
 chat1.system("You are a math tutor. Keep responses concise.")
 chat1.user("What is 10 + 15?")
-response1 = chat1.generate!
-puts "✓ First response: #{response1}"
+message1 = chat1.generate![:content]
+puts "✓ First message: #{message1}"
 
 chat1.user("Multiply that result by 2")
-response2 = chat1.generate!
-puts "✓ Second response: #{response2}"
+message2 = chat1.generate![:content]
+puts "✓ Second message: #{message2}"
 
 chat1.user("What was the original sum I asked about?")
-response3 = chat1.generate!
-puts "✓ Memory test: #{response3}"
+message3 = chat1.generate![:content]
+puts "✓ Memory test: #{message3}"
 puts
 
 # Test 2: Web search capability
@@ -35,8 +35,8 @@ chat2.web_search = true
 puts "Web search enabled: #{chat2.web_search}"
 chat2.user("What's the current weather in San Francisco?")
 begin
-  response = chat2.generate!
-  puts "✓ Response with web search: #{response}"
+  message = chat2.generate![:content]
+  puts "✓ Message with web search: #{message}"
 rescue => e
   puts "✗ Web search error: #{e.message}"
 end
@@ -91,8 +91,8 @@ chat5.user(<<~CODE)
     fibonacci(n - 1) + fibonacci(n - 2)
   end
 CODE
-response = chat5.generate!
-puts "✓ Code review response: #{response[0..150]}..."
+message = chat5.generate![:content]
+puts "✓ Code review message: #{message[0..150]}..."
 puts
 
 puts "=== Advanced Usage tests completed ===="

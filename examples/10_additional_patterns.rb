@@ -40,8 +40,8 @@ begin
     additionalProperties: false
   }
   chat2.user("What is the current population of Tokyo in 2025?")
-  response = chat2.generate!
-  puts "✓ Web search + structured output: #{response}"
+  message = chat2.generate![:content]
+  puts "✓ Web search + structured output: #{message}"
 rescue => e
   puts "✗ Web search + structured output error: #{e.message}"
 end
@@ -57,9 +57,9 @@ begin
 
   chat3 = AI::Chat.new
   chat3.user("What's in this file?", file: file_path)
-  response = chat3.generate!
+  message = chat3.generate!
   puts "✓ Handled file path with spaces and unicode"
-  puts "  Response: #{response[0..100]}..."
+  puts "  Message: #{message[0..100]}..."
 
   FileUtils.rm_rf(temp_dir)
 rescue => e
@@ -75,8 +75,8 @@ begin
   chat4a.model = "gpt-4o"
   chat4a.web_search = true
   chat4a.user("What's the latest Ruby version released?")
-  response = chat4a.generate!
-  puts "✓ First chat with web search: #{response[0..100]}..."
+  message = chat4a.generate![:content]
+  puts "✓ First chat with web search: #{message[0..100]}..."
 
   # Chain to second chat
   response_id = chat4a.last.dig(:response, :id)
@@ -84,8 +84,8 @@ begin
   chat4b.model = "gpt-4o"
   chat4b.previous_response_id = response_id
   chat4b.user("Is this version stable for production use?")
-  response = chat4b.generate!
-  puts "✓ Chained response: #{response[0..100]}..."
+  message = chat4b.generate![:content]
+  puts "✓ Chained response: #{message[0..100]}..."
 rescue => e
   puts "✗ Web search chaining error: #{e.message}"
 end
@@ -110,8 +110,8 @@ puts "-" * 50
 chat6 = AI::Chat.new
 chat6.schema = '{"type": "object", "properties": {"result": {"type": "number"}}, "required": ["result"], "additionalProperties": false}'
 chat6.user("What's 10 times 5?")
-response = chat6.generate!
-puts "✓ Schema from JSON string: #{response}"
+message = chat6.generate![:content]
+puts "✓ Schema from JSON string: #{message}"
 puts
 
 puts "Test 7: Empty content edge cases"
@@ -138,7 +138,7 @@ begin
   # User message with file
   chat8.user("Here's a text file", file: text_file.path)
 
-  # Assistant response
+  # Assistant message
   chat8.assistant("I see the text file contains 'This is a text file'")
 
   # Another user message with different file type

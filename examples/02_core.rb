@@ -8,14 +8,26 @@ require "amazing_print"
 puts "=== AI::Chat Core Functionality Test ==="
 puts
 
+# Test 0: Return types
+puts "Test 0: Return types"
+puts "-" * 30
+chat0 = AI::Chat.new
+messages = chat0.system("You're a helpful assistant who talks like Spider-man.")
+puts "#{messages.is_a?(Array) ? "✓ " : "✗"} AI::Chat#system returns an Array: #{messages.class}"
+messages = chat0.user("What is 2 + 2?")
+puts "#{messages.is_a?(Array) ? "✓ " : "✗"} AI::Chat#user returns an Array: #{messages.class}"
+messages = chat0.assistant("Hey friend, the answer you're looking for is 4. Need help with anything else?")
+puts "#{messages.is_a?(Array) ? "✓ " : "✗"} AI::Chat#assistant returns an Array: #{messages.class}"
+puts
+
 # Test 1: Basic conversation
 puts "Test 1: Basic conversation"
 puts "-" * 30
 chat1 = AI::Chat.new
 chat1.user("What is 2 + 2?")
-response = chat1.generate!
-puts "✓ Response: #{response}"
-puts "✓ Response is a String: #{response.is_a?(String)}"
+message = chat1.generate!
+puts "✓ Message: #{message}"
+puts "✓ Message is a Hash: #{message.is_a?(Hash)}"
 puts "✓ Response Hash exists: #{chat1.last[:response].is_a?(Hash)}"
 puts
 
@@ -33,9 +45,9 @@ puts "✓ Automatically set previous_response_id: #{response_id == chat2.last[:r
 chat3 = AI::Chat.new
 chat3.previous_response_id = response_id
 chat3.user("What is my name?")
-response = chat3.generate!
-puts "✓ Response: #{response}"
-puts "✓ New chat remembers context: #{response.include?("Alice")}"
+message = chat3.generate![:content]
+puts "✓ Message Content: #{message}"
+puts "✓ New chat remembers context: #{message.include?("Alice")}"
 puts
 
 # Test 3: Message handling

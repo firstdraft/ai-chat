@@ -82,7 +82,7 @@ pp a.messages
 # => [{:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"}]
 
 # Generate the next message using AI
-a.generate! # => "Matz is nice and so we are nice" (or similar)
+a.generate! # => { :role => "assistant", :content => "Matz is nice and so we are nice" (or similar) }
 
 # Your array now includes the assistant's response
 pp a.messages
@@ -93,7 +93,7 @@ pp a.messages
 
 # Continue the conversation
 a.add("What about Rails?")
-a.generate! # => "Convention over configuration."
+a.generate! # => { :role => "assistant", :content => "Convention over configuration."} 
 ```
 
 ## Understanding the Data Structure
@@ -135,7 +135,7 @@ pp b.messages
 #    ]
 
 # Generate a response
-b.generate! # => "Methinks 'tis 'Ruby doth bring joy to all who craft with care'"
+b.generate! # => { :role => "assistant", :content => "Methinks 'tis 'Ruby doth bring joy to all who craft with care'" }
 ```
 
 ### Convenience Methods
@@ -237,7 +237,7 @@ h.messages.last[:content]
 # => "Here's how to boil an egg..."
 
 # Or use the convenient shortcut
-h.last
+h.last[:content]
 # => "Here's how to boil an egg..."
 ```
 
@@ -277,10 +277,11 @@ i.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "objec
 i.user("1 slice of pizza")
 
 response = i.generate!
+data = response[:content]
 # => {:fat=>15, :protein=>12, :carbs=>35, :total_calories=>285}
 
 # The response is parsed JSON, not a string!
-response[:total_calories]  # => 285
+data[:total_calories]  # => 285
 ```
 
 ### Schema Formats
@@ -442,14 +443,14 @@ a = AI::Chat.new
 a.user("What color is the object in this photo?", image: "thing.png")
 a.generate! # => "Red"
 a.user("What is the object in the photo?")
-a.generate! # => "I don't see a photo"
+a.generate! # => { :content => "I don't see a photo", ... }
 
 b = AI::Chat.new
 b.user("What color is the object in this photo?", image: "thing.png")
 b.generate! # => "Red"
 b.user("What is the object in the photo?")
 b.previous_response_id = nil
-b.generate! # => "An apple"
+b.generate! # => { :content => "An apple", ... }
 ```
 
 If you don't set `previous_response_id` to `nil`, the model won't have the old image(s) to work with.
@@ -462,7 +463,7 @@ You can enable OpenAI's image generation tool:
 a = AI::Chat.new
 a.image_generation = true
 a.user("Draw a picture of a kitten")
-a.generate! # => "Here is your picture of a kitten:"
+a.generate! # => { :content => "Here is your picture of a kitten:", ... }
 ```
 
 By default, images are saved to `./images`. You can configure a different location:
@@ -472,7 +473,7 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./my_images"
 a.user("Draw a picture of a kitten")
-a.generate! # => "Here is your picture of a kitten:"
+a.generate! # => { :content => "Here is your picture of a kitten:", ... }
 ```
 
 Images are saved in timestamped subfolders using ISO 8601 basic format. For example:
@@ -510,9 +511,18 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./images"
 a.user("Draw a picture of a kitten")
-a.generate! # => "Here is a picture of a kitten:"
+a.generate! # => { :content => "Here is a picture of a kitten:", ... }
 a.user("Make it even cuter")
-a.generate! # => "Here is the kitten, but even cuter:"
+a.generate! # => { :content => "Here is the kitten, but even cuter:", ... }
+```
+
+## Code Interpreter
+
+```ruby
+y = AI::Chat.new
+y.code_interpreter = true
+y.user("Plot y = 2x*3 when x is -5 to 5.")
+y.generate! # => {:content => "Here is the graph.", ... }
 ```
 
 ## Building Conversations Without API Calls

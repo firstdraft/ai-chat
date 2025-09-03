@@ -142,7 +142,7 @@ begin
 
   chat4.schema = schema_json
   chat4.user(USER_MESSAGE)
-  response = chat4.generate!
+  response = chat4.generate![:content]
 
   puts "✓ OpenAI generator format (JSON String) worked:"
   ap response
@@ -181,7 +181,7 @@ begin
 
   chat5.schema = schema
   chat5.user(USER_MESSAGE)
-  response = chat5.generate!
+  response = chat5.generate![:content]
 
   puts "✓ Full format (Ruby Hash) worked:"
   ap response
@@ -221,7 +221,7 @@ begin
 
   chat6.schema = schema_json
   chat6.user(USER_MESSAGE)
-  response = chat6.generate!
+  response = chat6.generate![:content]
 
   puts "✓ Full format (JSON String) worked:"
   ap response
@@ -278,7 +278,7 @@ begin
   chat7.user("TechCorp is a software company founded in 2010. It has 50 employees including " \
              "Jane Smith who is the CEO with 15 years experience, and Bob Johnson who is " \
              "a senior developer with 8 years experience.")
-  response = chat7.generate!
+  response = chat7.generate![:content]
 
   puts "✓ Complex nested schema worked:"
   ap response
@@ -328,7 +328,7 @@ begin
 
   chat8.schema = enum_schema
   chat8.user("This is terrible! The app keeps crashing and I need this fixed immediately!")
-  response = chat8.generate!
+  response = chat8.generate![:content]
 
   puts "✓ Schema with enum values worked:"
   ap response

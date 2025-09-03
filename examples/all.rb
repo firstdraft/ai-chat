@@ -47,14 +47,3 @@ require_relative "12_image_generation"
 
 # Code Interpreter
 require_relative "13_code_interpreter"
-
-puts "\n=== All AI::Chat examples completed ==="
-puts
-puts "Summary:"
-puts "- Core functionality: Basic chat, messages, responses"
-puts "- Configuration: API keys, models, reasoning effort"
-puts "- Structured output: 6 different schema formats supported"
-puts "- File handling: PDFs, text files, URLs, Rails uploads"
-puts "- Multimodal: Images, multiple files, mixed content"
-puts "- Advanced: Chaining, web search, error handling"
-puts "- Edge cases: Validation, error messages, introspection"

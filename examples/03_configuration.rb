@@ -46,7 +46,7 @@ models.each do |model|
   chat = AI::Chat.new
   chat.model = model
   chat.user("Say 'Hello' in exactly 5 characters")
-  response = chat.generate!
+  response = chat.generate![:content]
   puts "✓ Model #{model}: #{response}"
 rescue => e
   puts "✗ Model #{model} error: #{e.message}"
