@@ -16,8 +16,8 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./my_generated_images"
 puts "User: #{a.user("Draw a simple red circle")}"
-response = a.generate![:content]
-puts "Assistant: #{response}"
+message = a.generate![:content]
+puts "Assistant: #{message}"
 puts "Images saved to: #{a.messages.last[:images]}"
 
 # Access images through the response object

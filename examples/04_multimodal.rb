@@ -57,10 +57,10 @@ begin
     chat2.schema = schema
     chat2.user("Extract the invoice data from this PDF", file: pdf_path)
 
-    response = chat2.generate![:content]
+    message = chat2.generate![:content]
     puts "✓ PDF data extracted:"
-    ap response
-    puts "✓ Response is a Hash: #{response.is_a?(Hash)}"
+    ap message
+    puts "✓ Message is a Hash: #{message.is_a?(Hash)}"
   else
     puts "✗ Test PDF not found at #{pdf_path}"
   end
@@ -79,13 +79,13 @@ begin
 
   chat3 = AI::Chat.new
   chat3.user("What is the first line of this file?", file: file_path)
-  response = chat3.generate!
-  puts "✓ AI correctly read file content: #{response}"
+  message = chat3.generate!
+  puts "✓ AI correctly read file content: #{message}"
 
   # Also test file summarization
   chat3.user("Now summarize this same file in one sentence", file: file_path)
-  response = chat3.generate![:content]
-  puts "✓ File summary: #{response}"
+  message = chat3.generate![:content]
+  puts "✓ File summary: #{message}"
 rescue => e
   puts "✗ Error: #{e.message}"
 end
@@ -101,8 +101,8 @@ begin
   if File.exist?(file1) && File.exist?(file2)
     chat4 = AI::Chat.new
     chat4.user("Compare these two files and tell me their purposes", files: [file1, file2])
-    response = chat4.generate![:content]
-    puts "✓ Files comparison: #{response[0..200]}..."
+    message = chat4.generate![:content]
+    puts "✓ Files comparison: #{message[0..200]}..."
   else
     puts "✗ One or more files not found"
   end
@@ -121,8 +121,8 @@ begin
   chat5.generate!
 
   chat5.user("Now tell me a joke about what you saw")
-  response = chat5.generate![:content]
-  puts "✓ Mixed content response: #{response}"
+  message = chat5.generate![:content]
+  puts "✓ Mixed content message: #{message}"
 rescue => e
   puts "✗ Error: #{e.message}"
 end

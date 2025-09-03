@@ -36,12 +36,12 @@ ap chat1.schema
 chat1.user("I saw a red fox today")
 
 begin
-  response = chat1.generate![:content]
-  puts "✓ Response:"
-  ap response
-  puts "✓ Response class: #{response.class}"
-  puts "✓ Extracted color: #{response[:color]}"
-  puts "✓ Extracted animal: #{response[:animal]}"
+  message = chat1.generate![:content]
+  puts "✓ Message:"
+  ap message
+  puts "✓ Message class: #{message.class}"
+  puts "✓ Extracted color: #{message[:color]}"
+  puts "✓ Extracted animal: #{message[:animal]}"
 rescue => e
   puts "✗ Error: #{e.message}"
   puts "  This might indicate the schema format needs adjustment"
@@ -63,12 +63,12 @@ ap chat2.schema
 chat2.user("Give me a random number")
 
 begin
-  response = chat2.generate![:content]
-  puts "✓ Response:"
-  ap response
-  puts "✓ Response class: #{response.class}"
-  puts "✓ Number value: #{response[:value]}"
-  puts "✓ Is integer: #{response[:value].is_a?(Integer)}"
+  message = chat2.generate![:content]
+  puts "✓ Message:"
+  ap message
+  puts "✓ Message class: #{message.class}"
+  puts "✓ Number value: #{message[:value]}"
+  puts "✓ Is integer: #{message[:value].is_a?(Integer)}"
 rescue => e
   puts "✗ Error: #{e.message}"
   puts "  This might indicate the schema format needs adjustment"
@@ -102,11 +102,11 @@ chat3.schema = nutrition_schema
 chat3.user("1 slice of pizza")
 
 begin
-  response = chat3.generate![:content]
-  puts "✓ Response:"
-  ap response
-  puts "✓ Total calories: #{response[:total_calories]}"
-  puts "✓ All values are numbers: #{response.values.all? { |v| v.is_a?(Numeric) }}"
+  message = chat3.generate![:content]
+  puts "✓ Message:"
+  ap message
+  puts "✓ Total calories: #{message[:total_calories]}"
+  puts "✓ All values are numbers: #{message.values.all? { |v| v.is_a?(Numeric) }}"
 rescue => e
   puts "✗ Error: #{e.message}"
   puts "  Error details: #{e.backtrace.first(3).join("\n  ")}"

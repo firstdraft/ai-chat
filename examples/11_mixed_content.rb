@@ -26,9 +26,9 @@ begin
     file: test_file.path
   )
 
-  response = chat1.generate![:content]
+  message = chat1.generate![:content]
   puts "✓ Single image + single file worked"
-  puts "  Response: #{response[0..150]}..."
+  puts "  Message: #{message[0..150]}..."
 
   test_file.unlink
 rescue => e
@@ -58,9 +58,9 @@ begin
     files: [file1.path, file2.path]
   )
 
-  response = chat2.generate![:content]
+  message = chat2.generate![:content]
   puts "✓ Multiple images + multiple files worked"
-  puts "  Response: #{response[0..150]}..."
+  puts "  Message: #{message[0..150]}..."
 
   file1.unlink
   file2.unlink
@@ -97,9 +97,9 @@ begin
     files: [multi_file1.path, multi_file2.path]
   )
 
-  response = chat3.generate![:content]
+  message = chat3.generate![:content]
   puts "✓ Mixed singular + plural parameters worked"
-  puts "  Response: #{response[0..150]}..."
+  puts "  Message: #{message[0..150]}..."
 
   single_file.unlink
   multi_file1.unlink
@@ -133,9 +133,9 @@ begin
       files: [text_file.path]
     )
 
-    response = chat4.generate![:content]
+    message = chat4.generate![:content]
     puts "✓ PDF + image + text file worked"
-    puts "  Response: #{response[0..150]}..."
+    puts "  Message: #{message[0..150]}..."
 
     text_file.unlink
   else
