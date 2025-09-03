@@ -401,6 +401,7 @@ module AI
 
     # :reek:UtilityFunction
     # :reek:ManualDispatch
+    # :reek:TooManyStatements
     def extract_text_from_response(response)
       output_with_content = response.output.flat_map do |output|
         output.respond_to?(:content) ? output.content : []
