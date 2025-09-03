@@ -79,7 +79,7 @@ begin
 
   chat3 = AI::Chat.new
   chat3.user("What is the first line of this file?", file: file_path)
-  message = chat3.generate!
+  message = chat3.generate![:content]
   puts "✓ AI correctly read file content: #{message}"
 
   # Also test file summarization
