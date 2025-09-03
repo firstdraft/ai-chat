@@ -18,7 +18,7 @@ begin
 
   chat1 = AI::Chat.new
   chat1.user("What type of document is this?", file: pdf_path)
-  response = chat1.generate!
+  response = chat1.generate![:content]
   puts "✓ PDF with .pdf extension handled correctly"
   puts "  Response: #{response[0..100]}..."
 rescue => e
@@ -39,7 +39,7 @@ begin
 
   chat2 = AI::Chat.new
   chat2.user("What type of document is this?", file: temp_file.path)
-  response = chat2.generate!
+  response = chat2.generate![:content]
   puts "✓ PDF without extension detected and handled correctly"
   puts "  Response: #{response[0..100]}..."
 
@@ -63,7 +63,7 @@ begin
 
   chat3 = AI::Chat.new
   chat3.user("What type of document is this?", file: temp_file.path)
-  response = chat3.generate!
+  response = chat3.generate![:content]
   puts "✓ PDF with wrong extension (.txt) still detected as PDF"
   puts "  Response: #{response[0..100]}..."
 
@@ -97,7 +97,7 @@ text_files.each do |description, (filename, content)|
 
   chat = AI::Chat.new
   chat.user("What kind of file is this and what does it contain?", file: temp_file.path)
-  response = chat.generate!
+  response = chat.generate![:content]
   puts "✓ #{description}: AI understood content"
   puts "  Response: #{response[0..80]}..."
 
@@ -141,7 +141,7 @@ begin
 
   chat5a = AI::Chat.new
   chat5a.user("What kind of uploaded file is this?", file: pdf_upload)
-  response = chat5a.generate!
+  response = chat5a.generate![:content]
   puts "✓ Rails PDF upload handled correctly"
   puts "  Response: #{response[0..100]}..."
   pdf_upload.close
@@ -155,7 +155,7 @@ begin
 
   chat5b = AI::Chat.new
   chat5b.user("What Rails model is defined in this uploaded file?", file: text_upload)
-  response = chat5b.generate!
+  response = chat5b.generate![:content]
   puts "✓ Rails text file upload handled correctly"
   puts "  Response: #{response[0..100]}..."
 
@@ -174,7 +174,7 @@ begin
   # Note: We're trusting the user to specify the correct parameter (file: vs image:)
   chat6 = AI::Chat.new
   chat6.user("Describe this image", image: "https://picsum.photos/200/300")
-  response = chat6.generate!
+  response = chat6.generate![:content]
   puts "✓ Image URL handled correctly"
   puts "  Response: #{response[0..100]}..."
 
@@ -251,7 +251,7 @@ begin
 
   chat9 = AI::Chat.new
   chat9.user("Analyze these files and tell me what they do", files: files.map(&:path))
-  response = chat9.generate!
+  response = chat9.generate![:content]
   puts "✓ Multiple text files handled correctly"
   puts "  Response: #{response[0..150]}..."
 

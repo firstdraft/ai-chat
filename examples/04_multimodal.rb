@@ -13,7 +13,7 @@ puts "Test 1: Image handling with URL"
 puts "-" * 30
 chat1 = AI::Chat.new
 chat1.user("What do you see in this image?", image: "https://picsum.photos/200/300")
-response = chat1.generate!
+response = chat1.generate![:content]
 puts "✓ Image description: #{response[0..100]}..."
 puts
 
@@ -57,7 +57,7 @@ begin
     chat2.schema = schema
     chat2.user("Extract the invoice data from this PDF", file: pdf_path)
 
-    response = chat2.generate!
+    response = chat2.generate![:content]
     puts "✓ PDF data extracted:"
     ap response
     puts "✓ Response is a Hash: #{response.is_a?(Hash)}"
@@ -84,7 +84,7 @@ begin
 
   # Also test file summarization
   chat3.user("Now summarize this same file in one sentence", file: file_path)
-  response = chat3.generate!
+  response = chat3.generate![:content]
   puts "✓ File summary: #{response}"
 rescue => e
   puts "✗ Error: #{e.message}"
@@ -101,7 +101,7 @@ begin
   if File.exist?(file1) && File.exist?(file2)
     chat4 = AI::Chat.new
     chat4.user("Compare these two files and tell me their purposes", files: [file1, file2])
-    response = chat4.generate!
+    response = chat4.generate![:content]
     puts "✓ Files comparison: #{response[0..200]}..."
   else
     puts "✗ One or more files not found"
@@ -121,7 +121,7 @@ begin
   chat5.generate!
 
   chat5.user("Now tell me a joke about what you saw")
-  response = chat5.generate!
+  response = chat5.generate![:content]
   puts "✓ Mixed content response: #{response}"
 rescue => e
   puts "✗ Error: #{e.message}"

@@ -16,7 +16,7 @@ puts
 puts "1. Basic conversation:"
 chat = AI::Chat.new
 chat.user("What is 2 + 2?")
-response = chat.generate!
+response = chat.generate![:content]
 puts "   Response: #{response}"
 puts
 
@@ -38,7 +38,7 @@ chat2.schema = {
   }
 }
 chat2.user("I saw a red fox in the garden")
-data = chat2.generate!
+data = chat2.generate![:content]
 puts "   Extracted data:"
 ap data
 puts
@@ -48,7 +48,7 @@ puts "3. File handling (reading text files):"
 readme_path = File.expand_path("../README.md", __dir__)
 chat3 = AI::Chat.new
 chat3.user("What is this gem about? (one sentence)", file: readme_path)
-response = chat3.generate!
+response = chat3.generate![:content]
 puts "   #{response}"
 puts
 
@@ -63,7 +63,7 @@ response_id = chat4.previous_response_id
 chat5 = AI::Chat.new
 chat5.previous_response_id = response_id
 chat5.user("What's my name and what do I like?")
-response = chat5.generate!
+response = chat5.generate![:content]
 puts "   #{response}"
 puts
 
@@ -73,7 +73,7 @@ puts "5. Different models:"
   chat = AI::Chat.new
   chat.model = model
   chat.user("Say 'Hi' in exactly 2 characters")
-  response = chat.generate!
+  response = chat.generate![:content]
   puts "   #{model}: #{response}"
 end
 puts

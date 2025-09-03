@@ -15,7 +15,7 @@ chat1 = AI::Chat.new
 chat1.user("What is 2 + 2?")
 response = chat1.generate!
 puts "✓ Response: #{response}"
-puts "✓ Response is a String: #{response.is_a?(String)}"
+puts "✓ Response is a Hash: #{response.is_a?(Hash)}"
 puts "✓ Response Hash exists: #{chat1.last[:response].is_a?(Hash)}"
 puts
 
@@ -33,7 +33,7 @@ puts "✓ Automatically set previous_response_id: #{response_id == chat2.last[:r
 chat3 = AI::Chat.new
 chat3.previous_response_id = response_id
 chat3.user("What is my name?")
-response = chat3.generate!
+response = chat3.generate![:content]
 puts "✓ Response: #{response}"
 puts "✓ New chat remembers context: #{response.include?("Alice")}"
 puts

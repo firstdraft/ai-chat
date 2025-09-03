@@ -75,7 +75,7 @@ begin
   chat4a.model = "gpt-4o"
   chat4a.web_search = true
   chat4a.user("What's the latest Ruby version released?")
-  response = chat4a.generate!
+  response = chat4a.generate![:content]
   puts "✓ First chat with web search: #{response[0..100]}..."
 
   # Chain to second chat
@@ -84,7 +84,7 @@ begin
   chat4b.model = "gpt-4o"
   chat4b.previous_response_id = response_id
   chat4b.user("Is this version stable for production use?")
-  response = chat4b.generate!
+  response = chat4b.generate![:content]
   puts "✓ Chained response: #{response[0..100]}..."
 rescue => e
   puts "✗ Web search chaining error: #{e.message}"
@@ -110,7 +110,7 @@ puts "-" * 50
 chat6 = AI::Chat.new
 chat6.schema = '{"type": "object", "properties": {"result": {"type": "number"}}, "required": ["result"], "additionalProperties": false}'
 chat6.user("What's 10 times 5?")
-response = chat6.generate!
+response = chat6.generate![:content]
 puts "✓ Schema from JSON string: #{response}"
 puts
 

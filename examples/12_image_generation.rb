@@ -16,7 +16,7 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./my_generated_images"
 puts "User: #{a.user("Draw a simple red circle")}"
-response = a.generate!
+response = a.generate![:content]
 puts "Assistant: #{response}"
 puts "Images saved to: #{a.messages.last[:images]}"
 

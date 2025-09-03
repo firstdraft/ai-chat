@@ -36,7 +36,7 @@ ap chat1.schema
 chat1.user("I saw a red fox today")
 
 begin
-  response = chat1.generate!
+  response = chat1.generate![:content]
   puts "✓ Response:"
   ap response
   puts "✓ Response class: #{response.class}"
@@ -63,7 +63,7 @@ ap chat2.schema
 chat2.user("Give me a random number")
 
 begin
-  response = chat2.generate!
+  response = chat2.generate![:content]
   puts "✓ Response:"
   ap response
   puts "✓ Response class: #{response.class}"
@@ -102,7 +102,7 @@ chat3.schema = nutrition_schema
 chat3.user("1 slice of pizza")
 
 begin
-  response = chat3.generate!
+  response = chat3.generate![:content]
   puts "✓ Response:"
   ap response
   puts "✓ Total calories: #{response[:total_calories]}"

@@ -14,15 +14,15 @@ puts "-" * 30
 chat1 = AI::Chat.new
 chat1.system("You are a math tutor. Keep responses concise.")
 chat1.user("What is 10 + 15?")
-response1 = chat1.generate!
+response1 = chat1.generate![:content]
 puts "✓ First response: #{response1}"
 
 chat1.user("Multiply that result by 2")
-response2 = chat1.generate!
+response2 = chat1.generate![:content]
 puts "✓ Second response: #{response2}"
 
 chat1.user("What was the original sum I asked about?")
-response3 = chat1.generate!
+response3 = chat1.generate![:content]
 puts "✓ Memory test: #{response3}"
 puts
 
@@ -35,7 +35,7 @@ chat2.web_search = true
 puts "Web search enabled: #{chat2.web_search}"
 chat2.user("What's the current weather in San Francisco?")
 begin
-  response = chat2.generate!
+  response = chat2.generate![:content]
   puts "✓ Response with web search: #{response}"
 rescue => e
   puts "✗ Web search error: #{e.message}"
@@ -91,7 +91,7 @@ chat5.user(<<~CODE)
     fibonacci(n - 1) + fibonacci(n - 2)
   end
 CODE
-response = chat5.generate!
+response = chat5.generate![:content]
 puts "✓ Code review response: #{response[0..150]}..."
 puts
 

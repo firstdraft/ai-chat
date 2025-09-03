@@ -26,7 +26,7 @@ begin
     file: test_file.path
   )
 
-  response = chat1.generate!
+  response = chat1.generate![:content]
   puts "✓ Single image + single file worked"
   puts "  Response: #{response[0..150]}..."
 
@@ -58,7 +58,7 @@ begin
     files: [file1.path, file2.path]
   )
 
-  response = chat2.generate!
+  response = chat2.generate![:content]
   puts "✓ Multiple images + multiple files worked"
   puts "  Response: #{response[0..150]}..."
 
@@ -97,7 +97,7 @@ begin
     files: [multi_file1.path, multi_file2.path]
   )
 
-  response = chat3.generate!
+  response = chat3.generate![:content]
   puts "✓ Mixed singular + plural parameters worked"
   puts "  Response: #{response[0..150]}..."
 
@@ -133,7 +133,7 @@ begin
       files: [text_file.path]
     )
 
-    response = chat4.generate!
+    response = chat4.generate![:content]
     puts "✓ PDF + image + text file worked"
     puts "  Response: #{response[0..150]}..."
 
