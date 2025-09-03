@@ -16,7 +16,7 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :messages, :model, :web_search, :previous_response_id, :image_generation, :image_folder
+    attr_accessor :messages, :model, :web_search, :previous_response_id, :image_generation, :image_folder, :code_interpreter
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -101,7 +101,7 @@ module AI
 
       text_response = extract_text_from_response(response)
 
-      image_filenames = extract_and_save_images(response)
+      image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
       response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
 
       chat_response = {
@@ -109,7 +109,7 @@ module AI
         model: response.model,
         usage: response_usage,
         total_tokens: response_usage[:total_tokens],
-        images: image_filenames
+        images: image_filenames,
       }
 
       message = if schema
@@ -206,7 +206,6 @@ module AI
         end
       end
     end
-
 
     private
 
@@ -389,6 +388,9 @@ module AI
       if image_generation
         tools_list << {type: "image_generation"}
       end
+      if code_interpreter
+        tools_list << {type: "code_interpreter", container: {type: "auto"}}
+      end
       tools_list
     end
 
@@ -463,6 +465,40 @@ module AI
       end
 
       image_filenames
+    end
+
+    def extract_and_save_files(response)
+      filenames = []
+
+      message_outputs = response.output.select do |output|
+        output.respond_to?(:type) && output.type == :message
+      end
+
+      outputs_with_annotations = message_outputs.map do |output|
+        output.content.find do |message|
+          message.respond_to?(:annotations) && message.annotations.length.positive?
+        end
+      end.compact
+
+      annotations = outputs_with_annotations.map do |output|
+        output.annotations.find do |annotation|
+          annotation.respond_to?(:filename)
+        end
+      end.compact
+
+      annotations.each do |annotation|
+        container_id = annotation.container_id
+        file_id = annotation.file_id
+        filename = annotation.filename
+        file_content = client.containers.files.content.retrieve(file_id, container_id: container_id)
+
+        File.open(filename, "w") do |file|
+          file.write(file_content.read)
+        end
+        filenames << filename
+      end
+
+      filenames
     end
   end
 end
