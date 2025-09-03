@@ -97,7 +97,7 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
-      response = create_response
+      p response = create_response
 
       text_response = extract_text_from_response(response)
 
@@ -440,12 +440,7 @@ module AI
 
       return image_filenames if image_outputs.empty?
 
-      # ISO 8601 basic format with centisecond precision
-      timestamp = Time.now.strftime("%Y%m%dT%H%M%S%2N")
-
-      subfolder_name = "#{timestamp}_#{response.id}"
-      subfolder_path = File.join(image_folder || "./images", subfolder_name)
-      FileUtils.mkdir_p(subfolder_path)
+      subfolder_path = create_images_folder
 
       image_outputs.each_with_index do |output, index|
         next unless output.respond_to?(:result) && output.result
@@ -467,6 +462,16 @@ module AI
       image_filenames
     end
 
+    def create_images_folder
+      # ISO 8601 basic format with centisecond precision
+      timestamp = Time.now.strftime("%Y%m%dT%H%M%S%2N")
+
+      subfolder_name = "#{timestamp}_#{response.id}"
+      subfolder_path = File.join(image_folder || "./images", subfolder_name)
+      FileUtils.mkdir_p(subfolder_path)
+      subfolder_path
+    end
+
     def extract_and_save_files(response)
       filenames = []
 
@@ -480,6 +485,9 @@ module AI
         end
       end.compact
 
+      return filenames if outputs_with_annotations.empty?
+
+      subfolder_path = create_images_folder
       annotations = outputs_with_annotations.map do |output|
         output.annotations.find do |annotation|
           annotation.respond_to?(:filename)
@@ -492,7 +500,8 @@ module AI
         filename = annotation.filename
         file_content = client.containers.files.content.retrieve(file_id, container_id: container_id)
 
-        File.open(filename, "w") do |file|
+        filepath = File.join(subfolder_path, filename)
+        File.open(filepath, "w") do |file|
           file.write(file_content.read)
         end
         filenames << filename
