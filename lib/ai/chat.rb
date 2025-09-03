@@ -43,7 +43,6 @@ module AI
             response: response
           }.compact
         )
-
       else
         text_and_files_array = [
           {
@@ -83,15 +82,15 @@ module AI
     end
 
     def system(message)
-      add(message, role: "system")
+      add(message, role: "system").last
     end
-
+    
     def user(message, image: nil, images: nil, file: nil, files: nil)
-      add(message, role: "user", image: image, images: images, file: file, files: files)
+      add(message, role: "user", image: image, images: images, file: file, files: files).last
     end
-
+    
     def assistant(message, response: nil)
-      add(message, role: "assistant", response: response)
+      add(message, role: "assistant", response: response).last
     end
 
     # :reek:NilCheck
@@ -135,8 +134,7 @@ module AI
       end
 
       self.previous_response_id = chat_response[:id]
-
-      message
+      last
     end
 
     # :reek:NilCheck
