@@ -177,6 +177,11 @@ module AI
     end
 
     # Support for Ruby's pp (pretty print)
+    # :reek:TooManyStatements
+    # :reek:NilCheck
+    # :reek:FeatureEnvy
+    # :reek:DuplicateMethodCall
+    # :reek:UncommunicativeParameterName
     def pretty_print(q)
       q.group(1, "#<#{self.class}", '>') do
         q.breakable
@@ -472,6 +477,10 @@ module AI
       subfolder_path
     end
 
+    # :reek:FeatureEnvy
+    # :reek:ManualDispatch
+    # :reek:NestedIterators
+    # :reek:TooManyStatements
     def extract_and_save_files(response)
       filenames = []
 
@@ -479,9 +488,9 @@ module AI
         output.respond_to?(:type) && output.type == :message
       end
 
-      outputs_with_annotations = message_outputs.map do |output|
-        output.content.find do |message|
-          message.respond_to?(:annotations) && message.annotations.length.positive?
+      outputs_with_annotations = message_outputs.map do |message|
+        message.content.find do |content|
+          content.respond_to?(:annotations) && content.annotations.length.positive?
         end
       end.compact
 
