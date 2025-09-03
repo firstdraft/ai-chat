@@ -109,7 +109,7 @@ module AI
         model: response.model,
         usage: response_usage,
         total_tokens: response_usage[:total_tokens],
-        images: image_filenames,
+        images: image_filenames
       }
 
       message = if schema
@@ -498,8 +498,6 @@ module AI
           content.respond_to?(:annotations) && content.annotations.length.positive?
         end
       end.compact
-
-      puts outputs_with_annotations.length
 
       return filenames if outputs_with_annotations.empty?
 
