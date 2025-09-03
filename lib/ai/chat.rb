@@ -7,6 +7,7 @@ require "openai"
 require "pathname"
 require "stringio"
 require "fileutils"
+require "tty-spinner"
 
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
@@ -16,7 +17,7 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :messages, :model, :web_search, :previous_response_id, :image_generation, :image_folder, :code_interpreter
+    attr_accessor :background, :code_interpreter, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -34,15 +35,16 @@ module AI
 
     # :reek:TooManyStatements
     # :reek:NilCheck
-    def add(content, role: "user", response: nil, image: nil, images: nil, file: nil, files: nil)
+    def add(content, role: "user", response: nil, status: nil, image: nil, images: nil, file: nil, files: nil)
       if image.nil? && images.nil? && file.nil? && files.nil?
-        messages.push(
-          {
-            role: role,
-            content: content,
-            response: response
-          }.compact
-        )
+        message = {
+          role: role,
+          content: content,
+          response: response
+        }
+        message[:content] = content if content
+        message[:status] = status if status
+        messages.push(message)
       else
         text_and_files_array = [
           {
@@ -75,7 +77,8 @@ module AI
         messages.push(
           {
             role: role,
-            content: text_and_files_array
+            content: text_and_files_array,
+            status: status
           }
         )
       end
@@ -88,52 +91,18 @@ module AI
     def user(message, image: nil, images: nil, file: nil, files: nil)
       add(message, role: "user", image: image, images: images, file: file, files: files)
     end
-
-    def assistant(message, response: nil)
-      add(message, role: "assistant", response: response)
+    
+    def assistant(message, response: nil, status: nil)
+      add(message, role: "assistant", response: response, status: status)
     end
 
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
       response = create_response
+      parse_response(response)
 
-      text_response = response.output_text
-
-      image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
-      response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
-
-      chat_response = {
-        id: response.id,
-        model: response.model,
-        usage: response_usage,
-        total_tokens: response_usage[:total_tokens],
-        images: image_filenames
-      }
-
-      message = if schema
-        if text_response.nil? || text_response.empty?
-          raise ArgumentError, "No text content in response to parse as JSON for schema: #{schema.inspect}"
-        end
-        JSON.parse(text_response, symbolize_names: true)
-      else
-        text_response
-      end
-
-      if image_filenames.empty?
-        assistant(message, response: chat_response)
-      else
-        messages.push(
-          {
-            role: "assistant",
-            content: message,
-            images: image_filenames,
-            response: chat_response
-          }.compact
-        )
-      end
-
-      self.previous_response_id = chat_response[:id]
+      self.previous_response_id = last.dig(:response, :id)
       last
     end
 
@@ -233,6 +202,7 @@ module AI
         model: model
       }
 
+      parameters[:background] = background if background
       parameters[:tools] = tools unless tools.empty?
       parameters[:text] = schema if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
@@ -242,6 +212,71 @@ module AI
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
 
       client.responses.create(**parameters)
+    end
+
+    def get_response(wait: false, timeout: )
+      response = if wait
+        spinner = TTY::Spinner.new("[:spinner] Loading ...", format: :dots)
+        spinner.auto_spin
+        api_response = client.responses.retrieve(previous_response_id)
+        number_of_times_polled = 0
+        while api_response.status != :completed
+          some_amount_of_seconds = calculate_wait(number_of_times_polled)
+          sleep some_amount_of_seconds
+          api_response = client.responses.retrieve(previous_response_id)
+          number_of_times_polled += 1
+        end
+        spinner.stop("Complete!")
+        api_response
+      else
+        client.responses.retrieve(previous_response_id)
+      end
+      parse_response(response)
+    end
+
+    def parse_response(response)
+      text_response = response.output_text
+      image_filenames = extract_and_save_images(response)
+      status = background.nil? ? nil : response.status
+      response_id = response.id
+      response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+
+      chat_response = {
+        id: response_id,
+        model: response.model,
+        usage: response_usage,
+        total_tokens: response_usage[:total_tokens],
+        images: image_filenames
+      }.compact
+
+      response_content = if schema
+        if text_response.nil? || text_response.empty?
+          raise ArgumentError, "No text content in response to parse as JSON for schema: #{schema.inspect}"
+        end
+        JSON.parse(text_response, symbolize_names: true)
+      else
+        text_response
+      end
+
+      existing_message_position = messages.find_index do |message|
+        message.dig(:response, :id) == response_id
+      end
+
+      message = {
+        role: "assistant",
+        content: response_content,
+        response: chat_response,
+        status: status
+      }
+
+      message.store(:images, image_filenames) unless image_filenames.empty?
+
+      if existing_message_position
+        messages[existing_message_position] = message
+      else
+        messages.push(message)
+        message
+      end
     end
 
     def prepare_messages_for_api
@@ -514,6 +549,14 @@ module AI
       end
 
       filenames
+    end
+
+    # This is similar to ActiveJob's :polynomially_longer retry option
+    def calculate_wait(executions)
+      # cap the maximum wait time to ~110 seconds
+      executions = executions.clamp(1..10)
+      jitter = 0.15
+      ((executions**2) + (Kernel.rand * (executions**2) * jitter)) + 2
     end
   end
 end
