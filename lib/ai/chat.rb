@@ -97,7 +97,7 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
-      p response = create_response
+      response = create_response
 
       text_response = extract_text_from_response(response)
 
@@ -402,11 +402,15 @@ module AI
     # :reek:UtilityFunction
     # :reek:ManualDispatch
     def extract_text_from_response(response)
-      response.output.flat_map { |output|
+      output_with_content = response.output.flat_map do |output|
         output.respond_to?(:content) ? output.content : []
-      }.compact.find { |content|
+      end.compact
+
+      response_output_text_array = output_with_content.select do |content|
         content.is_a?(OpenAI::Models::Responses::ResponseOutputText)
-      }&.text
+      end
+
+      response_output_text_array.map(&:text).join("\n")
     end
 
     # :reek:FeatureEnvy
@@ -493,6 +497,8 @@ module AI
           content.respond_to?(:annotations) && content.annotations.length.positive?
         end
       end.compact
+
+      puts outputs_with_annotations.length
 
       return filenames if outputs_with_annotations.empty?
 
