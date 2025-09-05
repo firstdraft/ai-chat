@@ -24,6 +24,7 @@ puts
 puts "Test 1: Basic conversation"
 puts "-" * 30
 chat1 = AI::Chat.new
+chat1.user("What is 2 + 2?")
 message = chat1.generate!
 puts "✓ Message: #{message}"
 puts "✓ Message is a Hash: #{message.is_a?(Hash)}"

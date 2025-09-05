@@ -98,7 +98,7 @@ module AI
     def generate!
       response = create_response
 
-      text_response = extract_text_from_response(response)
+      text_response = response.output_text
 
       image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
       response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
@@ -395,21 +395,6 @@ module AI
         tools_list << {type: "code_interpreter", container: {type: "auto"}}
       end
       tools_list
-    end
-
-    # :reek:UtilityFunction
-    # :reek:ManualDispatch
-    # :reek:TooManyStatements
-    def extract_text_from_response(response)
-      output_with_content = response.output.flat_map do |output|
-        output.respond_to?(:content) ? output.content : []
-      end.compact
-
-      response_output_text_array = output_with_content.select do |content|
-        content.is_a?(OpenAI::Models::Responses::ResponseOutputText)
-      end
-
-      response_output_text_array.map(&:text).join("\n")
     end
 
     # :reek:FeatureEnvy
