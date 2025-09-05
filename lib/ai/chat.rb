@@ -106,6 +106,30 @@ module AI
       last
     end
 
+    # :reek:BooleanParameter
+    # :reek:ControlParameter
+    # :reek:DuplicateMethodCall
+    # :reek:TooManyStatements
+    def get_response(wait: false)
+      response = if wait
+        spinner = TTY::Spinner.new("[:spinner] Loading ...", format: :dots)
+        spinner.auto_spin
+        api_response = client.responses.retrieve(previous_response_id)
+        number_of_times_polled = 0
+        while api_response.status != :completed
+          some_amount_of_seconds = calculate_wait(number_of_times_polled)
+          sleep some_amount_of_seconds
+          api_response = client.responses.retrieve(previous_response_id)
+          number_of_times_polled += 1
+        end
+        spinner.stop("Complete!")
+        api_response
+      else
+        client.responses.retrieve(previous_response_id)
+      end
+      parse_response(response)
+    end
+
     # :reek:NilCheck
     # :reek:TooManyStatements
     def reasoning_effort=(value)
@@ -212,30 +236,6 @@ module AI
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
 
       client.responses.create(**parameters)
-    end
-
-    # :reek:BooleanParameter
-    # :reek:ControlParameter
-    # :reek:DuplicateMethodCall
-    # :reek:TooManyStatements
-    def get_response(wait: false)
-      response = if wait
-        spinner = TTY::Spinner.new("[:spinner] Loading ...", format: :dots)
-        spinner.auto_spin
-        api_response = client.responses.retrieve(previous_response_id)
-        number_of_times_polled = 0
-        while api_response.status != :completed
-          some_amount_of_seconds = calculate_wait(number_of_times_polled)
-          sleep some_amount_of_seconds
-          api_response = client.responses.retrieve(previous_response_id)
-          number_of_times_polled += 1
-        end
-        spinner.stop("Complete!")
-        api_response
-      else
-        client.responses.retrieve(previous_response_id)
-      end
-      parse_response(response)
     end
 
     # :reek:NilCheck
