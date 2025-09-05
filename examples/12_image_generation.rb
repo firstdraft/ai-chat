@@ -36,7 +36,7 @@ user_message = b.user("Draw a #{animal}")[:content]
 puts "User: #{user_message}"
 b.generate!
 puts "First image: #{b.messages.last[:images]}"
-user_message = b.user("Make it cuter}")[:content]
+user_message = b.user("Make it cuter")[:content]
 puts "User: #{user_message}"
 b.generate!
 puts "Second image: #{b.messages.last[:images]}"

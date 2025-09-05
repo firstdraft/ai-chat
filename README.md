@@ -82,7 +82,7 @@ pp a.messages
 # => [{:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"}]
 
 # Generate the next message using AI
-a.generate! # => { :role => "assistant, :content => "Matz is nice and so we are nice" (or similar) }
+a.generate! # => { :role => "assistant", :content => "Matz is nice and so we are nice" (or similar) }
 
 # Your array now includes the assistant's response
 pp a.messages
@@ -511,9 +511,18 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./images"
 a.user("Draw a picture of a kitten")
-a.generate! # => "Here is a picture of a kitten:"
+a.generate! # => { :content => "Here is a picture of a kitten:", ... }
 a.user("Make it even cuter")
 a.generate! # => { :content => "Here is the kitten, but even cuter:", ... }
+```
+
+## Code Interpreter
+
+```ruby
+y = AI::Chat.new
+y.code_interpreter = true
+y.user("Plot y = 2x*3 when x is -5 to 5.")
+y.generate! # => {:content => "Here is the graph.", ... }
 ```
 
 ## Building Conversations Without API Calls
