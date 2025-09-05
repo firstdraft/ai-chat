@@ -8,6 +8,7 @@ require "pathname"
 require "stringio"
 require "fileutils"
 require "tty-spinner"
+require "timeout"
 
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
@@ -110,20 +111,9 @@ module AI
     # :reek:ControlParameter
     # :reek:DuplicateMethodCall
     # :reek:TooManyStatements
-    def get_response(wait: false)
+    def get_response(wait: false, timeout: 600)
       response = if wait
-        spinner = TTY::Spinner.new("[:spinner] Loading ...", format: :dots)
-        spinner.auto_spin
-        api_response = client.responses.retrieve(previous_response_id)
-        number_of_times_polled = 0
-        while api_response.status != :completed
-          some_amount_of_seconds = calculate_wait(number_of_times_polled)
-          sleep some_amount_of_seconds
-          api_response = client.responses.retrieve(previous_response_id)
-          number_of_times_polled += 1
-        end
-        spinner.stop("Complete!")
-        api_response
+        wait_for_response(timeout)
       else
         client.responses.retrieve(previous_response_id)
       end
@@ -283,6 +273,10 @@ module AI
         messages.push(message)
         message
       end
+    end
+
+    def cancel_request
+      client.responses.cancel(previous_response_id)
     end
 
     def prepare_messages_for_api
@@ -565,6 +559,35 @@ module AI
       executions = executions.clamp(1..10)
       jitter = 0.15
       ((executions**2) + (Kernel.rand * (executions**2) * jitter)) + 2
+    end
+
+    def timeout_request(duration)
+      begin
+        Timeout.timeout(duration) do
+          yield
+        end
+      rescue Timeout::Error
+        client.responses.cancel(previous_response_id)
+      end
+    end
+
+    def wait_for_response(timeout)
+        spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
+        spinner.auto_spin
+        api_response = client.responses.retrieve(previous_response_id)
+        number_of_times_polled = 0
+        response = timeout_request(timeout) do
+          while api_response.status != :completed
+            some_amount_of_seconds = calculate_wait(number_of_times_polled)
+            sleep some_amount_of_seconds
+            number_of_times_polled += 1
+            api_response = client.responses.retrieve(previous_response_id)
+          end
+          api_response
+        end
+        exit_message = response.status == "cancelled" ? "request timed out" : "done!"
+        spinner.stop(exit_message)
+        response
     end
   end
 end

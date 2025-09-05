@@ -30,9 +30,6 @@ puts "#{message[:status] == :completed ? "✓ " : "✗"} Assistant message statu
 puts "#{chat.messages.select { |msg| msg[:role] == "assistant"}.count == 1 ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
 puts "#{!message[:content].empty? ? "✓ " : "✗"} Assistant message is present: #{message[:status]}"
 
-# ap chat.messages
-
-
 puts "\n" * 2
 puts "=" * 24
 puts "\n" * 2
@@ -40,13 +37,13 @@ puts "\n" * 2
 puts "2. Automatic polling"
 b = AI::Chat.new
 b.background = true
-b.user("Write a short description about a sci-fi novel about a rat in space.")
+b.user("Write a long description about a sci-fi novel about a rat in space.")
 b.generate!
 
 puts "\n" * 2
 message = b.get_response(wait: true)
 puts "\n" * 2
-puts "Assistant message: #{message[:content]}"
+puts "Assistant message: #{message[:content].inspect}"
 
 puts "\n" * 2
 puts "=== Background Mode Examples Complete ==="
