@@ -42,6 +42,12 @@ require_relative "10_additional_patterns"
 # Mixed content types (images + files in single message)
 require_relative "11_mixed_content"
 
+# Image generation
+require_relative "12_image_generation"
+
+# Code Interpreter
+require_relative "13_code_interpreter"
+
 puts "\n=== All AI::Chat examples completed ==="
 puts
 puts "Summary:"

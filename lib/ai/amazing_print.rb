@@ -1,5 +1,5 @@
 require "amazing_print"
-
+# :reek:IrresponsibleModule
 module AmazingPrint
   module AI
     def self.included(base)
@@ -27,6 +27,10 @@ module AmazingPrint
       end
     end
 
+    # :reek:DuplicateMethodCall
+    # :reek:FeatureEnvy
+    # :reek:NilCheck
+    # :reek:TooManyStatements
     def format_ai_chat(chat)
       vars = []
       
@@ -53,6 +57,8 @@ module AmazingPrint
       format_object(chat, vars)
     end
 
+    # :reek:TooManyStatements
+    # :reek:DuplicateMethodCall
     def format_object(object, vars)
       data = vars.map do |(name, value)|
         name = colorize(name, :variable) unless @options[:plain]
