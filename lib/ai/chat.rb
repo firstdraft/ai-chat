@@ -82,15 +82,15 @@ module AI
     end
 
     def system(message)
-      add(message, role: "system").last
+      add(message, role: "system")
     end
     
     def user(message, image: nil, images: nil, file: nil, files: nil)
-      add(message, role: "user", image: image, images: images, file: file, files: files).last
+      add(message, role: "user", image: image, images: images, file: file, files: files)
     end
     
     def assistant(message, response: nil)
-      add(message, role: "assistant", response: response).last
+      add(message, role: "assistant", response: response)
     end
 
     # :reek:NilCheck

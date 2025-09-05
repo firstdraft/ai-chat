@@ -52,7 +52,8 @@ puts "User: #{user_message}"
 c.generate!
 puts "Assistant: #{c.messages.last[:content]}"
 puts "Watercolor image: #{c.messages.last[:images]}"
-user_message = c.user("Now make it black & white")[:content]
+c.user("Now make it black & white")
+user_message = c.last[:content]
 puts "User: #{user_message}"
 c.generate!
 puts "Assistant: #{c.messages.last[:content]}"

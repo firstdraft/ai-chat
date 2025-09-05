@@ -16,8 +16,8 @@ puts
 puts "1. Basic conversation:"
 chat = AI::Chat.new
 chat.user("What is 2 + 2?")
-response = chat.generate![:content]
-puts "   Message: #{response}"
+message = chat.generate!.dig(:content)
+puts "   Message: #{message}"
 puts
 
 # 2. Structured output

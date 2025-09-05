@@ -40,7 +40,7 @@ begin
     additionalProperties: false
   }
   chat2.user("What is the current population of Tokyo in 2025?")
-  message = chat2.generate!
+  message = chat2.generate![:content]
   puts "✓ Web search + structured output: #{message}"
 rescue => e
   puts "✗ Web search + structured output error: #{e.message}"
