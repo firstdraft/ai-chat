@@ -84,11 +84,11 @@ module AI
     def system(message)
       add(message, role: "system")
     end
-    
+
     def user(message, image: nil, images: nil, file: nil, files: nil)
       add(message, role: "user", image: image, images: images, file: file, files: files)
     end
-    
+
     def assistant(message, response: nil)
       add(message, role: "assistant", response: response)
     end

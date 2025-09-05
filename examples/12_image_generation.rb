@@ -15,11 +15,11 @@ puts "-" * 50
 a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./my_generated_images"
-user_message = a.user("Draw a simple red circle")[:content]
-puts "User: #{user_message}"
+a.user("Draw a simple red circle")
+puts "User: #{a.last[:content]}"
 message = a.generate![:content]
 puts "Assistant: #{message}"
-puts "Images saved to: #{a.messages.last[:images]}"
+puts "Images saved to: #{a.last[:images]}"
 
 # Access images through the response object
 response_obj = a.messages.last[:response]
@@ -32,12 +32,12 @@ puts "-" * 50
 b = AI::Chat.new
 b.image_generation = true
 animal = ["cat", "dog", "elephant", "zebra", "crab", "parrot", "peacock", "shark"].sample
-user_message = b.user("Draw a #{animal}")[:content]
-puts "User: #{user_message}"
+b.user("Draw a #{animal}")
+puts "User: #{b.last[:content]}"
 b.generate!
 puts "First image: #{b.messages.last[:images]}"
-user_message = b.user("Make it cuter")[:content]
-puts "User: #{user_message}"
+b.user("Make it cuter")
+puts "User: #{b.last[:content]}"
 b.generate!
 puts "Second image: #{b.messages.last[:images]}"
 puts
@@ -47,8 +47,8 @@ puts "-" * 50
 c = AI::Chat.new
 c.image_generation = true
 image_path = File.expand_path("../spec/fixtures/thing.jpg", __dir__)
-user_message = c.user("Transform this image to look like watercolor", image: image_path)[:content]
-puts "User: #{user_message}"
+c.user("Transform this image to look like watercolor", image: image_path)
+puts "User: #{c.last[:content]}"
 c.generate!
 puts "Assistant: #{c.messages.last[:content]}"
 puts "Watercolor image: #{c.messages.last[:images]}"
