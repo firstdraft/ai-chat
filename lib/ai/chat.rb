@@ -585,7 +585,8 @@ module AI
           end
           api_response
         end
-        exit_message = response.status == "cancelled" ? "request timed out" : "done!"
+
+        exit_message = response.status == :cancelled ? "request timed out" : "done!"
         spinner.stop(exit_message)
         response
     end
