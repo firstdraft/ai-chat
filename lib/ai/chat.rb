@@ -214,7 +214,11 @@ module AI
       client.responses.create(**parameters)
     end
 
-    def get_response(wait: false, timeout: )
+    # :reek:BooleanParameter
+    # :reek:ControlParameter
+    # :reek:DuplicateMethodCall
+    # :reek:TooManyStatements
+    def get_response(wait: false)
       response = if wait
         spinner = TTY::Spinner.new("[:spinner] Loading ...", format: :dots)
         spinner.auto_spin
@@ -234,6 +238,8 @@ module AI
       parse_response(response)
     end
 
+    # :reek:NilCheck
+    # :reek:TooManyStatements
     def parse_response(response)
       text_response = response.output_text
       image_filenames = extract_and_save_images(response)
@@ -552,6 +558,8 @@ module AI
     end
 
     # This is similar to ActiveJob's :polynomially_longer retry option
+    # :reek:DuplicateMethodCall
+    # :reek:UtilityFunction
     def calculate_wait(executions)
       # cap the maximum wait time to ~110 seconds
       executions = executions.clamp(1..10)
