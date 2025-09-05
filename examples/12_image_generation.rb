@@ -61,3 +61,4 @@ puts "Black and white image: #{c.messages.last[:images]}"
 puts
 
 puts "=== Image Generation Examples Complete ==="
+puts

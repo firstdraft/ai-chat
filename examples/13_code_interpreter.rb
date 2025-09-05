@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+puts
 # Example showcasing code interpreter capabilities
 puts "=== AI::Chat Code Interpreter Examples ==="
 puts
@@ -28,6 +29,6 @@ b.code_interpreter = true
 
 b.system("You are a personal math tutor. When asked a math question, write and run code using the python tool to answer the question.")
 b.user("Solve the equation 3x + 11 = 14.")
-puts b.generate!
+puts b.generate![:content]
 puts "\n" * 5
 
