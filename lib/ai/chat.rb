@@ -233,7 +233,6 @@ module AI
     def parse_response(response)
       text_response = response.output_text
       image_filenames = extract_and_save_images(response)
-      status = background.nil? ? nil : response.status
       response_id = response.id
       response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
 
@@ -262,7 +261,7 @@ module AI
         role: "assistant",
         content: response_content,
         response: chat_response,
-        status: status
+        status: response.status
       }
 
       message.store(:images, image_filenames) unless image_filenames.empty?
