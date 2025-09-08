@@ -47,3 +47,6 @@ require_relative "12_image_generation"
 
 # Code Interpreter
 require_relative "13_code_interpreter"
+
+# Background Mode
+require_relative "14_background_mode"
