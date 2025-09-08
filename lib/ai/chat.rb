@@ -92,7 +92,7 @@ module AI
     def user(message, image: nil, images: nil, file: nil, files: nil)
       add(message, role: "user", image: image, images: images, file: file, files: files)
     end
-    
+
     def assistant(message, response: nil, status: nil)
       add(message, role: "assistant", response: response, status: status)
     end
@@ -571,6 +571,8 @@ module AI
       end
     end
 
+    # :reek:DuplicateMethodCall
+    # :reek:TooManyStatements
     def wait_for_response(timeout)
         spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
         spinner.auto_spin
