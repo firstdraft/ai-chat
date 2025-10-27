@@ -32,3 +32,14 @@ b.user("Solve the equation 3x + 11 = 14.")
 puts b.generate![:content]
 puts "\n" * 5
 
+puts "Example 3: Basic file generation"
+puts "-" * 50
+
+c = AI::Chat.new
+c.code_interpreter = true
+
+c.user("Write an .csv file that contains a list of 10 random first names.")
+puts c.generate![:content]
+puts "Response contains generated file: #{!c.last.dig(:response, :images).empty? ? "✓ file is stored under :images key" : "✗ no file stored under :images key"}."
+puts "\n" * 5
+
