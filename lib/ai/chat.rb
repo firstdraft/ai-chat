@@ -3,6 +3,7 @@
 require "base64"
 require "json"
 require "marcel"
+require "net/http"
 require "openai"
 require "pathname"
 require "stringio"
@@ -18,18 +19,20 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
+    attr_accessor :background, :code_interpreter, :image_generation, :image_folder, :messages, :model, :previous_response_id, :proxy, :web_search
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
+    PROXY_URL = "https://prepend.me/".freeze
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
-      api_key ||= ENV.fetch(api_key_env_var)
+      @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-4.1-nano"
-      @client = OpenAI::Client.new(api_key: api_key)
+      @client = OpenAI::Client.new(api_key: @api_key)
       @previous_response_id = nil
+      @proxy = false
       @image_generation = false
       @image_folder = "./images"
     end
@@ -100,6 +103,12 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
+      if proxy && image_generation
+        message = "AI::Chat does not currently support Image Generation through the proxy. Set proxy to false and try again."
+        $stderr.puts message
+
+        return { status: 403, error: message }
+      end
       response = create_response
       parse_response(response)
 
@@ -115,7 +124,7 @@ module AI
       response = if wait
         wait_for_response(timeout)
       else
-        client.responses.retrieve(previous_response_id)
+        retrieve_response(previous_response_id)
       end
       parse_response(response)
     end
@@ -225,22 +234,65 @@ module AI
       messages_to_send = prepare_messages_for_api
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
 
-      client.responses.create(**parameters)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses")
+        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+          headers = {
+            "Content-Type" => "application/json",
+            "Authorization" => "Bearer #{@api_key}"
+          }
+          request = Net::HTTP::Post.new(uri, headers)
+          request.body = parameters.to_json
+          response = http.request(request)
+
+          # Handle proxy server 503 HTML response
+          begin
+            return JSON.parse(response.body, symbolize_names: true)
+          rescue JSON::ParserError, TypeError => e
+            exit(1)
+          end
+        end
+      else
+        client.responses.create(**parameters)
+      end
     end
 
     # :reek:NilCheck
     # :reek:TooManyStatements
     def parse_response(response)
-      text_response = response.output_text
-      image_filenames = extract_and_save_images(response)
-      response_id = response.id
-      response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+      if proxy && response.is_a?(Hash)
+        response_messages = response.dig(:output).select do |output|
+          output.dig(:type) == "message"
+        end
+        #
+        message_contents = response_messages.map do |message|
+          message.dig(:content)
+        end.flatten
 
+        output_texts = message_contents.select do |content|
+          content[:type] == "output_text"
+        end
+
+        text_response = output_texts.map { |output| output[:text] }.join
+        response_id = response.dig(:id)
+        response_status = response.dig(:status).to_sym
+        response_model = response.dig(:model)
+        response_usage = response.dig(:usage)&.slice(:input_tokens, :output_tokens, :total_tokens)
+        image_filenames = []
+      else        
+        text_response = response.output_text
+        response_id = response.id
+        response_status = response.status
+        response_model = response.model
+        response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+        image_filenames = extract_and_save_images(response)
+      end
+      
       chat_response = {
         id: response_id,
-        model: response.model,
-        usage: response_usage,
-        total_tokens: response_usage[:total_tokens],
+        model: response_model,
+        usage: response_usage || {},
+        total_tokens: response_usage&.fetch(:total_tokens, 0),
         images: image_filenames
       }.compact
 
@@ -261,7 +313,7 @@ module AI
         role: "assistant",
         content: response_content,
         response: chat_response,
-        status: response.status
+        status: response_status
       }
 
       message.store(:images, image_filenames) unless image_filenames.empty?
@@ -575,21 +627,59 @@ module AI
     def wait_for_response(timeout)
         spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
         spinner.auto_spin
-        api_response = client.responses.retrieve(previous_response_id)
+        api_response = retrieve_response(previous_response_id)
         number_of_times_polled = 0
         response = timeout_request(timeout) do
-          while api_response.status != :completed
+          status = if api_response.respond_to?(:status)
+            api_response.status
+          else 
+            api_response.dig(:status).to_sym
+          end
+
+          while status != :completed
             some_amount_of_seconds = calculate_wait(number_of_times_polled)
             sleep some_amount_of_seconds
             number_of_times_polled += 1
-            api_response = client.responses.retrieve(previous_response_id)
+            api_response = retrieve_response(previous_response_id)
+            status = if api_response.respond_to?(:status)
+              api_response.status
+            else 
+              api_response.dig(:status).to_sym
+            end
           end
           api_response
         end
-
-        exit_message = response.status == :cancelled ? "request timed out" : "done!"
+        
+        status = if api_response.respond_to?(:status)
+          api_response.status
+        else 
+          api_response.dig(:status).to_sym
+        end
+        exit_message = status == :cancelled ? "request timed out" : "done!"
         spinner.stop(exit_message)
         response
+    end
+
+    def retrieve_response(previous_response_id)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses/#{previous_response_id}")
+        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+          headers = {
+            "Content-Type" => "application/json",
+            "Authorization" => "Bearer #{@api_key}"
+          }
+          request = Net::HTTP::Get.new(uri, headers)
+          response = http.request(request)
+          # Handle proxy server 503 HTML response
+          begin
+            return JSON.parse(response.body, symbolize_names: true)
+          rescue JSON::ParserError, TypeError => e
+            exit(1)
+          end
+        end
+      else
+        client.responses.retrieve(previous_response_id)
+      end
     end
   end
 end
