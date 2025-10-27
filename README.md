@@ -243,17 +243,18 @@ h.last[:content]
 
 ## Web Search
 
-To give the model access to real-time information from the internet, we enable the `web_search` feature by default. This uses OpenAI's built-in `web_search_preview` tool.
+To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search_preview` tool.
 
 ```ruby
 m = AI::Chat.new
+m.web_search = true
 m.user("What are the latest developments in the Ruby language?")
 m.generate! # This may use web search to find current information
 ```
 
 **Note:** This feature requires a model that supports the `web_search_preview` tool, such as `gpt-4o` or `gpt-4o-mini`. The gem will attempt to use a compatible model if you have `web_search` enabled.
 
-If you don't want the model to use web search, set `web_search` to `false`:
+If you don't want the model to use web search, set `web_search` to `false` (this is the default):
 
 ```ruby
 m = AI::Chat.new
