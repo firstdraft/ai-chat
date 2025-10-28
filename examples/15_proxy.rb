@@ -19,9 +19,9 @@ end
 puts "\n=== AI::Chat Proxy Examples ==="
 puts
 
-1. Basic conversation
+# 1. Basic conversation
 puts "1. Basic conversation:"
-chat = AI::Chat.new(api_key_env_var "PROXY_API_KEY")
+chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat.proxy = true
 chat.user("What's the capital of Florida?")
 message = chat.generate![:content]

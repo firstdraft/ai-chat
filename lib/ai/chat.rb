@@ -249,7 +249,7 @@ module AI
           begin
             return JSON.parse(response.body, symbolize_names: true)
           rescue JSON::ParserError, TypeError => e
-            exit(1)
+            raise JSON::ParserError, "Failed to parse response from proxy: #{e.message}"
           end
         end
       else
@@ -674,7 +674,7 @@ module AI
           begin
             return JSON.parse(response.body, symbolize_names: true)
           rescue JSON::ParserError, TypeError => e
-            exit(1)
+            raise JSON::ParserError, "Failed to parse response from proxy: #{e.message}"
           end
         end
       else
