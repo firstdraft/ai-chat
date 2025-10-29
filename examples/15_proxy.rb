@@ -11,7 +11,6 @@ require "amazing_print"
 puts "\n=== AI::Chat Proxy Examples ==="
 puts
 
-# 1. Basic conversation
 puts "1. Basic conversation:"
 chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat.proxy = true
@@ -170,6 +169,32 @@ puts "\n" * 2
 puts "Assistant message: #{message[:content].inspect}"
 puts "Assistant message status: #{message[:status].inspect}"
 
+puts "\n" * 4
+
+puts "10. When an un-official API key is used and proxy is disabled:"
+chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat.user("What's the capital of Florida?")
+begin
+  chat.generate!
+rescue => e
+  puts "✓ Raises Error: #{e.message}."
+else
+  puts "✗ Does not raise Error."
+end
+
+puts "\n" * 4
+
+puts "11. When official API key is used and proxy is enabled:"
+chat = AI::Chat.new
+chat.proxy = true
+chat.user("What's the capital of Florida?")
+begin
+  chat.generate!
+rescue => e
+  puts "✓ Raises Error: #{e.message}."
+else
+  puts "✗ Does not raise Error."
+end
 puts "\n" * 4
 
 puts "=== Proxy Example Complete ==="

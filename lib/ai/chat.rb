@@ -105,6 +105,7 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
+      validate_api_key
       response = create_response
       parse_response(response)
 
@@ -201,6 +202,7 @@ module AI
     private
 
     class InputClassificationError < StandardError; end
+    class WrongAPITokenUsedError < StandardError; end
 
     # :reek:FeatureEnvy
     # :reek:ManualDispatch
@@ -546,6 +548,19 @@ module AI
         yield
       rescue => error
         warn "Failed to save image: #{error.message}"
+      end
+    end
+
+    def validate_api_key
+      openai_api_key_used = @api_key.start_with?("sk-proj")
+      proxy_api_key_used = !openai_api_key_used
+      proxy_enabled = proxy
+      proxy_disabled = !proxy
+
+      if openai_api_key_used && proxy_enabled
+        raise WrongAPITokenUsedError, "It looks like you're using an official API key from OpenAI with proxying enabled. When proxying is enabled you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response."
+      elsif proxy_api_key_used && proxy_disabled
+        raise WrongAPITokenUsedError, "It looks like you're using an unofficial OpenAI API key from prepend.me. When using an unofficial API key you must enable proxy before generating responses. Proxying is currently disabled, please enable it before generating a response."
       end
     end
 
