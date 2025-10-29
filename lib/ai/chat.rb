@@ -610,7 +610,6 @@ module AI
   
           warn_if_file_fails_to_save do
             file_content = retrieve_file(file_id, container_id: container_id)
-            file_content.class
             file_path = File.join(subfolder_path, filename)
             File.open(file_path, "wb") do |file|
               file.write(file_content)
@@ -723,7 +722,7 @@ module AI
       end
     end
 
-    def retrieve_file(file_id, container_id: container_id)
+    def retrieve_file(file_id, container_id: nil)
       if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/containers/#{container_id}/files/#{file_id}/content")
         Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
