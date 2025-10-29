@@ -3,13 +3,15 @@
 require "base64"
 require "json"
 require "marcel"
-require "net/http"
 require "openai"
 require "pathname"
 require "stringio"
 require "fileutils"
 require "tty-spinner"
 require "timeout"
+
+require_relative "http"
+include AI::Http
 
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
@@ -230,22 +232,7 @@ module AI
 
       if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/responses")
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
-          headers = {
-            "Content-Type" => "application/json",
-            "Authorization" => "Bearer #{@api_key}"
-          }
-          request = Net::HTTP::Post.new(uri, headers)
-          request.body = parameters.to_json
-          response = http.request(request)
-
-          # Handle proxy server 503 HTML response
-          begin
-            return JSON.parse(response.body, symbolize_names: true)
-          rescue JSON::ParserError, TypeError => e
-            raise JSON::ParserError, "Failed to parse response from proxy: #{e.message}"
-          end
-        end
+        send_request(uri, content_type: "json", parameters: parameters, method: "post")
       else
         client.responses.create(**parameters)
       end
@@ -258,7 +245,7 @@ module AI
         response_messages = response.dig(:output).select do |output|
           output.dig(:type) == "message"
         end
-        #
+
         message_contents = response_messages.map do |message|
           message.dig(:content)
         end.flatten
@@ -703,20 +690,7 @@ module AI
     def retrieve_response(previous_response_id)
       if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/responses/#{previous_response_id}")
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
-          headers = {
-            "Content-Type" => "application/json",
-            "Authorization" => "Bearer #{@api_key}"
-          }
-          request = Net::HTTP::Get.new(uri, headers)
-          response = http.request(request)
-          # Handle proxy server 503 HTML response
-          begin
-            return JSON.parse(response.body, symbolize_names: true)
-          rescue JSON::ParserError, TypeError => e
-            raise JSON::ParserError, "Failed to parse response from proxy: #{e.message}"
-          end
-        end
+        send_request(uri, content_type: "json", method: "get")
       else
         client.responses.retrieve(previous_response_id)
       end
@@ -725,16 +699,7 @@ module AI
     def retrieve_file(file_id, container_id: nil)
       if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/containers/#{container_id}/files/#{file_id}/content")
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
-          headers = {
-            "Content-Type" => "application/json",
-            "Authorization" => "Bearer #{@api_key}"
-          }
-          request = Net::HTTP::Get.new(uri, headers)
-          response = http.request(request)
-          # Binary data
-          return response.body
-        end
+        send_request(uri, method: "get")
       else
         container_content = client.containers.files.content
         file_content = container_content.retrieve(file_id, container_id: container_id)

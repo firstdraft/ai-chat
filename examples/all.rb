@@ -50,3 +50,6 @@ require_relative "13_code_interpreter"
 
 # Background Mode
 require_relative "14_background_mode"
+
+# Proxy
+require_relative "15_proxy"

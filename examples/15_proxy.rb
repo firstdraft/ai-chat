@@ -22,7 +22,7 @@ puts
 
 # 2. Structured output
 puts "2. Structured output (extracting data):"
-chat2 = AI::Chat.new(api_key_env_var "PROXY_API_KEY")
+chat2 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat2.proxy = true
 chat2.system("Extract the color and animal from the message.")
 chat2.schema = {
@@ -47,7 +47,7 @@ puts
 # 3. File handling
 puts "3. File handling (reading text files):"
 readme_path = File.expand_path("../README.md", __dir__)
-chat3 = AI::Chat.new(api_key_env_var "PROXY_API_KEY")
+chat3 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat3.proxy = true
 chat3.user("What is this gem about? (one sentence)", file: readme_path)
 response = chat3.generate![:content]
@@ -100,7 +100,7 @@ message = chat6.generate![:content]
 puts "✓ Chat with web search: #{message[0..100]}..."
 puts
 # 7. Image generation
-puts "Example 7: Image generation is not allowed through proxy"
+puts "Example 7: Image generation"
 puts "-" * 50
 chat7 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat7.proxy = true
@@ -126,7 +126,7 @@ chat8.user("Plot y = 2x + 3 where x is -10 to 10.")
 puts chat8.generate![:content]
 puts "\n" * 5
 puts "First file: #{chat8.messages.last.dig(:response, :images).empty? ? "✗" : "✓"} #{chat8.messages.last.dig(:response, :images, 0)}"
-
+return
 # 9. Background mode
 puts "Example 9: Background mode"
 chat9 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
