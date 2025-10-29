@@ -103,12 +103,6 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
-      if proxy && image_generation
-        message = "AI::Chat does not currently support Image Generation through the proxy. Set proxy to false and try again."
-        $stderr.puts message
-
-        return { status: 403, error: message }
-      end
       response = create_response
       parse_response(response)
 
@@ -278,16 +272,15 @@ module AI
         response_status = response.dig(:status).to_sym
         response_model = response.dig(:model)
         response_usage = response.dig(:usage)&.slice(:input_tokens, :output_tokens, :total_tokens)
-        image_filenames = []
       else        
         text_response = response.output_text
         response_id = response.id
         response_status = response.status
         response_model = response.model
         response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
-        image_filenames = extract_and_save_images(response)
       end
-      
+      image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
+
       chat_response = {
         id: response_id,
         model: response_model,
@@ -513,19 +506,31 @@ module AI
     def extract_and_save_images(response)
       image_filenames = []
 
-      image_outputs = response.output.select { |output|
-        output.respond_to?(:type) && output.type == :image_generation_call
-      }
+      if proxy
+        image_outputs = response.dig(:output).select { |output|
+          output.dig(:type) == "image_generation_call"
+        }
+      else       
+        image_outputs = response.output.select { |output|
+          output.respond_to?(:type) && output.type == :image_generation_call
+        }
+      end
 
       return image_filenames if image_outputs.empty?
 
-      subfolder_path = create_images_folder(response.id)
+      response_id = proxy ? response.dig(:id) : response.id
+      subfolder_path = create_images_folder(response_id)
 
       image_outputs.each_with_index do |output, index|
-        next unless output.respond_to?(:result) && output.result
+        if proxy
+          next unless output.key?(:result) && output.dig(:result)
+        else
+          next unless output.respond_to?(:result) && output.result
+        end
 
         warn_if_file_fails_to_save do
-          image_data = Base64.strict_decode64(output.result)
+          result = proxy ? output.dig(:result) : output.result
+          image_data = Base64.strict_decode64(result)
 
           filename = "#{(index + 1).to_s.rjust(3, "0")}.png"
           file_path = File.join(subfolder_path, filename)
@@ -564,41 +569,77 @@ module AI
     def extract_and_save_files(response)
       filenames = []
 
-      message_outputs = response.output.select do |output|
-        output.respond_to?(:type) && output.type == :message
-      end
-
-      outputs_with_annotations = message_outputs.map do |message|
-        message.content.find do |content|
-          content.respond_to?(:annotations) && content.annotations.length.positive?
+      if proxy
+        message_outputs = response.dig(:output).select do |output|
+          output.dig(:type) == "message"
         end
-      end.compact
+  
+        outputs_with_annotations = message_outputs.map do |message|
+          message.dig(:content).find do |content|
+            content.dig(:annotations).length.positive?
+          end
+        end.compact
+      else
+        message_outputs = response.output.select do |output|
+          output.respond_to?(:type) && output.type == :message
+        end
+  
+        outputs_with_annotations = message_outputs.map do |message|
+          message.content.find do |content|
+            content.respond_to?(:annotations) && content.annotations.length.positive?
+          end
+        end.compact
+      end
 
       return filenames if outputs_with_annotations.empty?
 
-      subfolder_path = create_images_folder(response.id)
-      annotations = outputs_with_annotations.map do |output|
-        output.annotations.find do |annotation|
-          annotation.respond_to?(:filename)
-        end
-      end.compact
+      response_id = proxy ? response.dig(:id) : response.id
+      subfolder_path = create_images_folder(response_id)
 
-      annotations.each do |annotation|
-        container_id = annotation.container_id
-        file_id = annotation.file_id
-        filename = annotation.filename
-
-        warn_if_file_fails_to_save do
-          container_content = client.containers.files.content
-          file_content = container_content.retrieve(file_id, container_id: container_id)
-          file_path = File.join(subfolder_path, filename)
-          File.open(file_path, "wb") do |file|
-            file.write(file_content.read)
+      if proxy
+        annotations = outputs_with_annotations.map do |output|
+          output.dig(:annotations).find do |annotation|
+            annotation.key?(:filename)
           end
-          filenames << file_path
+        end.compact
+  
+        annotations.each do |annotation|
+          container_id = annotation.dig(:container_id)
+          file_id = annotation.dig(:file_id)
+          filename = annotation.dig(:filename)
+  
+          warn_if_file_fails_to_save do
+            file_content = retrieve_file(file_id, container_id: container_id)
+            file_content.class
+            file_path = File.join(subfolder_path, filename)
+            File.open(file_path, "wb") do |file|
+              file.write(file_content)
+            end
+            filenames << file_path
+          end
+        end
+      else
+        annotations = outputs_with_annotations.map do |output|
+          output.annotations.find do |annotation|
+            annotation.respond_to?(:filename)
+          end
+        end.compact
+  
+        annotations.each do |annotation|
+          container_id = annotation.container_id
+          file_id = annotation.file_id
+          filename = annotation.filename
+  
+          warn_if_file_fails_to_save do
+            file_content = retrieve_file(file_id, container_id: container_id)
+            file_path = File.join(subfolder_path, filename)
+            File.open(file_path, "wb") do |file|
+              file.write(file_content.read)
+            end
+            filenames << file_path
+          end
         end
       end
-
       filenames
     end
 
@@ -679,6 +720,25 @@ module AI
         end
       else
         client.responses.retrieve(previous_response_id)
+      end
+    end
+
+    def retrieve_file(file_id, container_id: container_id)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/containers/#{container_id}/files/#{file_id}/content")
+        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+          headers = {
+            "Content-Type" => "application/json",
+            "Authorization" => "Bearer #{@api_key}"
+          }
+          request = Net::HTTP::Get.new(uri, headers)
+          response = http.request(request)
+          # Binary data
+          return response.body
+        end
+      else
+        container_content = client.containers.files.content
+        file_content = container_content.retrieve(file_id, container_id: container_id)
       end
     end
   end

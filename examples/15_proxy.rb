@@ -7,14 +7,6 @@ require_relative "../lib/ai-chat"
 require "dotenv"
 Dotenv.load(File.expand_path("../.env", __dir__))
 require "amazing_print"
-def with_captured_stderr
-  original_stderr = $stderr  # capture previous value of $stderr
-  $stderr = StringIO.new     # assign a string buffer to $stderr
-  yield                      # perform the body of the user code
-  $stderr.string             # return the contents of the string buffer
-ensure
-  $stderr = original_stderr  # restore $stderr to its previous value
-end
 
 puts "\n=== AI::Chat Proxy Examples ==="
 puts
@@ -116,16 +108,24 @@ chat7.image_generation = true
 chat7.image_folder = "./my_generated_images"
 chat7.user("Draw a simple red circle")
 puts "User: #{chat7.last[:content]}"
-puts
-generate_output = with_captured_stderr do
-  chat7.generate!
-end
-puts "generate! exited with message?: \"#{generate_output.chomp}\""
+message = chat7.generate![:content]
+puts "Assistant: #{message}"
+image_exists = !chat7.last[:images].empty?
+puts "Image generated: #{image_exists ? "✓" : "✗"}"
+puts "Images saved to: #{chat7.last[:images]}"
 puts
 
 # 8. Code interpreter
-puts "Example 8: Code interpreter... skipped for now"
-puts
+puts "Example 8: Code interpreter"
+puts "-" * 50
+
+chat8 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat8.proxy = true
+chat8.code_interpreter = true
+chat8.user("Plot y = 2x + 3 where x is -10 to 10.")
+puts chat8.generate![:content]
+puts "\n" * 5
+puts "First file: #{chat8.messages.last.dig(:response, :images).empty? ? "✗" : "✓"} #{chat8.messages.last.dig(:response, :images, 0)}"
 
 # 9. Background mode
 puts "Example 9: Background mode"
