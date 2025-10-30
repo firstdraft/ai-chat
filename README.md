@@ -703,10 +703,10 @@ Pretty-prints the entire conversation with all details for debugging and learnin
 chat.verbose
 
 # Output:
-# ============================================================
-# Conversation: conv_abc123...
-# Items: 4
-# ============================================================
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │ Conversation: conv_6903c1eea6cc819695af3a1b1ebf9b390c3db5e8ec021c9a        │
+# │ Items: 3                                                                   │
+# └────────────────────────────────────────────────────────────────────────────┘
 #
 # [detailed colorized output of all items including web searches,
 #  reasoning, tool calls, messages, etc.]
