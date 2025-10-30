@@ -18,7 +18,7 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
+    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -153,6 +153,23 @@ module AI
       messages.last
     end
 
+    def items(order: :asc)
+      raise "No conversation_id set. Call generate! first to create a conversation." unless conversation_id
+
+      client.conversations.items.list(conversation_id, order: order)
+    end
+
+    def verbose
+      page = items
+      puts "=" * 60
+      puts "Conversation: #{conversation_id}"
+      puts "Items: #{page.data.length}"
+      puts "=" * 60
+      puts
+
+      ap page.data, limit: 10, indent: 2
+    end
+
     def inspect
       "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
     end
@@ -164,9 +181,9 @@ module AI
     # :reek:DuplicateMethodCall
     # :reek:UncommunicativeParameterName
     def pretty_print(q)
-      q.group(1, "#<#{self.class}", '>') do
+      q.group(1, "#<#{self.class}", ">") do
         q.breakable
-        
+
         # Show messages with truncation
         q.text "@messages="
         truncated_messages = @messages.map do |msg|
@@ -177,7 +194,7 @@ module AI
           truncated_msg
         end
         q.pp truncated_messages
-        
+
         # Show other instance variables (except sensitive ones)
         skip_vars = [:@messages, :@api_key, :@client]
         instance_variables.sort.each do |var|
@@ -220,7 +237,19 @@ module AI
       parameters[:tools] = tools unless tools.empty?
       parameters[:text] = schema if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
-      parameters[:previous_response_id] = previous_response_id if previous_response_id
+
+      if previous_response_id && conversation_id
+        warn "Both conversation_id and previous_response_id are set. Using previous_response_id for forking. Only set one."
+        parameters[:previous_response_id] = previous_response_id
+      elsif previous_response_id
+        parameters[:previous_response_id] = previous_response_id
+      elsif conversation_id
+        parameters[:conversation] = conversation_id
+      else
+        conversation = client.conversations.create
+        self.conversation_id = conversation.id
+        parameters[:conversation] = conversation_id
+      end
 
       messages_to_send = prepare_messages_for_api
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
@@ -235,6 +264,10 @@ module AI
       image_filenames = extract_and_save_images(response)
       response_id = response.id
       response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+
+      if response.conversation
+        self.conversation_id = response.conversation.id
+      end
 
       chat_response = {
         id: response_id,
@@ -498,11 +531,9 @@ module AI
     end
 
     def warn_if_file_fails_to_save
-      begin
-        yield
-      rescue => error
-        warn "Failed to save image: #{error.message}"
-      end
+      yield
+    rescue => error
+      warn "Failed to save image: #{error.message}"
     end
 
     # :reek:FeatureEnvy
@@ -540,9 +571,7 @@ module AI
           container_content = client.containers.files.content
           file_content = container_content.retrieve(file_id, container_id: container_id)
           file_path = File.join(subfolder_path, filename)
-          File.open(file_path, "wb") do |file|
-            file.write(file_content.read)
-          end
+          File.binwrite(file_path, file_content.read)
           filenames << file_path
         end
       end
@@ -561,35 +590,33 @@ module AI
     end
 
     def timeout_request(duration)
-      begin
-        Timeout.timeout(duration) do
-          yield
-        end
-      rescue Timeout::Error
-        client.responses.cancel(previous_response_id)
+      Timeout.timeout(duration) do
+        yield
       end
+    rescue Timeout::Error
+      client.responses.cancel(previous_response_id)
     end
 
     # :reek:DuplicateMethodCall
     # :reek:TooManyStatements
     def wait_for_response(timeout)
-        spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
-        spinner.auto_spin
-        api_response = client.responses.retrieve(previous_response_id)
-        number_of_times_polled = 0
-        response = timeout_request(timeout) do
-          while api_response.status != :completed
-            some_amount_of_seconds = calculate_wait(number_of_times_polled)
-            sleep some_amount_of_seconds
-            number_of_times_polled += 1
-            api_response = client.responses.retrieve(previous_response_id)
-          end
-          api_response
+      spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
+      spinner.auto_spin
+      api_response = client.responses.retrieve(previous_response_id)
+      number_of_times_polled = 0
+      response = timeout_request(timeout) do
+        while api_response.status != :completed
+          some_amount_of_seconds = calculate_wait(number_of_times_polled)
+          sleep some_amount_of_seconds
+          number_of_times_polled += 1
+          api_response = client.responses.retrieve(previous_response_id)
         end
+        api_response
+      end
 
-        exit_message = response.status == :cancelled ? "request timed out" : "done!"
-        spinner.stop(exit_message)
-        response
+      exit_message = (response.status == :cancelled) ? "request timed out" : "done!"
+      spinner.stop(exit_message)
+      response
     end
   end
 end

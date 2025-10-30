@@ -2,11 +2,14 @@ PATH
   remote: .
   specs:
     ai-chat (0.2.4)
+      amazing_print (~> 1.8)
       base64 (> 0.1.1)
       json (~> 2.0)
       marcel (~> 1.0)
-      openai (~> 0.16)
+      openai (~> 0.34)
       tty-spinner (~> 0.9.3)
+    openai (0.34.1)
+      connection_pool
 
 GEM
   remote: https://rubygems.org/
@@ -64,8 +67,6 @@ GEM
     lint_roller (1.1.0)
     logger (1.7.0)
     marcel (1.0.4)
-    openai (0.17.1)
-      connection_pool
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
