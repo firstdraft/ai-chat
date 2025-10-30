@@ -103,7 +103,7 @@ module AI
       response = create_response
       parse_response(response)
 
-      self.previous_response_id = last.dig(:response, :id)
+      self.previous_response_id = last.dig(:response, :id) unless conversation_id
       last
     end
 
