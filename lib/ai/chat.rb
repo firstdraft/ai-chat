@@ -161,10 +161,15 @@ module AI
 
     def verbose
       page = items
-      puts "=" * 60
-      puts "Conversation: #{conversation_id}"
-      puts "Items: #{page.data.length}"
-      puts "=" * 60
+
+      box_width = 78
+      inner_width = box_width - 4
+
+      puts
+      puts "┌#{"─" * (box_width - 2)}┐"
+      puts "│ Conversation: #{conversation_id.ljust(inner_width - 14)} │"
+      puts "│ Items: #{page.data.length.to_s.ljust(inner_width - 7)} │"
+      puts "└#{"─" * (box_width - 2)}┘"
       puts
 
       ap page.data, limit: 10, indent: 2
