@@ -125,7 +125,9 @@ chat8.user("Plot y = 2x + 3 where x is -10 to 10.")
 puts chat8.generate![:content]
 puts "\n" * 5
 puts "First file: #{chat8.messages.last.dig(:response, :images).empty? ? "✗" : "✓"} #{chat8.messages.last.dig(:response, :images, 0)}"
-return
+puts
+puts
+
 # 9. Background mode
 puts "Example 9: Background mode"
 chat9 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
