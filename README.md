@@ -780,3 +780,15 @@ While this gem includes specs, they use mocked API responses. To test with real 
 3. Run the examples: `bundle exec ruby examples/all.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.
+
+## Contributing
+
+When contributing to this project:
+
+1. **Code Style**: This project uses StandardRB for linting. Run `bundle exec standardrb --fix` before committing to automatically fix style issues.
+
+2. **Testing**: Ensure all specs pass with `bundle exec rspec`.
+
+3. **Examples**: If adding a feature, consider adding an example in the `examples/` directory.
+
+4. **Documentation**: Update the README if your changes affect the public API.
