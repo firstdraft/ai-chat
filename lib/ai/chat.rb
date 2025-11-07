@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "base64"
+require "bigdecimal"
 require "json"
 require "marcel"
 require "openai"
@@ -17,6 +18,199 @@ module AI
   # :reek:InstanceVariableAssumption
   # :reek:IrresponsibleModule
   class Chat
+    # SchemaGenerator - generates JSON Schema from Ruby classes and objects
+    class SchemaGenerator
+      # Main method to generate schema from any Ruby object or class
+      def generate(target)
+        case target
+        when Class
+          generate_from_class(target)
+        when Hash
+          generate_from_hash(target)
+        when Array
+          generate_from_array(target)
+        else
+          generate_from_object(target)
+        end
+      end
+
+      private
+
+      # Generate schema from a Ruby class
+      def generate_from_class(klass)
+        # Check if it's a basic Ruby class
+        if klass <= Hash
+          {
+            type: "object",
+            properties: {},
+            required: []
+          }
+        elsif klass <= Array
+          {
+            type: "array",
+            items: { type: "string" } # Default to string if no specific type provided
+          }
+        else
+          # For custom classes, inspect instance variables
+          generate_from_class_inspection(klass)
+        end
+      end
+
+      # Generate schema by inspecting class instance variables
+      def generate_from_class_inspection(klass)
+        # Create an instance to inspect its structure
+        instance = klass.allocate
+        # Get instance variables by creating a basic instance and inspecting it
+        properties = {}
+        required = []
+
+        # Try to create an instance to analyze its structure (without calling initialize)
+        begin
+          # For classes that might have complex initialization, 
+          # we'll use a simpler approach by checking for common patterns
+          properties = {}
+          required = []
+          
+          # If the class has attributes that can be inferred, add them
+          # This is a basic implementation - could be enhanced
+          if klass.respond_to?(:new)
+            begin
+              # Try to create a minimal instance (may fail for complex classes)
+              temp_instance = klass.allocate
+              temp_instance.send(:initialize) if temp_instance.respond_to?(:initialize, true)
+            rescue
+              # If initialization fails, just use the class structure
+            end
+          end
+        rescue
+          # Fallback to basic object structure if inspection fails
+        end
+
+        # Default to a basic object schema for custom classes
+        {
+          type: "object",
+          properties: properties,
+          required: required
+        }
+      end
+
+      # Generate schema from a hash structure
+      def generate_from_hash(hash)
+        properties = {}
+        required = []
+
+        hash.each do |key, value|
+          key_name = key.is_a?(Symbol) ? key : key.to_sym
+          required << key_name
+          
+          properties[key_name] = infer_type_from_value(value)
+        end
+
+        {
+          type: "object",
+          properties: properties,
+          required: required
+        }
+      end
+
+      # Generate schema from an array
+      def generate_from_array(array)
+        return {
+          type: "array",
+          items: { type: "string" }
+        } if array.empty?
+
+        # For arrays, we look at the first element to infer the item type
+        # This is a basic approach - could be enhanced to handle mixed arrays
+        first_item_schema = infer_type_from_value(array.first)
+        
+        {
+          type: "array",
+          items: first_item_schema
+        }
+      end
+
+      # Generate schema from an arbitrary object
+      def generate_from_object(object)
+        # Handle different types of objects
+        case object
+        when Hash
+          generate_from_hash(object)
+        when Array
+          generate_from_array(object)
+        else
+          # For other objects, try to infer the structure
+          # If it's a simple value, return its type
+          {
+            type: infer_basic_type(object)
+          }
+        end
+      end
+
+      # Infer JSON schema type from Ruby value
+      def infer_type_from_value(value)
+        case value
+        when Hash
+          generate_from_hash(value)
+        when Array
+          generate_from_array(value)
+        when String
+          { type: "string" }
+        when Integer
+          { type: "integer" }
+        when Float
+          { type: "number" }
+        when BigDecimal
+          { type: "number" }
+        when TrueClass, FalseClass
+          { type: "boolean" }
+        when NilClass
+          { type: "null" }
+        when Symbol
+          { type: "string" } # Symbols can be represented as strings in JSON
+        else
+          # For custom objects, try to infer based on class
+          case value.class
+          when Time, DateTime
+            { type: "string", format: "date-time" }
+          when Date
+            { type: "string", format: "date" }
+          else
+            # Default to string for unknown types
+            { type: "string" }
+          end
+        end
+      end
+
+      # Infer basic JSON schema type from Ruby object
+      def infer_basic_type(obj)
+        case obj
+        when String
+          "string"
+        when Integer
+          "integer"
+        when Float, BigDecimal
+          "number"
+        when TrueClass, FalseClass
+          "boolean"
+        when NilClass
+          "null"
+        when Hash
+          "object"
+        when Array
+          "array"
+        when Symbol
+          "string"
+        else
+          # Try to categorize based on class
+          if obj.respond_to?(:to_s)
+            "string"
+          else
+            "object"
+          end
+        end
+      end
+    end
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
     attr_reader :reasoning_effort, :client, :schema
@@ -147,6 +341,19 @@ module AI
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
       end
+    end
+
+    # Generates a JSON schema from a Ruby class or object structure
+    def generate_schema(target, name: nil)
+      schema_generator = SchemaGenerator.new
+      schema = schema_generator.generate(target)
+      
+      # Wrap the schema with proper format if needed
+      wrapped_schema = wrap_schema_if_needed(schema)
+      
+      # Set the generated schema
+      @schema = wrapped_schema
+      wrapped_schema
     end
 
     def last
