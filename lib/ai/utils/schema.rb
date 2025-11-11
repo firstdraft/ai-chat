@@ -8,7 +8,10 @@ module AI::Utils
     end
 
     def generate_schema!
-      return unless schema_description
+      if schema_description.nil?
+        raise ArgumentError, "Expected to have schema_description set but found nil instead."
+      end
+
       system_prompt = <<~PROMPT
         You are an expert at creating JSON Schemas for OpenAI's Structured Outputs feature.
 
@@ -147,16 +150,12 @@ module AI::Utils
 
       output_text = response.output_text
 
-      if !output_text.nil? && !output_text.empty?
-        generated = JSON.parse(output_text)
-        self.schema = {
-          "name" => generated["name"],
-          "strict" => generated["strict"],
-          "schema" => generated["schema"]
-        }
-      else
-        STDERR.puts "Failed to generate schema from OpenAI"
-      end
+      generated = JSON.parse(output_text)
+      self.schema = {
+        "name" => generated["name"],
+        "strict" => generated["strict"],
+        "schema" => generated["schema"]
+      }
     end
   end
 end
