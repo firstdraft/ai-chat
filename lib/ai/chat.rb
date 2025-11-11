@@ -37,8 +37,8 @@ module AI
     def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       api_key ||= ENV.fetch(api_key_env_var)
       client = OpenAI::Client.new(api_key: api_key)
-
-      system_prompt = File.open("lib/prompts/schema_generator.txt").read
+      prompt_path = File.expand_path("../prompts/schema_generator.txt", __dir__)
+      system_prompt = File.open(prompt_path).read
 
       response = client.responses.create(
         model: "o4-mini",

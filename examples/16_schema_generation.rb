@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# This example demonstrates all schema generation-related captabilities
+# This example demonstrates all schema generation-related capabilities
 # - JSON schema generation
 # - JSON schema STDOUT format
 # - JSON schema used for Structured Output
