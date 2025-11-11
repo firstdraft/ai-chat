@@ -262,7 +262,7 @@ module AI
 
       parameters[:background] = background if background
       parameters[:tools] = tools unless tools.empty?
-      parameters[:text] = @schema if schema
+      parameters[:text] = schema if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
 
       if previous_response_id && conversation_id
