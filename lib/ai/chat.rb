@@ -19,9 +19,11 @@ module AI
   class Chat
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
-    attr_reader :reasoning_effort, :client, :schema
+    attr_reader :reasoning_effort, :client
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
+    require_relative "utils/schema"
+    include AI::Utils::Schema
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       api_key ||= ENV.fetch(api_key_env_var)
@@ -141,9 +143,9 @@ module AI
     def schema=(value)
       if value.is_a?(String)
         parsed = JSON.parse(value, symbolize_names: true)
-        @schema = wrap_schema_if_needed(parsed)
+        @schema_as_hash = wrap_schema_if_needed(parsed)
       elsif value.is_a?(Hash)
-        @schema = wrap_schema_if_needed(value)
+        @schema_as_hash = wrap_schema_if_needed(value)
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
       end
@@ -176,7 +178,7 @@ module AI
     end
 
     def inspect
-      "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
+      "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema_as_hash.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
     end
 
     # Support for Ruby's pp (pretty print)
@@ -240,7 +242,7 @@ module AI
 
       parameters[:background] = background if background
       parameters[:tools] = tools unless tools.empty?
-      parameters[:text] = schema if schema
+      parameters[:text] = @schema_as_hash if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
 
       if previous_response_id && conversation_id
