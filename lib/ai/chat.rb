@@ -21,7 +21,7 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :image_generation, :image_folder, :messages, :model, :previous_response_id, :proxy, :web_search
+    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :web_search
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
@@ -37,6 +37,28 @@ module AI
       @proxy = false
       @image_generation = false
       @image_folder = "./images"
+    end
+
+    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY")
+      api_key ||= ENV.fetch(api_key_env_var)
+      client = OpenAI::Client.new(api_key: api_key)
+      prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
+      system_prompt = File.open(prompt_path).read
+
+      response = client.responses.create(
+        model: "o4-mini",
+        input: [
+          {role: :system, content: system_prompt},
+          {role: :user, content: description}
+        ],
+        text: {format: {type: "json_object"}},
+        reasoning: {effort: "high"}
+      )
+
+      output_text = response.output_text
+
+      generated = JSON.parse(output_text)
+      JSON.pretty_generate(generated)
     end
 
     # :reek:TooManyStatements
@@ -109,7 +131,7 @@ module AI
       response = create_response
       parse_response(response)
 
-      self.previous_response_id = last.dig(:response, :id)
+      self.previous_response_id = last.dig(:response, :id) unless conversation_id
       last
     end
 
@@ -159,6 +181,28 @@ module AI
       messages.last
     end
 
+    def items(order: :asc)
+      raise "No conversation_id set. Call generate! first to create a conversation." unless conversation_id
+
+      client.conversations.items.list(conversation_id, order: order)
+    end
+
+    def verbose
+      page = items
+
+      box_width = 78
+      inner_width = box_width - 4
+
+      puts
+      puts "┌#{"─" * (box_width - 2)}┐"
+      puts "│ Conversation: #{conversation_id.ljust(inner_width - 14)} │"
+      puts "│ Items: #{page.data.length.to_s.ljust(inner_width - 7)} │"
+      puts "└#{"─" * (box_width - 2)}┘"
+      puts
+
+      ap page.data, limit: 10, indent: 2
+    end
+
     def inspect
       "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
     end
@@ -170,9 +214,9 @@ module AI
     # :reek:DuplicateMethodCall
     # :reek:UncommunicativeParameterName
     def pretty_print(q)
-      q.group(1, "#<#{self.class}", '>') do
+      q.group(1, "#<#{self.class}", ">") do
         q.breakable
-        
+
         # Show messages with truncation
         q.text "@messages="
         truncated_messages = @messages.map do |msg|
@@ -183,7 +227,7 @@ module AI
           truncated_msg
         end
         q.pp truncated_messages
-        
+
         # Show other instance variables (except sensitive ones)
         skip_vars = [:@messages, :@api_key, :@client]
         instance_variables.sort.each do |var|
@@ -227,7 +271,19 @@ module AI
       parameters[:tools] = tools unless tools.empty?
       parameters[:text] = schema if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
-      parameters[:previous_response_id] = previous_response_id if previous_response_id
+
+      if previous_response_id && conversation_id
+        warn "Both conversation_id and previous_response_id are set. Using previous_response_id for forking. Only set one."
+        parameters[:previous_response_id] = previous_response_id
+      elsif previous_response_id
+        parameters[:previous_response_id] = previous_response_id
+      elsif conversation_id
+        parameters[:conversation] = conversation_id
+      else
+        conversation = client.conversations.create
+        self.conversation_id = conversation.id
+        parameters[:conversation] = conversation_id
+      end
 
       messages_to_send = prepare_messages_for_api
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
@@ -269,6 +325,10 @@ module AI
         response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
       end
       image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
+
+      if response.conversation
+        self.conversation_id = response.conversation.id
+      end
 
       chat_response = {
         id: response_id,
@@ -544,11 +604,9 @@ module AI
     end
 
     def warn_if_file_fails_to_save
-      begin
-        yield
-      rescue => error
-        warn "Failed to save image: #{error.message}"
-      end
+      yield
+    rescue => error
+      warn "Failed to save image: #{error.message}"
     end
 
     def validate_api_key
@@ -613,9 +671,7 @@ module AI
           warn_if_file_fails_to_save do
             file_content = retrieve_file(file_id, container_id: container_id)
             file_path = File.join(subfolder_path, filename)
-            File.open(file_path, "wb") do |file|
-              file.write(file_content)
-            end
+            File.binwrite(file_path, file_content.read)
             filenames << file_path
           end
         end
@@ -655,13 +711,11 @@ module AI
     end
 
     def timeout_request(duration)
-      begin
-        Timeout.timeout(duration) do
-          yield
-        end
-      rescue Timeout::Error
-        client.responses.cancel(previous_response_id)
+      Timeout.timeout(duration) do
+        yield
       end
+    rescue Timeout::Error
+      client.responses.cancel(previous_response_id)
     end
 
     # :reek:DuplicateMethodCall

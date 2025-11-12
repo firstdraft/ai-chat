@@ -34,6 +34,11 @@ The `examples/` directory contains focused examples for specific features:
 - `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
 - `09_edge_cases.rb` - Error handling and edge cases
 - `10_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
+- `11_mixed_content.rb` - Combining text and images in messages
+- `12_image_generation.rb` - Using the image generation tool
+- `13_code_interpreter.rb` - Using the code interpreter tool
+- `14_background_mode.rb` - Running responses in background mode
+- `15_conversation_features_comprehensive.rb` - All conversation features (auto-creation, inspection, loading, forking)
 
 Each example is self-contained and can be run individually:
 ```bash
@@ -243,17 +248,18 @@ h.last[:content]
 
 ## Web Search
 
-To give the model access to real-time information from the internet, we enable the `web_search` feature by default. This uses OpenAI's built-in `web_search_preview` tool.
+To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search_preview` tool.
 
 ```ruby
 m = AI::Chat.new
+m.web_search = true
 m.user("What are the latest developments in the Ruby language?")
 m.generate! # This may use web search to find current information
 ```
 
 **Note:** This feature requires a model that supports the `web_search_preview` tool, such as `gpt-4o` or `gpt-4o-mini`. The gem will attempt to use a compatible model if you have `web_search` enabled.
 
-If you don't want the model to use web search, set `web_search` to `false`:
+If you don't want the model to use web search, set `web_search` to `false` (this is the default):
 
 ```ruby
 m = AI::Chat.new
@@ -639,6 +645,93 @@ u.generate!
 
 Unless you've stored the previous messages somewhere yourself, this technique won't bring them back. But OpenAI remembers what they were, so that you can at least continue the conversation. (If you're using a reasoning model, this technique also preserves all of the model's reasoning.)
 
+### Automatic Conversation Management
+
+Starting with your first `generate!` call, the gem automatically creates and manages a conversation with OpenAI. This conversation is stored server-side and tracks all messages, tool calls, reasoning, and other items.
+
+```ruby
+chat = AI::Chat.new
+chat.user("Hello")
+chat.generate!
+
+# Conversation ID is automatically set
+puts chat.conversation_id  # => "conv_abc123..."
+
+# Continue the conversation - context is automatically maintained
+chat.user("What did I just say?")
+chat.generate!  # Uses the same conversation automatically
+```
+
+You can also load an existing conversation from your database:
+
+```ruby
+# Load stored conversation_id from your database
+chat = AI::Chat.new
+chat.conversation_id = @thread.conversation_id  # From your database
+
+chat.user("Continue our discussion")
+chat.generate!  # Uses the loaded conversation
+```
+
+**Note on forking:** If you want to "fork" a conversation (create a branch), you can still use `previous_response_id`. If both `conversation_id` and `previous_response_id` are set, the gem will use `previous_response_id` and warn you.
+
+## Inspecting Conversation Details
+
+The gem provides two methods to inspect what happened during a conversation:
+
+### `items` - Programmatic Access
+
+Returns the raw conversation items for programmatic use (displaying in views, filtering, etc.):
+
+```ruby
+chat = AI::Chat.new
+chat.web_search = true
+chat.user("Search for Ruby tutorials")
+chat.generate!
+
+# Get all conversation items (chronological order by default)
+page = chat.items
+
+# Access item data
+page.data.each do |item|
+  case item.type
+  when :message
+    puts "#{item.role}: #{item.content.first.text}"
+  when :web_search_call
+    puts "Web search: #{item.action.query}"
+    puts "Results: #{item.results.length}"
+  when :reasoning
+    puts "Reasoning: #{item.summary.first.text}"
+  end
+end
+
+# For long conversations, you can request reverse chronological order
+# (useful for pagination to get most recent items first)
+recent_items = chat.items(order: :desc)
+```
+
+### `verbose` - Terminal Output
+
+Pretty-prints the entire conversation with all details for debugging and learning:
+
+```ruby
+chat.verbose
+
+# Output:
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │ Conversation: conv_6903c1eea6cc819695af3a1b1ebf9b390c3db5e8ec021c9a        │
+# │ Items: 3                                                                   │
+# └────────────────────────────────────────────────────────────────────────────┘
+#
+# [detailed colorized output of all items including web searches,
+#  reasoning, tool calls, messages, etc.]
+```
+
+This is useful for:
+- **Learning** how the model uses tools (web search, code interpreter, etc.)
+- **Debugging** why the model made certain decisions
+- **Understanding** the full context beyond just the final response
+
 ## Setting messages directly
 
 You can use `.messages=()` to assign an `Array` of `Hashes`. Each `Hash` must have keys `:role` and `:content`, and optionally `:image` or `:images`:
@@ -683,69 +776,6 @@ q.messages = [
 ]
 ```
 
-## Assigning `ActiveRecord::Relation`s
-
-If your chat history is contained in an `ActiveRecord::Relation`, you can assign it directly:
-
-```ruby
-# Load from ActiveRecord
-@thread = Thread.find(42)
-
-r = AI::Chat.new
-r.messages = @thread.posts.order(:created_at)
-r.user("What should we discuss next?")
-r.generate! # Creates a new post record, too
-```
-
-### Requirements
-
-In order for the above to "magically" work, there are a few requirements. Your ActiveRecord model must have:
-
-- `.role` method that returns "system", "user", or "assistant"
-- `.content` method that returns the message text
-- `.image` method (optional) for single images - can return URLs, file paths, or Active Storage attachments
-- `.images` method (optional) for multiple images
-
-### Custom Column Names
-
-If your columns have different names:
-
-```ruby
-s = AI::Chat.new
-s.configure_message_attributes(
-  role: :message_type,     # Your column for role
-  content: :message_body,  # Your column for content
-  image: :attachment       # Your column/association for images
-)
-s.messages = @conversation.messages
-```
-
-### Saving Responses with Metadata
-
-To preserve response metadata, add an `openai_response` column to your messages table:
-
-```ruby
-# In your migration
-add_column :messages, :openai_response, :text
-
-# In your model
-class Message < ApplicationRecord
-  serialize :openai_response, AI::Chat::Response
-end
-
-# Usage
-@thread = Thread.find(42)
-
-t = AI::Chat.new
-t.posts = @thread.messages
-t.user("Hello!")
-t.generate!
-
-# The saved message will include token usage, model info, etc.
-last_message = @thread.messages.last
-last_message.openai_response.usage # => {:prompt_tokens=>10, ...}
-```
-
 ## Other Features Being Considered
 
 - **Session management**: Save and restore conversations by ID
@@ -765,3 +795,15 @@ While this gem includes specs, they use mocked API responses. To test with real 
 3. Run the examples: `bundle exec ruby examples/all.rb`
 
 This test program runs through all the major features of the gem, making real API calls to OpenAI.
+
+## Contributing
+
+When contributing to this project:
+
+1. **Code Style**: This project uses StandardRB for linting. Run `bundle exec standardrb --fix` before committing to automatically fix style issues.
+
+2. **Testing**: Ensure all specs pass with `bundle exec rspec`.
+
+3. **Examples**: If adding a feature, consider adding an example in the `examples/` directory.
+
+4. **Documentation**: Update the README if your changes affect the public API.
