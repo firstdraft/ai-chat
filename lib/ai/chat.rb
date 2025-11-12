@@ -34,6 +34,28 @@ module AI
       @image_folder = "./images"
     end
 
+    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY")
+      api_key ||= ENV.fetch(api_key_env_var)
+      client = OpenAI::Client.new(api_key: api_key)
+      prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
+      system_prompt = File.open(prompt_path).read
+
+      response = client.responses.create(
+        model: "o4-mini",
+        input: [
+          {role: :system, content: system_prompt},
+          {role: :user, content: description}
+        ],
+        text: {format: {type: "json_object"}},
+        reasoning: {effort: "high"}
+      )
+
+      output_text = response.output_text
+
+      generated = JSON.parse(output_text)
+      JSON.pretty_generate(generated)
+    end
+
     # :reek:TooManyStatements
     # :reek:NilCheck
     def add(content, role: "user", response: nil, status: nil, image: nil, images: nil, file: nil, files: nil)

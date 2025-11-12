@@ -50,3 +50,9 @@ require_relative "13_code_interpreter"
 
 # Background Mode
 require_relative "14_background_mode"
+
+# Conversations
+require_relative "15_conversations_features_comprehensive"
+
+# Schema Generation
+require_relative "16_schema_generation"
