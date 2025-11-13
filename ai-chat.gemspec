@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "ai-chat"
-  spec.version = "0.2.4"
+  spec.version = "0.3.0"
   spec.authors = ["Raghu Betina"]
   spec.email = ["raghu@firstdraft.com"]
   spec.homepage = "https://github.com/firstdraft/ai-chat"
@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.metadata = {
     "bug_tracker_uri" => "https://github.com/firstdraft/ai-chat/issues",
     "changelog_uri" => "https://github.com/firstdraft/ai-chat/blob/main/CHANGELOG.md",
-    "homepage_uri" => "https://github.com/firstdraft/ai-chat",
+    "homepage_uri" => "https://rubygems.org/gems/ai-chat",
     "label" => "AI Chat",
     "rubygems_mfa_required" => "true",
     "source_code_uri" => "https://github.com/firstdraft/ai-chat"
@@ -21,13 +21,13 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = "~> 3.2"
   spec.add_runtime_dependency "openai", "~> 0.34"
   spec.add_runtime_dependency "marcel", "~> 1.0"
-  spec.add_runtime_dependency "base64", "> 0.1.1"
+  spec.add_runtime_dependency "base64",  "~> 0.1", "> 0.1.1"
   spec.add_runtime_dependency "json", "~> 2.0"
-  spec.add_runtime_dependency "ostruct", ">= 0.2"
+  spec.add_runtime_dependency "ostruct", "~> 0.2"
   spec.add_runtime_dependency "tty-spinner", "~> 0.9.3"
   spec.add_runtime_dependency "amazing_print", "~> 1.8"
 
-  spec.add_development_dependency "dotenv"
+  spec.add_development_dependency "dotenv", ">= 1.0.0"
   spec.add_development_dependency "refinements", "~> 11.1"
 
   spec.extra_rdoc_files = Dir["README*", "LICENSE*"]

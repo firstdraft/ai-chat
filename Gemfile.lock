@@ -1,13 +1,13 @@
 PATH
   remote: .
   specs:
-    ai-chat (0.2.4)
+    ai-chat (0.3.0)
       amazing_print (~> 1.8)
-      base64 (> 0.1.1)
+      base64 (~> 0.1, > 0.1.1)
       json (~> 2.0)
       marcel (~> 1.0)
       openai (~> 0.34)
-      ostruct (>= 0.2)
+      ostruct (~> 0.2)
       tty-spinner (~> 0.9.3)
 
 GEM
@@ -171,7 +171,7 @@ DEPENDENCIES
   ai-chat!
   amazing_print (~> 1.8)
   debug (~> 1.11)
-  dotenv
+  dotenv (>= 1.0.0)
   rake (~> 13.3)
   reek (~> 6.5)
   refinements (~> 11.1)
