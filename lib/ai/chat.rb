@@ -206,6 +206,7 @@ module AI
         if response_hash.key?(:data)
           response_hash.dig(:data).map do |hash|
             # Transform values to allow expected symbols that non-proxied request returns 
+
             hash.transform_values! do |value|
               if hash.key(value) == :type
                 value.to_sym
@@ -788,8 +789,7 @@ module AI
             api_response = retrieve_response(previous_response_id)
             status = if api_response.respond_to?(:status)
               api_response.status
-            else 
-              p api_response
+            else
               api_response.dig(:status)&.to_sym
             end
           end
