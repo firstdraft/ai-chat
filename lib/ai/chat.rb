@@ -4,6 +4,7 @@ require "base64"
 require "json"
 require "marcel"
 require "openai"
+require "ostruct"
 require "pathname"
 require "stringio"
 require "fileutils"
@@ -39,26 +40,40 @@ module AI
       @image_folder = "./images"
     end
 
-    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY")
-      api_key ||= ENV.fetch(api_key_env_var)
-      client = OpenAI::Client.new(api_key: api_key)
+    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
+      @api_key ||= ENV.fetch(api_key_env_var)
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.open(prompt_path).read
 
-      response = client.responses.create(
-        model: "o4-mini",
-        input: [
-          {role: :system, content: system_prompt},
-          {role: :user, content: description}
-        ],
-        text: {format: {type: "json_object"}},
-        reasoning: {effort: "high"}
-      )
+      json = if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses")
+        parameters = {
+          model: "o4-mini",
+          input: [
+            {role: :system, content: system_prompt},
+            {role: :user, content: description},
+          ],
+          text: {format: {type: "json_object"}},
+          reasoning: {effort: "high"}
+        }
 
-      output_text = response.output_text
+        send_request(uri, content_type: "json", parameters: parameters, method: "post")
+      else
+        client = OpenAI::Client.new(api_key: api_key)
+        response = client.responses.create(
+          model: "o4-mini",
+          input: [
+            {role: :system, content: system_prompt},
+            {role: :user, content: description}
+          ],
+          text: {format: {type: "json_object"}},
+          reasoning: {effort: "high"}
+        )
 
-      generated = JSON.parse(output_text)
-      JSON.pretty_generate(generated)
+        output_text = response.output_text
+        JSON.parse(output_text)
+      end
+      JSON.pretty_generate(json)
     end
 
     # :reek:TooManyStatements
@@ -131,7 +146,7 @@ module AI
       response = create_response
       parse_response(response)
 
-      self.previous_response_id = last.dig(:response, :id) unless conversation_id
+      self.previous_response_id = last.dig(:response, :id) unless (conversation_id && !background)
       last
     end
 
@@ -184,7 +199,28 @@ module AI
     def items(order: :asc)
       raise "No conversation_id set. Call generate! first to create a conversation." unless conversation_id
 
-      client.conversations.items.list(conversation_id, order: order)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/conversations/#{conversation_id}/items?order=#{order.to_s}")
+        response_hash = send_request(uri, content_type: "json", method: "get")
+
+        if response_hash.key?(:data)
+          response_hash.dig(:data).map do |hash|
+            # Transform values to allow expected symbols that non-proxied request returns 
+            hash.transform_values! do |value|
+              if hash.key(value) == :type
+                value.to_sym
+              else
+                value
+              end
+            end
+          end
+          response_hash
+        end
+        # Convert to Struct to allow same interface as non-proxied request
+        create_deep_struct(response_hash)
+      else
+        client.conversations.items.list(conversation_id, order: order)
+      end
     end
 
     def verbose
@@ -261,6 +297,17 @@ module AI
       end
     end
 
+    def create_conversation
+      self.conversation_id = if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/conversations")
+        response = send_request(uri, content_type: "json", method: "post")
+        response.dig(:id)
+      else
+        conversation = client.conversations.create
+        conversation.id
+      end
+    end
+
     # :reek:TooManyStatements
     def create_response
       parameters = {
@@ -280,9 +327,7 @@ module AI
       elsif conversation_id
         parameters[:conversation] = conversation_id
       else
-        conversation = client.conversations.create
-        self.conversation_id = conversation.id
-        parameters[:conversation] = conversation_id
+        create_conversation
       end
 
       messages_to_send = prepare_messages_for_api
@@ -317,18 +362,22 @@ module AI
         response_status = response.dig(:status).to_sym
         response_model = response.dig(:model)
         response_usage = response.dig(:usage)&.slice(:input_tokens, :output_tokens, :total_tokens)
+
+        if response.key?(:conversation)
+          self.conversation_id = response.dig(:conversation, :id)
+        end
       else        
         text_response = response.output_text
         response_id = response.id
         response_status = response.status
         response_model = response.model
         response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+
+        if response.conversation
+          self.conversation_id = response.conversation.id
+        end
       end
       image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
-
-      if response.conversation
-        self.conversation_id = response.conversation.id
-      end
 
       chat_response = {
         id: response_id,
@@ -671,7 +720,7 @@ module AI
           warn_if_file_fails_to_save do
             file_content = retrieve_file(file_id, container_id: container_id)
             file_path = File.join(subfolder_path, filename)
-            File.binwrite(file_path, file_content.read)
+            File.binwrite(file_path, file_content)
             filenames << file_path
           end
         end
@@ -729,7 +778,7 @@ module AI
           status = if api_response.respond_to?(:status)
             api_response.status
           else 
-            api_response.dig(:status).to_sym
+            api_response.dig(:status)&.to_sym
           end
 
           while status != :completed
@@ -740,7 +789,8 @@ module AI
             status = if api_response.respond_to?(:status)
               api_response.status
             else 
-              api_response.dig(:status).to_sym
+              p api_response
+              api_response.dig(:status)&.to_sym
             end
           end
           api_response

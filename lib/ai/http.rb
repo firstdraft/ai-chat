@@ -30,5 +30,16 @@ module AI
         end
       end
     end
+
+    def create_deep_struct(value)
+      case value
+      when Hash
+        OpenStruct.new(value.transform_values { |hash_value| send __method__, hash_value })
+      when Array
+        value.map { |element| send __method__, element }
+      else
+        value
+      end
+    end
   end
 end

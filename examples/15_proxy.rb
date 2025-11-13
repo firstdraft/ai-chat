@@ -199,6 +199,81 @@ else
 end
 puts "\n" * 4
 
+puts "12. Conversations:"
+# Feature 1: Auto-creation of conversation
+puts "a. Auto-creation of Conversation"
+puts "-" * 60
+puts "A conversation is automatically created on the first generate! call."
+puts
+
+chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat.model = "gpt-4o-mini"
+chat.web_search = true
+chat.proxy = true
+puts "Before first generate!: conversation_id = #{chat.conversation_id.inspect}"
+
+chat.user("Search for Ruby programming tutorials and tell me about one")
+chat.generate!
+
+puts "After first generate!: conversation_id = #{chat.conversation_id}"
+puts "Response: #{chat.last[:content]}"
+puts
+
+# Feature 2: Conversation continuity
+puts "b. Conversation Continuity"
+puts "-" * 60
+puts "Subsequent messages automatically use the same conversation."
+puts
+
+chat.user("What did I ask you to say?")
+chat.generate!
+puts "Response: #{chat.last[:content]}"
+puts
+
+# Feature 3: Programmatic access to items
+puts "c. Accessing Conversation Items (Programmatically)"
+puts "-" * 60
+puts "Use chat.items to get conversation data for processing or display."
+puts
+
+page = chat.items
+puts "Total items: #{page.data.length}"
+puts "Item breakdown:"
+
+page.data.each_with_index do |item, i|
+  case item.type
+  when :message
+    content = begin
+      item.content.first.text
+    rescue
+      "[complex content]"
+    end
+    preview = (content.length > 60) ? "#{content[0..57]}..." : content
+    puts "  [#{i + 1}] #{item.type} (#{item.role}): #{preview}"
+  else
+    puts "  [#{i + 1}] #{item.type}"
+  end
+end
+puts
+
+puts "\n" * 4
+
+puts "13. Schema Generation:"
+description = "A user profile with name (required), email (required), age (number), and bio (optional text)."
+schema = AI::Chat.generate_schema!(description, api_key_env_var: "PROXY_API_KEY", proxy: true)
+puts
+puts schema
+puts
+puts "Schema can be used to generate structured output"
+
+puts "\n" * 4
+
+puts "=== Proxy Example Complete ==="
+puts
+puts "For comprehensive tests, run: bundle exec ruby examples/all.rb"
+puts "For specific features, see examples/*.rb files"
+
+
 puts "=== Proxy Example Complete ==="
 puts
 puts "For comprehensive tests, run: bundle exec ruby examples/all.rb"
