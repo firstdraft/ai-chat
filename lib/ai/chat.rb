@@ -4,11 +4,15 @@ require "base64"
 require "json"
 require "marcel"
 require "openai"
+require "ostruct"
 require "pathname"
 require "stringio"
 require "fileutils"
 require "tty-spinner"
 require "timeout"
+
+require_relative "http"
+include AI::Http
 
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
@@ -18,42 +22,58 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :previous_response_id, :web_search
+    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :web_search
     attr_reader :reasoning_effort, :client, :schema
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
+    PROXY_URL = "https://prepend.me/".freeze
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
-      api_key ||= ENV.fetch(api_key_env_var)
+      @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-4.1-nano"
-      @client = OpenAI::Client.new(api_key: api_key)
+      @client = OpenAI::Client.new(api_key: @api_key)
       @previous_response_id = nil
+      @proxy = false
       @image_generation = false
       @image_folder = "./images"
     end
 
-    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY")
-      api_key ||= ENV.fetch(api_key_env_var)
-      client = OpenAI::Client.new(api_key: api_key)
+    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
+      @api_key ||= ENV.fetch(api_key_env_var)
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.open(prompt_path).read
 
-      response = client.responses.create(
-        model: "o4-mini",
-        input: [
-          {role: :system, content: system_prompt},
-          {role: :user, content: description}
-        ],
-        text: {format: {type: "json_object"}},
-        reasoning: {effort: "high"}
-      )
+      json = if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses")
+        parameters = {
+          model: "o4-mini",
+          input: [
+            {role: :system, content: system_prompt},
+            {role: :user, content: description},
+          ],
+          text: {format: {type: "json_object"}},
+          reasoning: {effort: "high"}
+        }
 
-      output_text = response.output_text
+        send_request(uri, content_type: "json", parameters: parameters, method: "post")
+      else
+        client = OpenAI::Client.new(api_key: api_key)
+        response = client.responses.create(
+          model: "o4-mini",
+          input: [
+            {role: :system, content: system_prompt},
+            {role: :user, content: description}
+          ],
+          text: {format: {type: "json_object"}},
+          reasoning: {effort: "high"}
+        )
 
-      generated = JSON.parse(output_text)
-      JSON.pretty_generate(generated)
+        output_text = response.output_text
+        JSON.parse(output_text)
+      end
+      JSON.pretty_generate(json)
     end
 
     # :reek:TooManyStatements
@@ -122,10 +142,11 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
+      validate_api_key
       response = create_response
       parse_response(response)
 
-      self.previous_response_id = last.dig(:response, :id) unless conversation_id
+      self.previous_response_id = last.dig(:response, :id) unless (conversation_id && !background)
       last
     end
 
@@ -137,7 +158,7 @@ module AI
       response = if wait
         wait_for_response(timeout)
       else
-        client.responses.retrieve(previous_response_id)
+        retrieve_response(previous_response_id)
       end
       parse_response(response)
     end
@@ -178,7 +199,29 @@ module AI
     def items(order: :asc)
       raise "No conversation_id set. Call generate! first to create a conversation." unless conversation_id
 
-      client.conversations.items.list(conversation_id, order: order)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/conversations/#{conversation_id}/items?order=#{order.to_s}")
+        response_hash = send_request(uri, content_type: "json", method: "get")
+
+        if response_hash.key?(:data)
+          response_hash.dig(:data).map do |hash|
+            # Transform values to allow expected symbols that non-proxied request returns 
+
+            hash.transform_values! do |value|
+              if hash.key(value) == :type
+                value.to_sym
+              else
+                value
+              end
+            end
+          end
+          response_hash
+        end
+        # Convert to Struct to allow same interface as non-proxied request
+        create_deep_struct(response_hash)
+      else
+        client.conversations.items.list(conversation_id, order: order)
+      end
     end
 
     def verbose
@@ -240,6 +283,7 @@ module AI
     private
 
     class InputClassificationError < StandardError; end
+    class WrongAPITokenUsedError < StandardError; end
 
     # :reek:FeatureEnvy
     # :reek:ManualDispatch
@@ -251,6 +295,17 @@ module AI
       else
         raise InputClassificationError,
           "Unable to determine filename from file object. File objects must respond to :original_filename or :path"
+      end
+    end
+
+    def create_conversation
+      self.conversation_id = if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/conversations")
+        response = send_request(uri, content_type: "json", method: "post")
+        response.dig(:id)
+      else
+        conversation = client.conversations.create
+        conversation.id
       end
     end
 
@@ -273,34 +328,63 @@ module AI
       elsif conversation_id
         parameters[:conversation] = conversation_id
       else
-        conversation = client.conversations.create
-        self.conversation_id = conversation.id
-        parameters[:conversation] = conversation_id
+        create_conversation
       end
 
       messages_to_send = prepare_messages_for_api
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
 
-      client.responses.create(**parameters)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses")
+        send_request(uri, content_type: "json", parameters: parameters, method: "post")
+      else
+        client.responses.create(**parameters)
+      end
     end
 
     # :reek:NilCheck
     # :reek:TooManyStatements
     def parse_response(response)
-      text_response = response.output_text
-      image_filenames = extract_and_save_images(response)
-      response_id = response.id
-      response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+      if proxy && response.is_a?(Hash)
+        response_messages = response.dig(:output).select do |output|
+          output.dig(:type) == "message"
+        end
 
-      if response.conversation
-        self.conversation_id = response.conversation.id
+        message_contents = response_messages.map do |message|
+          message.dig(:content)
+        end.flatten
+
+        output_texts = message_contents.select do |content|
+          content[:type] == "output_text"
+        end
+
+        text_response = output_texts.map { |output| output[:text] }.join
+        response_id = response.dig(:id)
+        response_status = response.dig(:status).to_sym
+        response_model = response.dig(:model)
+        response_usage = response.dig(:usage)&.slice(:input_tokens, :output_tokens, :total_tokens)
+
+        if response.key?(:conversation)
+          self.conversation_id = response.dig(:conversation, :id)
+        end
+      else        
+        text_response = response.output_text
+        response_id = response.id
+        response_status = response.status
+        response_model = response.model
+        response_usage = response.usage.to_h.slice(:input_tokens, :output_tokens, :total_tokens)
+
+        if response.conversation
+          self.conversation_id = response.conversation.id
+        end
       end
+      image_filenames = extract_and_save_images(response) + extract_and_save_files(response)
 
       chat_response = {
         id: response_id,
-        model: response.model,
-        usage: response_usage,
-        total_tokens: response_usage[:total_tokens],
+        model: response_model,
+        usage: response_usage || {},
+        total_tokens: response_usage&.fetch(:total_tokens, 0),
         images: image_filenames
       }.compact
 
@@ -321,7 +405,7 @@ module AI
         role: "assistant",
         content: response_content,
         response: chat_response,
-        status: response.status
+        status: response_status
       }
 
       message.store(:images, image_filenames) unless image_filenames.empty?
@@ -521,19 +605,31 @@ module AI
     def extract_and_save_images(response)
       image_filenames = []
 
-      image_outputs = response.output.select { |output|
-        output.respond_to?(:type) && output.type == :image_generation_call
-      }
+      if proxy
+        image_outputs = response.dig(:output).select { |output|
+          output.dig(:type) == "image_generation_call"
+        }
+      else       
+        image_outputs = response.output.select { |output|
+          output.respond_to?(:type) && output.type == :image_generation_call
+        }
+      end
 
       return image_filenames if image_outputs.empty?
 
-      subfolder_path = create_images_folder(response.id)
+      response_id = proxy ? response.dig(:id) : response.id
+      subfolder_path = create_images_folder(response_id)
 
       image_outputs.each_with_index do |output, index|
-        next unless output.respond_to?(:result) && output.result
+        if proxy
+          next unless output.key?(:result) && output.dig(:result)
+        else
+          next unless output.respond_to?(:result) && output.result
+        end
 
         warn_if_file_fails_to_save do
-          image_data = Base64.strict_decode64(output.result)
+          result = proxy ? output.dig(:result) : output.result
+          image_data = Base64.strict_decode64(result)
 
           filename = "#{(index + 1).to_s.rjust(3, "0")}.png"
           file_path = File.join(subfolder_path, filename)
@@ -563,6 +659,30 @@ module AI
       warn "Failed to save image: #{error.message}"
     end
 
+    def validate_api_key
+      openai_api_key_used = @api_key.start_with?("sk-proj")
+      proxy_api_key_used = !openai_api_key_used
+      proxy_enabled = proxy
+      proxy_disabled = !proxy
+
+      if openai_api_key_used && proxy_enabled
+        raise WrongAPITokenUsedError, <<~STRING
+          It looks like you're using an official API key from OpenAI with proxying enabled. When proxying is enabled you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
+        STRING
+      elsif proxy_api_key_used && proxy_disabled
+        raise WrongAPITokenUsedError, <<~STRING
+          It looks like you're using an unofficial OpenAI API key from prepend.me. When using an unofficial API key you must enable proxy before generating a response. Proxying is currently disabled, please enable it before generating a response.
+
+          Example:
+
+            chat = AI::Chat.new
+            chat.proxy = true
+            chat.user(...)
+            chat.generate!
+        STRING
+      end
+    end
+
     # :reek:FeatureEnvy
     # :reek:ManualDispatch
     # :reek:NestedIterators
@@ -570,39 +690,74 @@ module AI
     def extract_and_save_files(response)
       filenames = []
 
-      message_outputs = response.output.select do |output|
-        output.respond_to?(:type) && output.type == :message
-      end
-
-      outputs_with_annotations = message_outputs.map do |message|
-        message.content.find do |content|
-          content.respond_to?(:annotations) && content.annotations.length.positive?
+      if proxy
+        message_outputs = response.dig(:output).select do |output|
+          output.dig(:type) == "message"
         end
-      end.compact
+  
+        outputs_with_annotations = message_outputs.map do |message|
+          message.dig(:content).find do |content|
+            content.dig(:annotations).length.positive?
+          end
+        end.compact
+      else
+        message_outputs = response.output.select do |output|
+          output.respond_to?(:type) && output.type == :message
+        end
+  
+        outputs_with_annotations = message_outputs.map do |message|
+          message.content.find do |content|
+            content.respond_to?(:annotations) && content.annotations.length.positive?
+          end
+        end.compact
+      end
 
       return filenames if outputs_with_annotations.empty?
 
-      subfolder_path = create_images_folder(response.id)
-      annotations = outputs_with_annotations.map do |output|
-        output.annotations.find do |annotation|
-          annotation.respond_to?(:filename)
+      response_id = proxy ? response.dig(:id) : response.id
+      subfolder_path = create_images_folder(response_id)
+
+      if proxy
+        annotations = outputs_with_annotations.map do |output|
+          output.dig(:annotations).find do |annotation|
+            annotation.key?(:filename)
+          end
+        end.compact
+  
+        annotations.each do |annotation|
+          container_id = annotation.dig(:container_id)
+          file_id = annotation.dig(:file_id)
+          filename = annotation.dig(:filename)
+  
+          warn_if_file_fails_to_save do
+            file_content = retrieve_file(file_id, container_id: container_id)
+            file_path = File.join(subfolder_path, filename)
+            File.binwrite(file_path, file_content)
+            filenames << file_path
+          end
         end
-      end.compact
-
-      annotations.each do |annotation|
-        container_id = annotation.container_id
-        file_id = annotation.file_id
-        filename = annotation.filename
-
-        warn_if_file_fails_to_save do
-          container_content = client.containers.files.content
-          file_content = container_content.retrieve(file_id, container_id: container_id)
-          file_path = File.join(subfolder_path, filename)
-          File.binwrite(file_path, file_content.read)
-          filenames << file_path
+      else
+        annotations = outputs_with_annotations.map do |output|
+          output.annotations.find do |annotation|
+            annotation.respond_to?(:filename)
+          end
+        end.compact
+  
+        annotations.each do |annotation|
+          container_id = annotation.container_id
+          file_id = annotation.file_id
+          filename = annotation.filename
+  
+          warn_if_file_fails_to_save do
+            file_content = retrieve_file(file_id, container_id: container_id)
+            file_path = File.join(subfolder_path, filename)
+            File.open(file_path, "wb") do |file|
+              file.write(file_content.read)
+            end
+            filenames << file_path
+          end
         end
       end
-
       filenames
     end
 
@@ -627,23 +782,58 @@ module AI
     # :reek:DuplicateMethodCall
     # :reek:TooManyStatements
     def wait_for_response(timeout)
-      spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
-      spinner.auto_spin
-      api_response = client.responses.retrieve(previous_response_id)
-      number_of_times_polled = 0
-      response = timeout_request(timeout) do
-        while api_response.status != :completed
-          some_amount_of_seconds = calculate_wait(number_of_times_polled)
-          sleep some_amount_of_seconds
-          number_of_times_polled += 1
-          api_response = client.responses.retrieve(previous_response_id)
-        end
-        api_response
-      end
+        spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
+        spinner.auto_spin
+        api_response = retrieve_response(previous_response_id)
+        number_of_times_polled = 0
+        response = timeout_request(timeout) do
+          status = if api_response.respond_to?(:status)
+            api_response.status
+          else 
+            api_response.dig(:status)&.to_sym
+          end
 
-      exit_message = (response.status == :cancelled) ? "request timed out" : "done!"
-      spinner.stop(exit_message)
-      response
+          while status != :completed
+            some_amount_of_seconds = calculate_wait(number_of_times_polled)
+            sleep some_amount_of_seconds
+            number_of_times_polled += 1
+            api_response = retrieve_response(previous_response_id)
+            status = if api_response.respond_to?(:status)
+              api_response.status
+            else
+              api_response.dig(:status)&.to_sym
+            end
+          end
+          api_response
+        end
+        
+        status = if api_response.respond_to?(:status)
+          api_response.status
+        else 
+          api_response.dig(:status).to_sym
+        end
+        exit_message = status == :cancelled ? "request timed out" : "done!"
+        spinner.stop(exit_message)
+        response
+    end
+
+    def retrieve_response(previous_response_id)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses/#{previous_response_id}")
+        send_request(uri, content_type: "json", method: "get")
+      else
+        client.responses.retrieve(previous_response_id)
+      end
+    end
+
+    def retrieve_file(file_id, container_id: nil)
+      if proxy
+        uri = URI(PROXY_URL + "api.openai.com/v1/containers/#{container_id}/files/#{file_id}/content")
+        send_request(uri, method: "get")
+      else
+        container_content = client.containers.files.content
+        file_content = container_content.retrieve(file_id, container_id: container_id)
+      end
     end
   end
 end

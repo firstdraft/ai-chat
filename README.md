@@ -531,6 +531,21 @@ y.user("Plot y = 2x*3 when x is -5 to 5.")
 y.generate! # => {:content => "Here is the graph.", ... }
 ```
 
+## Proxying Through prepend.me
+
+You can proxy API calls through [prepend.me](https://prepend.me/).
+
+```rb
+chat = AI::Chat.new
+chat.proxy = true
+chat.user("Tell me a story")
+chat.generate!
+puts chat.last[:content]
+# => "Once upon a time..."
+```
+
+When proxy is enabled, **you must use the API key provided by prepend.me** in place of a real OpenAI API key. Refer to [the section on API keys](#api-key) for options on how to set your key.
+
 ## Building Conversations Without API Calls
 
 You can manually add assistant messages without making API calls, which is useful when reconstructing a past conversation:
