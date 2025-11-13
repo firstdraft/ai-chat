@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "marcel", "~> 1.0"
   spec.add_runtime_dependency "base64", "> 0.1.1"
   spec.add_runtime_dependency "json", "~> 2.0"
+  spec.add_runtime_dependency "ostruct", ">= 0.2"
   spec.add_runtime_dependency "tty-spinner", "~> 0.9.3"
   spec.add_runtime_dependency "amazing_print", "~> 1.8"
 

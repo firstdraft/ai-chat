@@ -7,6 +7,7 @@ PATH
       json (~> 2.0)
       marcel (~> 1.0)
       openai (~> 0.34)
+      ostruct (>= 0.2)
       tty-spinner (~> 0.9.3)
 
 GEM
@@ -67,6 +68,7 @@ GEM
     marcel (1.1.0)
     openai (0.35.1)
       connection_pool
+    ostruct (0.6.3)
     parallel (1.27.0)
     parser (3.3.10.0)
       ast (~> 2.4.1)
