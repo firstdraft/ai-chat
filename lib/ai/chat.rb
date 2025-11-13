@@ -666,9 +666,20 @@ module AI
       proxy_disabled = !proxy
 
       if openai_api_key_used && proxy_enabled
-        raise WrongAPITokenUsedError, "It looks like you're using an official API key from OpenAI with proxying enabled. When proxying is enabled you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response."
+        raise WrongAPITokenUsedError, <<~STRING
+          It looks like you're using an official API key from OpenAI with proxying enabled. When proxying is enabled you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
+        STRING
       elsif proxy_api_key_used && proxy_disabled
-        raise WrongAPITokenUsedError, "It looks like you're using an unofficial OpenAI API key from prepend.me. When using an unofficial API key you must enable proxy before generating a response. Proxying is currently disabled, please enable it before generating a response."
+        raise WrongAPITokenUsedError, <<~STRING
+          It looks like you're using an unofficial OpenAI API key from prepend.me. When using an unofficial API key you must enable proxy before generating a response. Proxying is currently disabled, please enable it before generating a response.
+
+          Example:
+
+            chat = AI::Chat.new
+            chat.proxy = true
+            chat.user(...)
+            chat.generate!
+        STRING
       end
     end
 
