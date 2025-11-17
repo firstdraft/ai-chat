@@ -41,7 +41,7 @@ module AI
     end
 
     def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
-      @api_key ||= ENV.fetch(api_key_env_var)
+      api_key ||= ENV.fetch(api_key_env_var)
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.open(prompt_path).read
 
