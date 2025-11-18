@@ -58,3 +58,45 @@ rescue => e
   puts "✗ Direct API key failed: #{e.message}"
 end
 puts
+
+puts "4. Schema Generation writes to schema.json by default"
+puts "-" * 60
+puts
+# Remove schema file if exists
+File.delete("schema.json") if File.exist?("schema.json")
+AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key: ENV["OPENAI_API_KEY"])
+if File.exist?("schema.json")
+  puts "✓ AI::Chat.generate_schema! creates file"
+else
+  puts "✗ AI::Chat.generate_schema! fails to create file"
+end
+puts
+
+puts "5. Schema Generation DOES NOT write to file when location: false"
+puts "-" * 60
+puts
+# Remove schema file if exists
+File.delete("schema.json") if File.exist?("schema.json")
+puts AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", location: false, api_key: ENV["OPENAI_API_KEY"])
+puts
+if File.exist?("schema.json")
+  puts "✗ AI::Chat.generate_schema! creates file"
+else
+  puts "✓ AI::Chat.generate_schema! does not create file"
+end
+puts
+
+puts "6. Schema Generation writes to custom file given location"
+puts "-" * 60
+puts
+# Remove schema file if exists
+path = "my_schemas/test.json"
+File.delete(path) if File.exist?(path)
+puts AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", location: path, api_key: ENV["OPENAI_API_KEY"])
+puts
+if File.exist?(path)
+  puts "✓ AI::Chat.generate_schema! creates file at #{path}"
+else
+  puts "✗ AI::Chat.generate_schema! does not create file at #{path}"
+end
+puts

@@ -40,7 +40,7 @@ module AI
       @image_folder = "./images"
     end
 
-    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
+    def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
       api_key ||= ENV.fetch(api_key_env_var)
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.open(prompt_path).read
@@ -73,7 +73,15 @@ module AI
         output_text = response.output_text
         JSON.parse(output_text)
       end
-      JSON.pretty_generate(json)
+      content = JSON.pretty_generate(json)
+      if location
+        path = Pathname.new(location)
+        FileUtils.mkdir_p(path.dirname) if path.dirname != "."
+        File.open(location, "wb") do |file|
+          file.write(content)
+        end
+      end
+      content
     end
 
     # :reek:TooManyStatements
