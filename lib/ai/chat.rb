@@ -201,8 +201,8 @@ module AI
     end
 
     def schema_file=(path)
-      @schema_file = path
       content = File.open(path).read
+      @schema_file = path
       self.schema = content
     end
 
