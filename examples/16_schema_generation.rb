@@ -100,3 +100,17 @@ else
   puts "✗ AI::Chat.generate_schema! does not create file at #{path}"
 end
 puts
+
+puts "7. AI::Chat can load the schema from a given file"
+puts "-" * 60
+puts
+puts AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required) default 'Smith'.")
+puts
+chat = AI::Chat.new
+chat.schema_file = "schema.json"
+if chat.schema.present?
+  puts "✓ AI::Chat#schema_file= assigns AI::Chat#schema"
+else
+  puts "✗ AI::Chat#schema_file= does not assign AI::Chat#schema"
+end
+puts

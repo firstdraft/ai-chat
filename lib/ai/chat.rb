@@ -23,7 +23,7 @@ module AI
   class Chat
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :web_search
-    attr_reader :reasoning_effort, :client, :schema
+    attr_reader :reasoning_effort, :client, :schema, :schema_file
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
     PROXY_URL = "https://prepend.me/".freeze
@@ -198,6 +198,12 @@ module AI
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
       end
+    end
+
+    def schema_file=(path)
+      @schema_file = path
+      content = File.open(path).read
+      self.schema = content
     end
 
     def last
