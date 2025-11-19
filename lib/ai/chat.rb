@@ -25,7 +25,7 @@ module AI
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :web_search
     attr_reader :reasoning_effort, :client, :schema, :schema_file
 
-    VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
+    VALID_REASONING_EFFORTS = [:none, :minimal, :low, :medium, :high].freeze
     PROXY_URL = "https://prepend.me/".freeze
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
