@@ -41,3 +41,5 @@ images/
 my_generated_images/
 examples/images/
 examples/my_generated_images/
+schema.json
+my_schemas/

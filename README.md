@@ -362,6 +362,40 @@ i.schema = '{"name":"nutrition_values","strict":true,"schema":{...}}'
 i.schema = '{"type":"object","properties":{...}}'
 ```
 
+### Generating a Schema
+
+You can call the class method `AI::Chat.generate_schema!` to use OpenAI to generate a JSON schema for you given a `String` describing the schema you want.
+
+```rb
+AI::Chat.generate_schema!("A user profile with name (required), email (required), age (number), and bio (optional text).")
+# => "{ ... }"
+```
+
+This method returns a String containing the JSON schema. The JSON schema also writes (or overwrites) to `schema.json` at the root of the project.
+
+Similar to generating messages with `AI::Chat` objects, this class method will assume that you have an API key called `OPENAI_API_KEY` defined. You can also pass the API key directly or choose a different environment variable key for it to use.
+
+```rb
+# Passing the API key directly
+AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key: "MY_SECRET_API_KEY")
+
+# Choosing a different API key name
+AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key_env_var: "CUSTOM_KEY")
+```
+
+You can choose a location for the schema to save by using the `location` keyword argument.
+
+```rb
+AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", location: "my_schemas/user.json")
+```
+
+If you don't want to write the output to a file, you can pass `false` to `location`.
+
+```rb
+AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", location: false)
+# => { ... }
+```
+
 ### Schema Notes
 
 - The keys can be `String`s or `Symbol`s.

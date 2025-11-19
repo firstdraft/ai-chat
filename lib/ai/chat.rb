@@ -23,7 +23,7 @@ module AI
   class Chat
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :web_search
-    attr_reader :reasoning_effort, :client, :schema
+    attr_reader :reasoning_effort, :client, :schema, :schema_file
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
     PROXY_URL = "https://prepend.me/".freeze
@@ -40,7 +40,7 @@ module AI
       @image_folder = "./images"
     end
 
-    def self.generate_schema!(description, api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
+    def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
       api_key ||= ENV.fetch(api_key_env_var)
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.open(prompt_path).read
@@ -48,7 +48,7 @@ module AI
       json = if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/responses")
         parameters = {
-          model: "o4-mini",
+          model: "gpt-5.1",
           input: [
             {role: :system, content: system_prompt},
             {role: :user, content: description},
@@ -73,7 +73,15 @@ module AI
         output_text = response.output_text
         JSON.parse(output_text)
       end
-      JSON.pretty_generate(json)
+      content = JSON.pretty_generate(json)
+      if location
+        path = Pathname.new(location)
+        FileUtils.mkdir_p(path.dirname) if path.dirname != "."
+        File.open(location, "wb") do |file|
+          file.write(content)
+        end
+      end
+      content
     end
 
     # :reek:TooManyStatements
@@ -190,6 +198,12 @@ module AI
       else
         raise ArgumentError, "Invalid schema value: '#{value}'. Must be a String containing JSON or a Hash."
       end
+    end
+
+    def schema_file=(path)
+      content = File.open(path).read
+      @schema_file = path
+      self.schema = content
     end
 
     def last
