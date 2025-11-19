@@ -61,7 +61,7 @@ module AI
       else
         client = OpenAI::Client.new(api_key: api_key)
         response = client.responses.create(
-          model: "o4-mini",
+          model: "gpt-5.1",
           input: [
             {role: :system, content: system_prompt},
             {role: :user, content: description}
