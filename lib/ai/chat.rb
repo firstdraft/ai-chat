@@ -48,7 +48,7 @@ module AI
       json = if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/responses")
         parameters = {
-          model: "o4-mini",
+          model: "gpt-5.1",
           input: [
             {role: :system, content: system_prompt},
             {role: :user, content: description},
