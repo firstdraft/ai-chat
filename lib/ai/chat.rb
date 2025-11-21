@@ -22,10 +22,9 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :web_search
-    attr_reader :reasoning_effort, :client, :schema, :schema_file
+    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :reasoning_effort, :web_search
+    attr_reader :client, :schema, :schema_file
 
-    VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
     PROXY_URL = "https://prepend.me/"
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
@@ -167,24 +166,6 @@ module AI
         retrieve_response(previous_response_id)
       end
       parse_response(response)
-    end
-
-    # :reek:NilCheck
-    # :reek:TooManyStatements
-    def reasoning_effort=(value)
-      if value.nil?
-        @reasoning_effort = nil
-        return
-      end
-
-      normalized_value = value.to_sym
-
-      if VALID_REASONING_EFFORTS.include?(normalized_value)
-        @reasoning_effort = normalized_value
-      else
-        valid_values = VALID_REASONING_EFFORTS.map { |valid_value| ":#{valid_value} or \"#{valid_value}\"" }.join(", ")
-        raise ArgumentError, "Invalid reasoning_effort value: '#{value}'. Must be one of: #{valid_values}"
-      end
     end
 
     def schema=(value)

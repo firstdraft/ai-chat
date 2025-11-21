@@ -63,28 +63,24 @@ rescue => e
 end
 puts
 
-# Test 3: Reasoning effort validation
-puts "Test 3: Reasoning effort validation"
+# Test 3: Invalid reasoning effort - API error propagation
+puts "Test 3: Invalid reasoning effort - API error propagation"
 puts "-" * 50
 begin
   chat = AI::Chat.new
-  chat.model = "o1-mini"  # Reasoning model
-
-  # Valid values
-  [:low, :medium, :high, "low", "medium", "high", nil].each do |value|
-    chat.reasoning_effort = value
-    puts "✓ Reasoning effort '#{value.inspect}' (#{value.class}) accepted"
-  end
-
-  # Invalid values
-  ["extreme", :ultra, "invalid", 123].each do |value|
-    chat.reasoning_effort = value
-    puts "✗ Reasoning effort '#{value}' should have failed"
-  rescue ArgumentError => e
-    puts "✓ Invalid reasoning effort '#{value}' rejected: #{e.message[0..60]}..."
+  chat.model = "gpt-5.1"
+  chat.reasoning_effort = "minimal"
+  chat.user("Hello")
+  chat.generate!
+  puts "✗ Should have raised an error"
+rescue OpenAI::Errors::BadRequestError => e
+  if e.message.include?("minimal") && e.message.include?("Supported values")
+    puts "✓ API error correctly propagated with helpful message"
+  else
+    puts "✗ Error propagated but message unclear: #{e.message[0..80]}..."
   end
 rescue => e
-  puts "✗ Unexpected error: #{e.message}"
+  puts "✗ Unexpected error type: #{e.class} - #{e.message[0..80]}..."
 end
 puts
 

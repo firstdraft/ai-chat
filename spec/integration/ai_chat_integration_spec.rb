@@ -179,22 +179,6 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
   end
 
-  describe "reasoning effort" do
-    it "accepts reasoning effort levels for o-series models" do
-      chat = AI::Chat.new
-      chat.model = "o1-mini"
-
-      expect { chat.reasoning_effort = "low" }.not_to raise_error
-      expect { chat.reasoning_effort = "medium" }.not_to raise_error
-      expect { chat.reasoning_effort = "high" }.not_to raise_error
-      expect { chat.reasoning_effort = :high }.not_to raise_error
-      expect { chat.reasoning_effort = :medium }.not_to raise_error
-      expect { chat.reasoning_effort = :low }.not_to raise_error
-
-      expect { chat.reasoning_effort = "invalid" }.to raise_error(ArgumentError)
-    end
-  end
-
   describe "image handling" do
     context "with a test image URL" do
       let(:test_image_url) { "https://picsum.photos/200/300" }

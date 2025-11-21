@@ -53,29 +53,4 @@ rescue => e
 end
 puts
 
-# Test 3: Reasoning effort configuration (for o-series models)
-puts "Test 3: Reasoning effort configuration"
-puts "-" * 30
-chat3 = AI::Chat.new
-chat3.model = "o1-mini"
-puts "Testing reasoning effort levels..."
-["low", "medium", "high", :low].each do |level|
-  chat3.reasoning_effort = level
-  puts "  Set reasoning_effort to #{level} (#{level.class}) - OK"
-rescue => e
-  puts "  Set reasoning_effort to #{level} - ERROR: #{e.message}"
-end
-
-# Test invalid value
-begin
-  chat3.reasoning_effort = "invalid"
-rescue ArgumentError => e
-  puts "  Invalid reasoning_effort correctly raises error: #{e.message}"
-end
-
-# Test nil value
-chat3.reasoning_effort = nil
-puts "  Set reasoning_effort to nil - OK"
-puts
-
 puts "=== Configuration tests completed ===="
