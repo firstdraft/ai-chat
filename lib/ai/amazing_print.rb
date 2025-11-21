@@ -33,7 +33,7 @@ module AmazingPrint
     # :reek:TooManyStatements
     def format_ai_chat(chat)
       vars = []
-      
+
       # Format messages with truncation
       if chat.instance_variable_defined?(:@messages)
         messages = chat.instance_variable_get(:@messages).map do |msg|
@@ -45,7 +45,7 @@ module AmazingPrint
         end
         vars << ["@messages", messages]
       end
-      
+
       # Add other variables (except sensitive ones)
       skip_vars = [:@api_key, :@client, :@messages]
       chat.instance_variables.sort.each do |var|
@@ -68,7 +68,7 @@ module AmazingPrint
       if @options[:multiline]
         "#<#{object.class}\n#{data.map { |line| "  #{line}" }.join("\n")}\n>"
       else
-        "#<#{object.class} #{data.join(', ')}>"
+        "#<#{object.class} #{data.join(", ")}>"
       end
     end
   end

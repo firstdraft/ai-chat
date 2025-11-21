@@ -31,4 +31,3 @@ b.system("You are a personal math tutor. When asked a math question, write and r
 b.user("Solve the equation 3x + 11 = 14.")
 puts b.generate![:content]
 puts "\n" * 5
-

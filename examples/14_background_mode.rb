@@ -3,7 +3,6 @@ require "dotenv"
 Dotenv.load(File.expand_path("../.env", __dir__))
 require "amazing_print"
 
-
 # Example showcasing background mode capabilities
 puts "=== AI::Chat Background Mode Examples ==="
 puts
@@ -16,7 +15,7 @@ chat.generate!
 message = chat.get_response
 
 puts "#{message.is_a?(Hash) ? "✓ " : "✗"} get_response returns a Hash: #{message.class}"
-puts "#{message[:status] != :completed ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
+puts "#{(message[:status] != :completed) ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
 puts "#{message[:content].empty? ? "✓ " : "✗"} Assistant message is empty: #{message[:content].inspect}"
 
 puts
@@ -26,9 +25,9 @@ sleep 10
 
 message = chat.get_response
 
-puts "#{message[:status] == :completed ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
-puts "#{chat.messages.select { |msg| msg[:role] == "assistant"}.count == 1 ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
-puts "#{!message[:content].empty? ? "✓ " : "✗"} Assistant message is present: #{message[:content].inspect}"
+puts "#{(message[:status] == :completed) ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
+puts "#{(chat.messages.select { |msg| msg[:role] == "assistant" }.count == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
+puts "#{(!message[:content].empty?) ? "✓ " : "✗"} Assistant message is present: #{message[:content].inspect}"
 
 puts "\n" * 2
 puts "=" * 24

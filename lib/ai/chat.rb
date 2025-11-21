@@ -26,7 +26,7 @@ module AI
     attr_reader :reasoning_effort, :client, :schema, :schema_file
 
     VALID_REASONING_EFFORTS = [:low, :medium, :high].freeze
-    PROXY_URL = "https://prepend.me/".freeze
+    PROXY_URL = "https://prepend.me/"
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       @api_key = api_key || ENV.fetch(api_key_env_var)
@@ -43,7 +43,7 @@ module AI
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
       api_key ||= ENV.fetch(api_key_env_var)
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
-      system_prompt = File.open(prompt_path).read
+      system_prompt = File.read(prompt_path)
 
       json = if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/responses")
@@ -51,7 +51,7 @@ module AI
           model: "gpt-5.1",
           input: [
             {role: :system, content: system_prompt},
-            {role: :user, content: description},
+            {role: :user, content: description}
           ],
           text: {format: {type: "json_object"}},
           reasoning: {effort: "high"}
@@ -77,9 +77,7 @@ module AI
       if location
         path = Pathname.new(location)
         FileUtils.mkdir_p(path.dirname) if path.dirname != "."
-        File.open(location, "wb") do |file|
-          file.write(content)
-        end
+        File.binwrite(location, content)
       end
       content
     end
@@ -154,7 +152,7 @@ module AI
       response = create_response
       parse_response(response)
 
-      self.previous_response_id = last.dig(:response, :id) unless (conversation_id && !background)
+      self.previous_response_id = last.dig(:response, :id) unless conversation_id && !background
       last
     end
 
@@ -201,7 +199,7 @@ module AI
     end
 
     def schema_file=(path)
-      content = File.open(path).read
+      content = File.read(path)
       @schema_file = path
       self.schema = content
     end
@@ -214,12 +212,12 @@ module AI
       raise "No conversation_id set. Call generate! first to create a conversation." unless conversation_id
 
       if proxy
-        uri = URI(PROXY_URL + "api.openai.com/v1/conversations/#{conversation_id}/items?order=#{order.to_s}")
+        uri = URI(PROXY_URL + "api.openai.com/v1/conversations/#{conversation_id}/items?order=#{order}")
         response_hash = send_request(uri, content_type: "json", method: "get")
 
         if response_hash.key?(:data)
           response_hash.dig(:data).map do |hash|
-            # Transform values to allow expected symbols that non-proxied request returns 
+            # Transform values to allow expected symbols that non-proxied request returns
 
             hash.transform_values! do |value|
               if hash.key(value) == :type
@@ -297,6 +295,7 @@ module AI
     private
 
     class InputClassificationError < StandardError; end
+
     class WrongAPITokenUsedError < StandardError; end
 
     # :reek:FeatureEnvy
@@ -381,7 +380,7 @@ module AI
         if response.key?(:conversation)
           self.conversation_id = response.dig(:conversation, :id)
         end
-      else        
+      else
         text_response = response.output_text
         response_id = response.id
         response_status = response.status
@@ -619,12 +618,12 @@ module AI
     def extract_and_save_images(response)
       image_filenames = []
 
-      if proxy
-        image_outputs = response.dig(:output).select { |output|
+      image_outputs = if proxy
+        response.dig(:output).select { |output|
           output.dig(:type) == "image_generation_call"
         }
-      else       
-        image_outputs = response.output.select { |output|
+      else
+        response.output.select { |output|
           output.respond_to?(:type) && output.type == :image_generation_call
         }
       end
@@ -708,7 +707,7 @@ module AI
         message_outputs = response.dig(:output).select do |output|
           output.dig(:type) == "message"
         end
-  
+
         outputs_with_annotations = message_outputs.map do |message|
           message.dig(:content).find do |content|
             content.dig(:annotations).length.positive?
@@ -718,7 +717,7 @@ module AI
         message_outputs = response.output.select do |output|
           output.respond_to?(:type) && output.type == :message
         end
-  
+
         outputs_with_annotations = message_outputs.map do |message|
           message.content.find do |content|
             content.respond_to?(:annotations) && content.annotations.length.positive?
@@ -737,12 +736,12 @@ module AI
             annotation.key?(:filename)
           end
         end.compact
-  
+
         annotations.each do |annotation|
           container_id = annotation.dig(:container_id)
           file_id = annotation.dig(:file_id)
           filename = annotation.dig(:filename)
-  
+
           warn_if_file_fails_to_save do
             file_content = retrieve_file(file_id, container_id: container_id)
             file_path = File.join(subfolder_path, filename)
@@ -756,18 +755,16 @@ module AI
             annotation.respond_to?(:filename)
           end
         end.compact
-  
+
         annotations.each do |annotation|
           container_id = annotation.container_id
           file_id = annotation.file_id
           filename = annotation.filename
-  
+
           warn_if_file_fails_to_save do
             file_content = retrieve_file(file_id, container_id: container_id)
             file_path = File.join(subfolder_path, filename)
-            File.open(file_path, "wb") do |file|
-              file.write(file_content.read)
-            end
+            File.binwrite(file_path, file_content.read)
             filenames << file_path
           end
         end
@@ -796,39 +793,39 @@ module AI
     # :reek:DuplicateMethodCall
     # :reek:TooManyStatements
     def wait_for_response(timeout)
-        spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
-        spinner.auto_spin
-        api_response = retrieve_response(previous_response_id)
-        number_of_times_polled = 0
-        response = timeout_request(timeout) do
-          status = if api_response.respond_to?(:status)
-            api_response.status
-          else 
-            api_response.dig(:status)&.to_sym
-          end
-
-          while status != :completed
-            some_amount_of_seconds = calculate_wait(number_of_times_polled)
-            sleep some_amount_of_seconds
-            number_of_times_polled += 1
-            api_response = retrieve_response(previous_response_id)
-            status = if api_response.respond_to?(:status)
-              api_response.status
-            else
-              api_response.dig(:status)&.to_sym
-            end
-          end
-          api_response
-        end
-        
+      spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
+      spinner.auto_spin
+      api_response = retrieve_response(previous_response_id)
+      number_of_times_polled = 0
+      response = timeout_request(timeout) do
         status = if api_response.respond_to?(:status)
           api_response.status
-        else 
-          api_response.dig(:status).to_sym
+        else
+          api_response.dig(:status)&.to_sym
         end
-        exit_message = status == :cancelled ? "request timed out" : "done!"
-        spinner.stop(exit_message)
-        response
+
+        while status != :completed
+          some_amount_of_seconds = calculate_wait(number_of_times_polled)
+          sleep some_amount_of_seconds
+          number_of_times_polled += 1
+          api_response = retrieve_response(previous_response_id)
+          status = if api_response.respond_to?(:status)
+            api_response.status
+          else
+            api_response.dig(:status)&.to_sym
+          end
+        end
+        api_response
+      end
+
+      status = if api_response.respond_to?(:status)
+        api_response.status
+      else
+        api_response.dig(:status).to_sym
+      end
+      exit_message = (status == :cancelled) ? "request timed out" : "done!"
+      spinner.stop(exit_message)
+      response
     end
 
     def retrieve_response(previous_response_id)
@@ -846,7 +843,7 @@ module AI
         send_request(uri, method: "get")
       else
         container_content = client.containers.files.content
-        file_content = container_content.retrieve(file_id, container_id: container_id)
+        container_content.retrieve(file_id, container_id: container_id)
       end
     end
   end

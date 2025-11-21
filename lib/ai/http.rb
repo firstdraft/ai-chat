@@ -1,7 +1,7 @@
 require "net/http"
 module AI
   module Http
-    def send_request(uri, content_type: nil, parameters: nil, method:)
+    def send_request(uri, method:, content_type: nil, parameters: nil)
       Net::HTTP.start(uri.host, 443, use_ssl: true) do |http|
         headers = {
           "Authorization" => "Bearer #{@api_key}"
