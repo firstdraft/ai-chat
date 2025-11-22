@@ -31,27 +31,8 @@ puts "✓ Message is a Hash: #{message.is_a?(Hash)}"
 puts "✓ Response Hash exists: #{chat1.last[:response].is_a?(Hash)}"
 puts
 
-# Test 2: previous_response_id functionality
-puts "Test 2: previous_response_id functionality"
-puts "-" * 30
-chat2 = AI::Chat.new
-chat2.user("My name is Alice and I live in Boston.")
-chat2.generate!
-response_id = chat2.previous_response_id
-puts "✓ Response ID: #{chat2.last[:response][:id]}"
-puts "✓ Automatically set previous_response_id: #{response_id == chat2.last[:response][:id]}"
-
-# Create new chat with previous_response_id
-chat3 = AI::Chat.new
-chat3.previous_response_id = response_id
-chat3.user("What is my name?")
-message = chat3.generate![:content]
-puts "✓ Message Content: #{message}"
-puts "✓ New chat remembers context: #{message.include?("Alice")}"
-puts
-
-# Test 3: Message handling
-puts "Test 3: Message types and convenience methods"
+# Test 2: Message handling
+puts "Test 2: Message types and convenience methods"
 puts "-" * 30
 chat4 = AI::Chat.new
 chat4.system("You are a helpful assistant")
@@ -64,8 +45,8 @@ puts "✓ Assistant message: #{chat4.messages[2][:role] == "assistant"}"
 puts "✓ Last helper: #{chat4.last == chat4.messages.last}"
 puts
 
-# Test 4: Response details
-puts "Test 4: Response details"
+# Test 3: Response details
+puts "Test 3: Response details"
 puts "-" * 30
 chat5 = AI::Chat.new
 chat5.user("Say hello")

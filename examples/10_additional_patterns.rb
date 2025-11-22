@@ -78,11 +78,10 @@ begin
   message = chat4a.generate![:content]
   puts "✓ First chat with web search: #{message[0..100]}..."
 
-  # Chain to second chat
-  response_id = chat4a.last.dig(:response, :id)
+  # Chain to second chat using conversation_id
   chat4b = AI::Chat.new
   chat4b.model = "gpt-4o"
-  chat4b.previous_response_id = response_id
+  chat4b.conversation_id = chat4a.conversation_id
   chat4b.user("Is this version stable for production use?")
   message = chat4b.generate![:content]
   puts "✓ Chained response: #{message[0..100]}..."

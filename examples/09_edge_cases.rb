@@ -124,39 +124,8 @@ rescue => e
 end
 puts
 
-# Test 5: previous_response_id edge cases
-puts "Test 5: previous_response_id edge cases"
-puts "-" * 50
-begin
-  chat1 = AI::Chat.new
-
-  # Using previous_response_id without any messages
-  chat1.previous_response_id = "resp_nonexistent"
-  chat1.user("Hello")
-  chat1.generate!
-  puts "✓ Nonexistent previous_response_id handled gracefully"
-
-  # Using nil previous_response_id
-  chat2 = AI::Chat.new
-  chat2.previous_response_id = nil
-  chat2.user("Hello")
-  chat2.generate!
-  puts "✓ nil previous_response_id works"
-
-  # Chaining with previous_response_id
-  id1 = chat1.previous_response_id
-  chat3 = AI::Chat.new
-  chat3.previous_response_id = id1
-  chat3.user("Continue")
-  chat3.generate!
-  puts "✓ Chaining with valid previous_response_id works"
-rescue => e
-  puts "✗ Error: #{e.message}"
-end
-puts
-
-# Test 6: File/Image parameter combinations
-puts "Test 6: File/Image parameter combinations"
+# Test 5: File/Image parameter combinations
+puts "Test 5: File/Image parameter combinations"
 puts "-" * 50
 begin
   chat = AI::Chat.new
@@ -193,8 +162,8 @@ rescue => e
 end
 puts
 
-# Test 7: Schema edge cases
-puts "Test 7: Schema edge cases"
+# Test 6: Schema edge cases
+puts "Test 6: Schema edge cases"
 puts "-" * 50
 begin
   chat = AI::Chat.new
@@ -230,8 +199,8 @@ rescue => e
 end
 puts
 
-# Test 8: Web search edge cases
-puts "Test 8: Web search edge cases"
+# Test 7: Web search edge cases
+puts "Test 7: Web search edge cases"
 puts "-" * 50
 begin
   chat = AI::Chat.new
@@ -252,8 +221,8 @@ rescue => e
 end
 puts
 
-# Test 9: Inspect and introspection
-puts "Test 9: Inspect and introspection"
+# Test 8: Inspect and introspection
+puts "Test 8: Inspect and introspection"
 puts "-" * 50
 begin
   chat = AI::Chat.new
@@ -261,7 +230,6 @@ begin
   chat.reasoning_effort = :low
   chat.web_search = true
   chat.schema = {type: "object"}
-  chat.previous_response_id = "resp_123"
   chat.system("System message")
   chat.user("User message")
 

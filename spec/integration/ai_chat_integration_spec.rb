@@ -101,49 +101,6 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
   end
 
-  # TODO: Fix bug where conversation_id prevents previous_response_id from being set
-  # See: https://github.com/firstdraft/ai-chat/issues/38
-  describe "previous_response_id functionality" do
-    xit "continues a conversation using previous_response_id" do
-      # First conversation
-      chat1 = AI::Chat.new
-      chat1.user("My name is Alice and I live in Boston.")
-      chat1.generate!
-
-      response_id = chat1.previous_response_id
-      expect(response_id).to match(/^resp_/)
-
-      # New conversation continuing from previous
-      chat2 = AI::Chat.new
-      chat2.previous_response_id = response_id
-      chat2.user("What is my name and where do I live?")
-
-      chat2.generate!
-
-      expect(chat2.last[:content]).to match(/Alice/i)
-      expect(chat2.last[:content]).to match(/Boston/i)
-    end
-
-    xit "automatically updates previous_response_id after each generate!" do
-      chat = AI::Chat.new
-
-      expect(chat.previous_response_id).to be_nil
-
-      chat.user("Hello")
-      chat.generate!
-
-      first_id = chat.previous_response_id
-      expect(first_id).to match(/^resp_/)
-
-      chat.user("Goodbye")
-      chat.generate!
-
-      second_id = chat.previous_response_id
-      expect(second_id).to match(/^resp_/)
-      expect(second_id).not_to eq(first_id)
-    end
-  end
-
   describe "model selection" do
     it "uses gpt-4.1-nano by default" do
       chat = AI::Chat.new

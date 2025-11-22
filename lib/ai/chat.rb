@@ -22,7 +22,7 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :previous_response_id, :reasoning_effort, :web_search
+    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :reasoning_effort, :web_search
     attr_reader :client, :schema, :schema_file
 
     PROXY_URL = "https://prepend.me/"
@@ -33,7 +33,7 @@ module AI
       @reasoning_effort = nil
       @model = "gpt-4.1-nano"
       @client = OpenAI::Client.new(api_key: @api_key)
-      @previous_response_id = nil
+      @last_response_id = nil
       @proxy = false
       @image_generation = false
       @image_folder = "./images"
@@ -151,7 +151,7 @@ module AI
       response = create_response
       parse_response(response)
 
-      self.previous_response_id = last.dig(:response, :id) unless conversation_id && !background
+      @last_response_id = last.dig(:response, :id)
       last
     end
 
@@ -163,7 +163,7 @@ module AI
       response = if wait
         wait_for_response(timeout)
       else
-        retrieve_response(previous_response_id)
+        retrieve_response(@last_response_id)
       end
       parse_response(response)
     end
@@ -314,16 +314,8 @@ module AI
       parameters[:text] = schema if schema
       parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
 
-      if previous_response_id && conversation_id
-        warn "Both conversation_id and previous_response_id are set. Using previous_response_id for forking. Only set one."
-        parameters[:previous_response_id] = previous_response_id
-      elsif previous_response_id
-        parameters[:previous_response_id] = previous_response_id
-      elsif conversation_id
-        parameters[:conversation] = conversation_id
-      else
-        create_conversation
-      end
+      create_conversation unless conversation_id
+      parameters[:conversation] = conversation_id
 
       messages_to_send = prepare_messages_for_api
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
@@ -413,16 +405,16 @@ module AI
     end
 
     def cancel_request
-      client.responses.cancel(previous_response_id)
+      client.responses.cancel(@last_response_id)
     end
 
     def prepare_messages_for_api
-      return messages unless previous_response_id
+      return messages unless @last_response_id
 
-      previous_response_index = messages.find_index { |message| message.dig(:response, :id) == previous_response_id }
+      last_response_index = messages.find_index { |message| message.dig(:response, :id) == @last_response_id }
 
-      if previous_response_index
-        messages[(previous_response_index + 1)..] || []
+      if last_response_index
+        messages[(last_response_index + 1)..] || []
       else
         messages
       end
@@ -768,7 +760,7 @@ module AI
         yield
       end
     rescue Timeout::Error
-      client.responses.cancel(previous_response_id)
+      client.responses.cancel(@last_response_id)
     end
 
     # :reek:DuplicateMethodCall
@@ -776,7 +768,7 @@ module AI
     def wait_for_response(timeout)
       spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
       spinner.auto_spin
-      api_response = retrieve_response(previous_response_id)
+      api_response = retrieve_response(@last_response_id)
       number_of_times_polled = 0
       response = timeout_request(timeout) do
         status = if api_response.respond_to?(:status)
@@ -789,7 +781,7 @@ module AI
           some_amount_of_seconds = calculate_wait(number_of_times_polled)
           sleep some_amount_of_seconds
           number_of_times_polled += 1
-          api_response = retrieve_response(previous_response_id)
+          api_response = retrieve_response(@last_response_id)
           status = if api_response.respond_to?(:status)
             api_response.status
           else
@@ -809,12 +801,12 @@ module AI
       response
     end
 
-    def retrieve_response(previous_response_id)
+    def retrieve_response(response_id)
       if proxy
-        uri = URI(PROXY_URL + "api.openai.com/v1/responses/#{previous_response_id}")
+        uri = URI(PROXY_URL + "api.openai.com/v1/responses/#{response_id}")
         send_request(uri, content_type: "json", method: "get")
       else
-        client.responses.retrieve(previous_response_id)
+        client.responses.retrieve(response_id)
       end
     end
 

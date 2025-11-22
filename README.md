@@ -474,27 +474,6 @@ l.generate!
 
 **Note**: Images should use `image:`/`images:` parameters, while documents should use `file:`/`files:` parameters.
 
-## Re-sending old images and files
-
-Note: if you generate another API request using the same chat, old images and files in the conversation history will not be re-sent by default. If you really want to re-send old images and files, then you must set `previous_response_id` to `nil`:
-
-```ruby
-a = AI::Chat.new
-a.user("What color is the object in this photo?", image: "thing.png")
-a.generate! # => "Red"
-a.user("What is the object in the photo?")
-a.generate! # => { :content => "I don't see a photo", ... }
-
-b = AI::Chat.new
-b.user("What color is the object in this photo?", image: "thing.png")
-b.generate! # => "Red"
-b.user("What is the object in the photo?")
-b.previous_response_id = nil
-b.generate! # => { :content => "An apple", ... }
-```
-
-If you don't set `previous_response_id` to `nil`, the model won't have the old image(s) to work with.
-
 ## Image generation
 
 You can enable OpenAI's image generation tool:
@@ -658,27 +637,6 @@ This information is useful for:
 - Understanding which model was actually used.
 - Future features like cost tracking.
 
-You can also, if you know a response ID, continue an old conversation by setting the `previous_response_id`:
-
-```ruby
-t = AI::Chat.new
-t.user("Hello!")
-t.generate!
-old_id = t.last[:response][:id] # => "resp_abc123..."
-
-# Some time in the future...
-
-u = AI::Chat.new
-u.previous_response_id = "resp_abc123..."
-u.user("What did I just say?")
-u.generate! # Will have context from the previous conversation}
-#    ]
-u.user("What should we do next?")
-u.generate!
-```
-
-Unless you've stored the previous messages somewhere yourself, this technique won't bring them back. But OpenAI remembers what they were, so that you can at least continue the conversation. (If you're using a reasoning model, this technique also preserves all of the model's reasoning.)
-
 ### Automatic Conversation Management
 
 Starting with your first `generate!` call, the gem automatically creates and manages a conversation with OpenAI. This conversation is stored server-side and tracks all messages, tool calls, reasoning, and other items.
@@ -706,8 +664,6 @@ chat.conversation_id = @thread.conversation_id  # From your database
 chat.user("Continue our discussion")
 chat.generate!  # Uses the loaded conversation
 ```
-
-**Note on forking:** If you want to "fork" a conversation (create a branch), you can still use `previous_response_id`. If both `conversation_id` and `previous_response_id` are set, the gem will use `previous_response_id` and warn you.
 
 ## Inspecting Conversation Details
 

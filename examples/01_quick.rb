@@ -52,16 +52,16 @@ response = chat3.generate![:content]
 puts "   #{response}"
 puts
 
-# 4. Previous response ID (conversation memory)
+# 4. Conversation memory across instances
 puts "4. Conversation memory across instances:"
 chat4 = AI::Chat.new
 chat4.user("My name is Alice and I like Ruby programming")
 chat4.generate!
-response_id = chat4.previous_response_id
+conv_id = chat4.conversation_id
 
 # New chat instance with memory
 chat5 = AI::Chat.new
-chat5.previous_response_id = response_id
+chat5.conversation_id = conv_id
 chat5.user("What's my name and what do I like?")
 response = chat5.generate![:content]
 puts "   #{response}"

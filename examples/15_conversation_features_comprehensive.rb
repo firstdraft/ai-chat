@@ -5,8 +5,6 @@
 # - Conversation continuity across multiple turns
 # - Inspecting conversation items (programmatically and verbose)
 # - Loading existing conversations
-# - Forking conversations
-# - Handling conflicts between conversation_id and previous_response_id
 
 require_relative "../lib/ai-chat"
 require "dotenv"
@@ -137,41 +135,6 @@ chat2.conversation_id = stored_id
 chat2.user("What was the very first thing I asked you?")
 chat2.generate!
 puts "Response from loaded conversation: #{chat2.last[:content]}"
-puts
-
-# Feature 8: Forking conversations
-puts "8. Forking Conversations"
-puts "-" * 60
-puts "You can fork a conversation using previous_response_id to create a branch."
-puts
-
-response_id = chat.last[:response][:id]
-puts "Using response_id: #{response_id}"
-puts
-
-fork = AI::Chat.new
-fork.previous_response_id = response_id
-fork.user("Say 'Hello from the forked conversation'")
-fork.generate!
-puts "Fork conversation_id: #{fork.conversation_id.inspect} (should be nil)"
-puts "Fork response: #{fork.last[:content]}"
-puts
-
-# Feature 9: Conflict handling
-puts "9. Conflict Handling (Both IDs Set)"
-puts "-" * 60
-puts "If both conversation_id and previous_response_id are set,"
-puts "the gem uses previous_response_id and displays a warning."
-puts
-
-conflict = AI::Chat.new
-conflict.conversation_id = stored_id
-conflict.previous_response_id = response_id
-conflict.user("This triggers the conflict warning")
-puts "Calling generate! with both IDs set..."
-conflict.generate!
-puts "Response: #{conflict.last[:content]}"
-puts "(Check stderr for warning message)"
 puts
 
 puts "=" * 60
