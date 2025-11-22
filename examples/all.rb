@@ -15,9 +15,6 @@ require_relative "01_quick"
 # Core functionality tests
 require_relative "02_core"
 
-# Configuration tests (API keys, models, reasoning)
-require_relative "03_configuration"
-
 # Basic multimodal tests (images, PDFs, files)
 require_relative "04_multimodal"
 
@@ -29,9 +26,6 @@ require_relative "06_structured_output"
 
 # Comprehensive structured output tests (all 6 schema formats)
 require_relative "07_structured_output_comprehensive"
-
-# Advanced usage patterns
-require_relative "08_advanced_usage"
 
 # Edge cases and error handling
 require_relative "09_edge_cases"
@@ -52,7 +46,7 @@ require_relative "13_code_interpreter"
 require_relative "14_background_mode"
 
 # Conversations
-require_relative "15_conversations_features_comprehensive"
+require_relative "15_conversation_features_comprehensive"
 
 # Schema Generation
 require_relative "16_schema_generation"
