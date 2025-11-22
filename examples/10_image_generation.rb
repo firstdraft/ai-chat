@@ -13,6 +13,7 @@ puts
 puts "Example 1: Basic generation & Response object access"
 puts "-" * 50
 a = AI::Chat.new
+a.reasoning_effort = nil  # image_generation requires nil reasoning
 a.image_generation = true
 a.image_folder = "./my_generated_images"
 a.user("Draw a simple red circle")
@@ -30,6 +31,7 @@ puts
 puts "Example 2: Model remembers previously generated images"
 puts "-" * 50
 b = AI::Chat.new
+b.reasoning_effort = nil  # image_generation requires nil reasoning
 b.image_generation = true
 animal = ["cat", "dog", "elephant", "zebra", "crab", "parrot", "peacock", "shark"].sample
 b.user("Draw a #{animal}")
@@ -45,6 +47,7 @@ puts
 puts "Example 3: Multiturn image editing"
 puts "-" * 50
 c = AI::Chat.new
+c.reasoning_effort = nil  # image_generation requires nil reasoning
 c.image_generation = true
 image_path = File.expand_path("../spec/fixtures/thing.jpg", __dir__)
 c.user("Transform this image to look like watercolor", image: image_path)

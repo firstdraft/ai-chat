@@ -67,17 +67,6 @@ response = chat5.generate![:content]
 puts "   #{response}"
 puts
 
-# 5. Model selection
-puts "5. Different models:"
-["gpt-5-nano", "gpt-4o"].each do |model|
-  chat = AI::Chat.new
-  chat.model = model
-  chat.user("Say 'Hi' in exactly 2 characters")
-  response = chat.generate![:content]
-  puts "   #{model}: #{response}"
-end
-puts
-
 puts "=== Quick Example Complete ==="
 puts
 puts "For comprehensive tests, run: bundle exec ruby examples/all.rb"
