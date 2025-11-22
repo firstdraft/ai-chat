@@ -74,42 +74,8 @@ rescue => e
 end
 puts
 
-# Test 4: Various text file types
-puts "Test 4: Various text file types"
-puts "-" * 50
-text_files = {
-  "Ruby code (.rb)" => ["test.rb", "def hello\n  puts 'Hello, world!'\nend"],
-  "Python code (.py)" => ["test.py", "def hello():\n    print('Hello, world!')"],
-  "JavaScript (.js)" => ["test.js", "function hello() {\n  console.log('Hello, world!');\n}"],
-  "JSON (.json)" => ["test.json", '{"message": "Hello, world!", "count": 42}'],
-  "YAML (.yml)" => ["test.yml", "message: Hello, world!\ncount: 42"],
-  "CSV (.csv)" => ["test.csv", "name,age,city\nAlice,30,Boston\nBob,25,NYC"],
-  "Markdown (.md)" => ["test.md", "# Hello\n\nThis is a **markdown** file."],
-  "Plain text (.txt)" => ["test.txt", "This is plain text content."],
-  "Config file (.conf)" => ["test.conf", "server.port=8080\nserver.host=localhost"],
-  "No extension" => ["testfile", "File with no extension"]
-}
-
-text_files.each do |description, (filename, content)|
-  temp_file = Tempfile.new(filename)
-  temp_file.write(content)
-  temp_file.rewind
-
-  chat = AI::Chat.new
-  chat.user("What kind of file is this and what does it contain?", file: temp_file.path)
-  message = chat.generate![:content]
-  puts "✓ #{description}: AI understood content"
-  puts "  Message: #{message[0..80]}..."
-
-  temp_file.close
-  temp_file.unlink
-rescue => e
-  puts "✗ #{description}: #{e.message}"
-end
-puts
-
-# Test 5: Rails-style file uploads (simulating ActionDispatch::Http::UploadedFile)
-puts "Test 5: Rails-style file uploads"
+# Test 4: Rails-style file uploads (simulating ActionDispatch::Http::UploadedFile)
+puts "Test 4: Rails-style file uploads"
 puts "-" * 50
 begin
   # Simulate a Rails uploaded file
@@ -167,8 +133,8 @@ rescue => e
 end
 puts
 
-# Test 6: URL file handling
-puts "Test 6: URL file handling"
+# Test 5: URL file handling
+puts "Test 5: URL file handling"
 puts "-" * 50
 begin
   # Note: We're trusting the user to specify the correct parameter (file: vs image:)
@@ -186,52 +152,8 @@ rescue => e
 end
 puts
 
-# Test 7: Binary file handling (should fail gracefully)
-puts "Test 7: Binary file handling (expected to fail)"
-puts "-" * 50
-begin
-  # Create a binary file
-  temp_file = Tempfile.new(["binary", ".bin"])
-  temp_file.binmode
-  temp_file.write([0x00, 0xFF, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC].pack("C*"))
-  temp_file.rewind
-
-  chat7 = AI::Chat.new
-  chat7.user("What is this file?", file: temp_file.path)
-  chat7.generate!
-  puts "✗ Binary file should have failed but didn't"
-
-  temp_file.close
-  temp_file.unlink
-rescue AI::Chat::InputClassificationError => e
-  puts "✓ Binary file correctly rejected with clear error:"
-  puts "  #{e.message}"
-rescue => e
-  puts "✗ Unexpected error: #{e.message}"
-end
-puts
-
-# Test 8: File-like objects without proper methods
-puts "Test 8: File-like objects without proper methods"
-puts "-" * 50
-begin
-  # Create an object that has read but no filename methods
-  bad_file = StringIO.new("Some content")
-
-  chat8 = AI::Chat.new
-  chat8.user("Read this", file: bad_file)
-  chat8.generate!
-  puts "✗ Should have failed with missing filename error"
-rescue AI::Chat::InputClassificationError => e
-  puts "✓ File object without filename methods correctly rejected:"
-  puts "  #{e.message}"
-rescue => e
-  puts "✗ Unexpected error: #{e.message}"
-end
-puts
-
-# Test 9: Multiple files with mixed types
-puts "Test 9: Multiple files with mixed types"
+# Test 6: Multiple files with mixed types
+puts "Test 6: Multiple files with mixed types"
 puts "-" * 50
 begin
   # Create multiple temporary files

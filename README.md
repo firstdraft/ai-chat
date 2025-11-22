@@ -766,6 +766,20 @@ q.messages = [
 - **Streaming responses**: Real-time streaming as the AI generates its response
 - **Cost tracking**: Automatic calculation and tracking of API costs
 
+## TODO: Missing Test Coverage
+
+The following gem-specific logic would benefit from additional RSpec test coverage:
+
+1. **Schema format normalization** - The `wrap_schema_if_needed` method detects and wraps 3 different input formats (raw, named, already-wrapped). This complex conditional logic could silently regress.
+
+2. **Multimodal content array building** - The `add` method builds nested structures when images/files are provided, handling `image`/`images` and `file`/`files` parameters with specific ordering (text → images → files).
+
+3. **File classification and processing** - `classify_obj` and `process_file_input` distinguish URLs vs file paths vs file-like objects, with MIME type detection determining encoding behavior.
+
+4. **Message preparation after response** - `prepare_messages_for_api` has slicing logic that only sends messages after the last response, preventing re-sending entire conversation history.
+
+These are all gem-specific transformations (not just OpenAI pass-through) that could regress without proper test coverage.
+
 ## Testing with Real API Calls
 
 While this gem includes specs, they use mocked API responses. To test with real API calls:

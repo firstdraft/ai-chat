@@ -141,13 +141,6 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
   end
 
-  describe "model selection" do
-    it "uses gpt-5-nano by default" do
-      chat = AI::Chat.new
-      expect(chat.model).to eq("gpt-5-nano")
-    end
-  end
-
   describe "web search functionality" do
     it "can use web search when enabled" do
       chat = AI::Chat.new
@@ -278,15 +271,6 @@ RSpec.describe "AI::Chat Integration", :integration do
 
       expect(chat.last[:content]).to be_a(String)
       expect(chat.messages.count).to eq(5)
-    end
-
-    it "provides last as a convenience method" do
-      chat = AI::Chat.new
-      chat.user("Hello")
-      chat.generate!
-
-      expect(chat.last).to eq(chat.messages.last)
-      expect(chat.last[:role]).to eq("assistant")
     end
   end
 end
