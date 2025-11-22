@@ -50,7 +50,7 @@ pp chat.messages
 #      {
 #        role: "assistant",
 #        content: "Here's a Ruby method to calculate factorial:\n\n```ruby\ndef factorial(n)...",
-#        response: { id: "resp_abc...", model: "gpt-4.1-nano", ... }
+#        response: { id: "resp_abc...", model: "gpt-5-nano", ... }
 #      }
 #    ]
 ```
@@ -85,7 +85,7 @@ After `generate!` is called, the assistant message includes a `:response` hash w
 chat.messages.last[:response]
 # => {
 #      id: "resp_abc123...",
-#      model: "gpt-4.1-nano",
+#      model: "gpt-5-nano",
 #      usage: {
 #        input_tokens: 25,
 #        output_tokens: 150,

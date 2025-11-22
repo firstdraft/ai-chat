@@ -26,19 +26,19 @@ The `examples/` directory contains focused examples for specific features:
 
 - `01_quick.rb` - Quick overview of key features
 - `02_core.rb` - Core functionality (basic chat, messages, responses)
-- `03_configuration.rb` - Configuration options (API keys, models, reasoning effort)
-- `04_multimodal.rb` - Basic file and image handling
-- `05_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
-- `06_structured_output.rb` - Basic structured output with schemas
-- `07_structured_output_comprehensive.rb` - All 6 supported schema formats
-- `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
-- `09_edge_cases.rb` - Error handling and edge cases
-- `10_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
-- `11_mixed_content.rb` - Combining text and images in messages
-- `12_image_generation.rb` - Using the image generation tool
-- `13_code_interpreter.rb` - Using the code interpreter tool
-- `14_background_mode.rb` - Running responses in background mode
-- `15_conversation_features_comprehensive.rb` - All conversation features (auto-creation, inspection, loading, forking)
+- `03_multimodal.rb` - Basic file and image handling
+- `04_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
+- `05_structured_output.rb` - Basic structured output with schemas
+- `06_structured_output_comprehensive.rb` - All 6 supported schema formats
+- `07_edge_cases.rb` - Error handling and edge cases
+- `08_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
+- `09_mixed_content.rb` - Combining text and images in messages
+- `10_image_generation.rb` - Using the image generation tool
+- `11_code_interpreter.rb` - Using the code interpreter tool
+- `12_background_mode.rb` - Running responses in background mode
+- `13_conversation_features_comprehensive.rb` - Conversation features (auto-creation, continuity, inspection)
+- `14_schema_generation.rb` - Generate JSON schemas from natural language
+- `15_proxy.rb` - Proxy support for student accounts
 
 Each example is self-contained and can be run individually:
 ```bash
@@ -93,7 +93,7 @@ a.generate! # => { :role => "assistant", :content => "Matz is nice and so we are
 pp a.messages
 # => [
 #      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"},
-#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 } }
+#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => { id=resp_abc... model=gpt-5-nano tokens=12 } }
 #    ]
 
 # Continue the conversation
@@ -113,7 +113,7 @@ That's it! You're building something like this:
 [
   {:role => "system", :content => "You are a helpful assistant"},
   {:role => "user", :content => "Hello!"},
-  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 } }
+  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => { id=resp_abc... model=gpt-5-nano tokens=12 } }
 ]
 ```
 
@@ -183,25 +183,14 @@ d.generate!                         # Generate a response
 
 ### Model
 
-By default, the gem uses OpenAI's `gpt-4.1-nano` model. If you want to use a different model, you can set it:
+By default, the gem uses OpenAI's `gpt-5-nano` model with `reasoning_effort: "minimal"`. If you want to use a different model, you can set it:
 
 ```ruby
 e = AI::Chat.new
-e.model = "o4-mini"
+e.model = "gpt-4o"
 ```
 
-As of 2025-07-29, the list of chat models that you probably want to choose from are:
-
-#### Foundation models 
-
-- gpt-4.1-nano
-- gpt-4.1-mini
-- gpt-4.1
-
-#### Reasoning models
-
-- o4-mini
-- o3
+See [OpenAI's model documentation](https://platform.openai.com/docs/models) for available models.
 
 ### API key
 
@@ -248,7 +237,7 @@ h.last[:content]
 
 ## Web Search
 
-To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search_preview` tool.
+To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search` tool.
 
 ```ruby
 m = AI::Chat.new
@@ -257,7 +246,12 @@ m.user("What are the latest developments in the Ruby language?")
 m.generate! # This may use web search to find current information
 ```
 
-**Note:** This feature requires a model that supports the `web_search_preview` tool, such as `gpt-4o` or `gpt-4o-mini`. The gem will attempt to use a compatible model if you have `web_search` enabled.
+**Note:** Web search is not compatible with `reasoning_effort`. If you're using web search, set `reasoning_effort` to `nil`:
+
+```ruby
+m.reasoning_effort = nil
+m.web_search = true
+```
 
 If you don't want the model to use web search, set `web_search` to `false` (this is the default):
 
@@ -587,25 +581,25 @@ puts response
 
 With this, you can loop through any conversation's history (perhaps after retrieving it from your database), recreate an `AI::Chat`, and then continue it.
 
-## Reasoning Models
+## Reasoning Effort
 
-When using reasoning models like `o3` or `o4-mini`, you can specify a reasoning effort level to control how much reasoning the model does before producing its final response:
+You can control how much reasoning the model does before producing its response:
 
 ```ruby
 l = AI::Chat.new
-l.model = "o3-mini"
-l.reasoning_effort = "medium" # Can be "low", "medium", or "high"
+l.reasoning_effort = "low" # Can be "minimal", "low", "medium", or "high"
 
 l.user("What does this error message mean? <insert error message>")
 l.generate!
 ```
 
-The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate before creating a response to the prompt. Options are:
+The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate. Options are:
+- `"minimal"`: (Default) Fastest, minimal reasoning.
 - `"low"`: Favors speed and economical token usage.
-- `"medium"`: (Default) Balances speed and reasoning accuracy.
+- `"medium"`: Balances speed and reasoning accuracy.
 - `"high"`: Favors more complete reasoning.
 
-Setting to `nil` disables the reasoning parameter.
+Setting to `nil` disables the reasoning parameter (required for web search).
 
 ## Advanced: Response Details
 
@@ -621,13 +615,13 @@ pp t.messages.last
 # => {
 #      :role => "assistant",
 #      :content => "Hello! How can I help you today?",
-#      :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 }
+#      :response => { id=resp_abc... model=gpt-5-nano tokens=12 }
 #    }
 
 # Access detailed information
 response = t.last[:response]
 response[:id]           # => "resp_abc123..."
-response[:model]        # => "gpt-4.1-nano"
+response[:model]        # => "gpt-5-nano"
 response[:usage]        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
 ```
 

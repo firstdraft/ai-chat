@@ -30,8 +30,8 @@ module AI
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
-      @reasoning_effort = nil
-      @model = "gpt-4.1-nano"
+      @reasoning_effort = "minimal"
+      @model = "gpt-5-nano"
       @client = OpenAI::Client.new(api_key: @api_key)
       @last_response_id = nil
       @proxy = false
@@ -550,7 +550,7 @@ module AI
     def tools
       tools_list = []
       if web_search
-        tools_list << {type: "web_search_preview"}
+        tools_list << {type: "web_search"}
       end
       if image_generation
         tools_list << {type: "image_generation"}

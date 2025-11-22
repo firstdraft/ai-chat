@@ -142,22 +142,16 @@ RSpec.describe "AI::Chat Integration", :integration do
   end
 
   describe "model selection" do
-    it "uses gpt-4.1-nano by default" do
+    it "uses gpt-5-nano by default" do
       chat = AI::Chat.new
-      expect(chat.model).to eq("gpt-4.1-nano")
-    end
-
-    it "allows setting a different model" do
-      chat = AI::Chat.new
-      chat.model = "gpt-4o-mini"
-      expect(chat.model).to eq("gpt-4o-mini")
+      expect(chat.model).to eq("gpt-5-nano")
     end
   end
 
   describe "web search functionality" do
     it "can use web search when enabled" do
       chat = AI::Chat.new
-      chat.model = "gpt-4o-mini"
+      chat.reasoning_effort = nil  # web_search doesn't work with reasoning
       chat.web_search = true
 
       chat.user("What is the current price of Bitcoin in USD?")

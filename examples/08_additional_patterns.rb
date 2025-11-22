@@ -28,7 +28,7 @@ puts "Test 2: Web search with structured output"
 puts "-" * 50
 begin
   chat2 = AI::Chat.new
-  chat2.model = "gpt-4o"  # Model that supports both features
+  chat2.reasoning_effort = nil  # web_search requires nil reasoning
   chat2.web_search = true
   chat2.schema = {
     type: "object",
@@ -72,7 +72,7 @@ puts "-" * 50
 begin
   # First chat searches the web
   chat4a = AI::Chat.new
-  chat4a.model = "gpt-4o"
+  chat4a.reasoning_effort = nil  # web_search requires nil reasoning
   chat4a.web_search = true
   chat4a.user("What's the latest Ruby version released?")
   message = chat4a.generate![:content]
@@ -80,7 +80,6 @@ begin
 
   # Chain to second chat using conversation_id
   chat4b = AI::Chat.new
-  chat4b.model = "gpt-4o"
   chat4b.conversation_id = chat4a.conversation_id
   chat4b.user("Is this version stable for production use?")
   message = chat4b.generate![:content]
@@ -127,7 +126,6 @@ puts "Test 8: Mixed multimodal in conversation"
 puts "-" * 50
 begin
   chat8 = AI::Chat.new
-  chat8.model = "gpt-4o"
 
   # Create test files
   text_file = Tempfile.new(["content", ".txt"])

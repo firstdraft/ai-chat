@@ -13,7 +13,6 @@ puts "Test 1: Single image + single file in one message"
 puts "-" * 50
 begin
   chat1 = AI::Chat.new
-  chat1.model = "gpt-4o"
 
   # Create a test file
   test_file = Tempfile.new(["test", ".txt"])
@@ -41,7 +40,6 @@ puts "Test 2: Multiple images + multiple files"
 puts "-" * 50
 begin
   chat2 = AI::Chat.new
-  chat2.model = "gpt-4o"
 
   # Create test files
   file1 = Tempfile.new(["code", ".rb"])
@@ -74,7 +72,6 @@ puts "Test 3: Mixed singular and plural (image + images, file + files)"
 puts "-" * 50
 begin
   chat3 = AI::Chat.new
-  chat3.model = "gpt-4o"
 
   # Create test files
   single_file = Tempfile.new(["single", ".txt"])
@@ -115,7 +112,6 @@ puts "Test 4: PDF + images + text files"
 puts "-" * 50
 begin
   chat4 = AI::Chat.new
-  chat4.model = "gpt-4o"
 
   # Use real PDF if available
   pdf_path = File.expand_path("../spec/fixtures/test.pdf", __dir__)

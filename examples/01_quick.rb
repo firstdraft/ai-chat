@@ -69,7 +69,7 @@ puts
 
 # 5. Model selection
 puts "5. Different models:"
-["gpt-4.1-nano", "gpt-4o-mini"].each do |model|
+["gpt-5-nano", "gpt-4o"].each do |model|
   chat = AI::Chat.new
   chat.model = model
   chat.user("Say 'Hi' in exactly 2 characters")

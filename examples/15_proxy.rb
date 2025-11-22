@@ -92,7 +92,7 @@ puts
 # 6. Web search
 chat6 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat6.proxy = true
-chat6.model = "gpt-4o"
+chat6.reasoning_effort = nil  # web_search requires nil reasoning
 chat6.web_search = true
 chat6.user("What's the latest Ruby on Rails version released?")
 message = chat6.generate![:content]
@@ -207,7 +207,7 @@ puts "A conversation is automatically created on the first generate! call."
 puts
 
 chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat.model = "gpt-4o-mini"
+chat.reasoning_effort = nil  # web_search requires nil reasoning
 chat.web_search = true
 chat.proxy = true
 puts "Before first generate!: conversation_id = #{chat.conversation_id.inspect}"
