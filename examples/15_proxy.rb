@@ -150,7 +150,7 @@ sleep 15
 message = chat9.get_response
 
 puts "#{(message[:status] == :completed) ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
-puts "#{(chat9.messages.select { |msg| msg[:role] == "assistant" }.count == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
+puts "#{(chat9.messages.count { |msg| msg[:role] == "assistant" } == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
 puts "#{(!message[:content].empty?) ? "✓ " : "✗"} Assistant message is present: #{message[:content].inspect}"
 
 puts "\n" * 2
