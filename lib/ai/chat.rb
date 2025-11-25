@@ -23,7 +23,7 @@ module AI
   class Chat
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :reasoning_effort, :web_search
-    attr_reader :client, :schema, :schema_file
+    attr_reader :client, :last_response_id, :schema, :schema_file
 
     PROXY_URL = "https://prepend.me/"
 
@@ -163,7 +163,7 @@ module AI
       response = if wait
         wait_for_response(timeout)
       else
-        retrieve_response(@last_response_id)
+        retrieve_response(last_response_id)
       end
       parse_response(response)
     end
@@ -405,13 +405,13 @@ module AI
     end
 
     def cancel_request
-      client.responses.cancel(@last_response_id)
+      client.responses.cancel(last_response_id)
     end
 
     def prepare_messages_for_api
-      return messages unless @last_response_id
+      return messages unless last_response_id
 
-      last_response_index = messages.find_index { |message| message.dig(:response, :id) == @last_response_id }
+      last_response_index = messages.find_index { |message| message.dig(:response, :id) == last_response_id }
 
       if last_response_index
         messages[(last_response_index + 1)..] || []
@@ -760,7 +760,7 @@ module AI
         yield
       end
     rescue Timeout::Error
-      client.responses.cancel(@last_response_id)
+      client.responses.cancel(last_response_id)
     end
 
     # :reek:DuplicateMethodCall
@@ -768,7 +768,7 @@ module AI
     def wait_for_response(timeout)
       spinner = TTY::Spinner.new("[:spinner] Thinking ...", format: :dots)
       spinner.auto_spin
-      api_response = retrieve_response(@last_response_id)
+      api_response = retrieve_response(last_response_id)
       number_of_times_polled = 0
       response = timeout_request(timeout) do
         status = if api_response.respond_to?(:status)
@@ -781,7 +781,7 @@ module AI
           some_amount_of_seconds = calculate_wait(number_of_times_polled)
           sleep some_amount_of_seconds
           number_of_times_polled += 1
-          api_response = retrieve_response(@last_response_id)
+          api_response = retrieve_response(last_response_id)
           status = if api_response.respond_to?(:status)
             api_response.status
           else

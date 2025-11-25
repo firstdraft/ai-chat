@@ -252,6 +252,25 @@ RSpec.describe "AI::Chat Integration", :integration do
       expect(response_obj[:usage][:total_tokens]).to be_a(Integer)
       expect(response_obj[:total_tokens]).to eq(response_obj[:usage][:total_tokens])
     end
+
+    it "updates last_response_id after each generate!" do
+      chat = AI::Chat.new
+
+      expect(chat.last_response_id).to be_nil
+
+      chat.user("Hello")
+      chat.generate!
+
+      first_id = chat.last_response_id
+      expect(first_id).to match(/^resp_/)
+
+      chat.user("Goodbye")
+      chat.generate!
+
+      second_id = chat.last_response_id
+      expect(second_id).to match(/^resp_/)
+      expect(second_id).not_to eq(first_id)
+    end
   end
 
   describe "messages manipulation" do

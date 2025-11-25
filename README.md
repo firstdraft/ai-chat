@@ -631,6 +631,25 @@ This information is useful for:
 - Understanding which model was actually used.
 - Future features like cost tracking.
 
+### Last Response ID
+
+In addition to the `response` object inside each message, the `AI::Chat` instance also provides a convenient reader, `last_response_id`, which always holds the ID of the most recent response.
+
+```ruby
+chat = AI::Chat.new
+chat.user("Hello")
+chat.generate!
+
+puts chat.last_response_id # => "resp_abc123..."
+
+chat.user("Goodbye")
+chat.generate!
+
+puts chat.last_response_id # => "resp_xyz789..." (a new ID)
+```
+
+This is particularly useful for managing background tasks. When you make a request in background mode, you can immediately get the `last_response_id` to track, retrieve, or cancel that specific job later from a different process.
+
 ### Automatic Conversation Management
 
 Starting with your first `generate!` call, the gem automatically creates and manages a conversation with OpenAI. This conversation is stored server-side and tracks all messages, tool calls, reasoning, and other items.

@@ -58,6 +58,9 @@ chat4 = AI::Chat.new
 chat4.user("My name is Alice and I like Ruby programming")
 chat4.generate!
 conv_id = chat4.conversation_id
+resp_id = chat4.last_response_id
+puts "   Conversation ID: #{conv_id}"
+puts "   Last Response ID: #{resp_id}"
 
 # New chat instance with memory
 chat5 = AI::Chat.new
