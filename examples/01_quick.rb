@@ -58,6 +58,9 @@ chat4 = AI::Chat.new
 chat4.user("My name is Alice and I like Ruby programming")
 chat4.generate!
 conv_id = chat4.conversation_id
+resp_id = chat4.last_response_id
+puts "   Conversation ID: #{conv_id}"
+puts "   Last Response ID: #{resp_id}"
 
 # New chat instance with memory
 chat5 = AI::Chat.new
@@ -65,17 +68,6 @@ chat5.conversation_id = conv_id
 chat5.user("What's my name and what do I like?")
 response = chat5.generate![:content]
 puts "   #{response}"
-puts
-
-# 5. Model selection
-puts "5. Different models:"
-["gpt-4.1-nano", "gpt-4o-mini"].each do |model|
-  chat = AI::Chat.new
-  chat.model = model
-  chat.user("Say 'Hi' in exactly 2 characters")
-  response = chat.generate![:content]
-  puts "   #{model}: #{response}"
-end
 puts
 
 puts "=== Quick Example Complete ==="

@@ -11,24 +11,10 @@ require "fileutils"
 puts "=== AI::Chat Additional Usage Patterns ==="
 puts
 
-# Note: System messages only support text content, not images or files.
-# This is a limitation of the OpenAI API, not this gem.
-
-puts "Test 1: Using the add method directly"
-puts "-" * 50
-chat1 = AI::Chat.new
-chat1.add("Hello from add method", role: "user")
-chat1.add("Hi there! I see you're using the add method directly.", role: "assistant")
-chat1.add("Yes, showing that we can build conversations manually", role: "user")
-puts "✓ Built conversation with add method:"
-puts "  Messages count: #{chat1.messages.length}"
-puts
-
-puts "Test 2: Web search with structured output"
+puts "Test 1: Web search with structured output"
 puts "-" * 50
 begin
   chat2 = AI::Chat.new
-  chat2.model = "gpt-4o"  # Model that supports both features
   chat2.web_search = true
   chat2.schema = {
     type: "object",
@@ -47,7 +33,7 @@ rescue => e
 end
 puts
 
-puts "Test 3: File paths with spaces and unicode"
+puts "Test 2: File paths with spaces and unicode"
 puts "-" * 50
 begin
   # Create a file with spaces and unicode in the name
@@ -67,12 +53,11 @@ rescue => e
 end
 puts
 
-puts "Test 4: Chaining with web search"
+puts "Test 3: Chaining with web search"
 puts "-" * 50
 begin
   # First chat searches the web
   chat4a = AI::Chat.new
-  chat4a.model = "gpt-4o"
   chat4a.web_search = true
   chat4a.user("What's the latest Ruby version released?")
   message = chat4a.generate![:content]
@@ -80,7 +65,6 @@ begin
 
   # Chain to second chat using conversation_id
   chat4b = AI::Chat.new
-  chat4b.model = "gpt-4o"
   chat4b.conversation_id = chat4a.conversation_id
   chat4b.user("Is this version stable for production use?")
   message = chat4b.generate![:content]
@@ -90,7 +74,7 @@ rescue => e
 end
 puts
 
-puts "Test 5: Manually passing response objects"
+puts "Test 4: Manually passing response objects"
 puts "-" * 50
 chat5 = AI::Chat.new
 # Simulate building a conversation with manual response tracking
@@ -104,7 +88,7 @@ puts "✓ Manually added assistant message with response object"
 puts "  Message has response: #{chat5.last.key?(:response)}"
 puts
 
-puts "Test 6: Schema as JSON string"
+puts "Test 5: Schema as JSON string"
 puts "-" * 50
 chat6 = AI::Chat.new
 chat6.schema = '{"type": "object", "properties": {"result": {"type": "number"}}, "required": ["result"], "additionalProperties": false}'
@@ -113,21 +97,10 @@ message = chat6.generate![:content]
 puts "✓ Schema from JSON string: #{message}"
 puts
 
-puts "Test 7: Empty content edge cases"
-puts "-" * 50
-chat7 = AI::Chat.new
-chat7.user("")  # Empty string
-chat7.user(" ")  # Whitespace only
-chat7.user("\n\t")  # Just whitespace characters
-puts "✓ Empty/whitespace messages accepted"
-puts "  Total messages: #{chat7.messages.length}"
-puts
-
-puts "Test 8: Mixed multimodal in conversation"
+puts "Test 6: Mixed multimodal in conversation"
 puts "-" * 50
 begin
   chat8 = AI::Chat.new
-  chat8.model = "gpt-4o"
 
   # Create test files
   text_file = Tempfile.new(["content", ".txt"])

@@ -26,7 +26,7 @@ sleep 10
 message = chat.get_response
 
 puts "#{(message[:status] == :completed) ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
-puts "#{(chat.messages.select { |msg| msg[:role] == "assistant" }.count == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
+puts "#{(chat.messages.count { |msg| msg[:role] == "assistant" } == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
 puts "#{(!message[:content].empty?) ? "✓ " : "✗"} Assistant message is present: #{message[:content].inspect}"
 
 puts "\n" * 2

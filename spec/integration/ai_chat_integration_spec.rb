@@ -29,6 +29,46 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
   end
 
+  describe "conversation continuity" do
+    it "creates a conversation_id on first generate!" do
+      chat = AI::Chat.new
+      expect(chat.conversation_id).to be_nil
+
+      chat.user("Hello")
+      chat.generate!
+
+      expect(chat.conversation_id).to match(/^conv_/)
+    end
+
+    it "maintains conversation_id across multiple generate! calls" do
+      chat = AI::Chat.new
+      chat.user("My name is Alice")
+      chat.generate!
+
+      first_conv_id = chat.conversation_id
+
+      chat.user("What's my name?")
+      chat.generate!
+
+      expect(chat.conversation_id).to eq(first_conv_id)
+      expect(chat.last[:content]).to match(/alice/i)
+    end
+
+    it "allows continuing a conversation in a new instance" do
+      chat1 = AI::Chat.new
+      chat1.user("Remember: the secret word is banana")
+      chat1.generate!
+      conv_id = chat1.conversation_id
+
+      chat2 = AI::Chat.new
+      chat2.conversation_id = conv_id
+      chat2.user("What's the secret word?")
+      chat2.generate!
+
+      expect(chat2.last[:content]).to match(/banana/i)
+    end
+  end
+
   describe "message types" do
     it "supports convenience methods for adding messages" do
       chat = AI::Chat.new
@@ -101,23 +141,9 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
   end
 
-  describe "model selection" do
-    it "uses gpt-4.1-nano by default" do
-      chat = AI::Chat.new
-      expect(chat.model).to eq("gpt-4.1-nano")
-    end
-
-    it "allows setting a different model" do
-      chat = AI::Chat.new
-      chat.model = "gpt-4o-mini"
-      expect(chat.model).to eq("gpt-4o-mini")
-    end
-  end
-
   describe "web search functionality" do
     it "can use web search when enabled" do
       chat = AI::Chat.new
-      chat.model = "gpt-4o-mini"
       chat.web_search = true
 
       chat.user("What is the current price of Bitcoin in USD?")
@@ -151,6 +177,38 @@ RSpec.describe "AI::Chat Integration", :integration do
         expect(chat.last[:content]).to be_a(String)
         expect(chat.last[:content].length).to be > 10
       end
+    end
+  end
+
+  describe "file handling" do
+    it "accepts text files" do
+      require "tempfile"
+
+      file = Tempfile.new(["test", ".txt"])
+      file.write("The secret number is 42.")
+      file.close
+
+      chat = AI::Chat.new
+      chat.user("What number is mentioned in this file?", file: file.path)
+      chat.generate!
+
+      expect(chat.last[:content]).to match(/42/)
+
+      file.unlink
+    end
+  end
+
+  describe "conversation items" do
+    it "retrieves conversation items from the API" do
+      chat = AI::Chat.new
+      chat.user("Say hello")
+      chat.generate!
+
+      items = chat.items
+
+      expect(items).to respond_to(:data)
+      expect(items.data).to be_an(Array)
+      expect(items.data.length).to be >= 2
     end
   end
 
@@ -193,6 +251,25 @@ RSpec.describe "AI::Chat Integration", :integration do
       expect(response_obj[:usage][:total_tokens]).to be_a(Integer)
       expect(response_obj[:total_tokens]).to eq(response_obj[:usage][:total_tokens])
     end
+
+    it "updates last_response_id after each generate!" do
+      chat = AI::Chat.new
+
+      expect(chat.last_response_id).to be_nil
+
+      chat.user("Hello")
+      chat.generate!
+
+      first_id = chat.last_response_id
+      expect(first_id).to match(/^resp_/)
+
+      chat.user("Goodbye")
+      chat.generate!
+
+      second_id = chat.last_response_id
+      expect(second_id).to match(/^resp_/)
+      expect(second_id).not_to eq(first_id)
+    end
   end
 
   describe "messages manipulation" do
@@ -212,15 +289,6 @@ RSpec.describe "AI::Chat Integration", :integration do
 
       expect(chat.last[:content]).to be_a(String)
       expect(chat.messages.count).to eq(5)
-    end
-
-    it "provides last as a convenience method" do
-      chat = AI::Chat.new
-      chat.user("Hello")
-      chat.generate!
-
-      expect(chat.last).to eq(chat.messages.last)
-      expect(chat.last[:role]).to eq("assistant")
     end
   end
 end

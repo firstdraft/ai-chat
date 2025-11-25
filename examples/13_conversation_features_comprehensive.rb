@@ -23,7 +23,6 @@ puts "A conversation is automatically created on the first generate! call."
 puts
 
 chat = AI::Chat.new
-chat.model = "gpt-4o-mini"  # Use a model that supports web search
 chat.web_search = true  # Enable web search for more interesting items
 puts "Before first generate!: conversation_id = #{chat.conversation_id.inspect}"
 
