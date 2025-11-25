@@ -24,6 +24,8 @@ jobs:
 
       - name: Build
         run: bundle exec rake
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: SimpleCov Report
         uses: actions/upload-artifact@v4
