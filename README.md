@@ -26,19 +26,19 @@ The `examples/` directory contains focused examples for specific features:
 
 - `01_quick.rb` - Quick overview of key features
 - `02_core.rb` - Core functionality (basic chat, messages, responses)
-- `03_configuration.rb` - Configuration options (API keys, models, reasoning effort)
-- `04_multimodal.rb` - Basic file and image handling
-- `05_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
-- `06_structured_output.rb` - Basic structured output with schemas
-- `07_structured_output_comprehensive.rb` - All 6 supported schema formats
-- `08_advanced_usage.rb` - Advanced patterns (chaining, web search)
-- `09_edge_cases.rb` - Error handling and edge cases
-- `10_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
-- `11_mixed_content.rb` - Combining text and images in messages
-- `12_image_generation.rb` - Using the image generation tool
-- `13_code_interpreter.rb` - Using the code interpreter tool
-- `14_background_mode.rb` - Running responses in background mode
-- `15_conversation_features_comprehensive.rb` - All conversation features (auto-creation, inspection, loading, forking)
+- `03_multimodal.rb` - Basic file and image handling
+- `04_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
+- `05_structured_output.rb` - Basic structured output with schemas
+- `06_structured_output_comprehensive.rb` - All 6 supported schema formats
+- `07_edge_cases.rb` - Error handling and edge cases
+- `08_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
+- `09_mixed_content.rb` - Combining text and images in messages
+- `10_image_generation.rb` - Using the image generation tool
+- `11_code_interpreter.rb` - Using the code interpreter tool
+- `12_background_mode.rb` - Running responses in background mode
+- `13_conversation_features_comprehensive.rb` - Conversation features (auto-creation, continuity, inspection)
+- `14_schema_generation.rb` - Generate JSON schemas from natural language
+- `15_proxy.rb` - Proxy support for student accounts
 
 Each example is self-contained and can be run individually:
 ```bash
@@ -93,7 +93,7 @@ a.generate! # => { :role => "assistant", :content => "Matz is nice and so we are
 pp a.messages
 # => [
 #      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"},
-#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 } }
+#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => { id=resp_abc... model=gpt-5.1 tokens=12 } }
 #    ]
 
 # Continue the conversation
@@ -113,7 +113,7 @@ That's it! You're building something like this:
 [
   {:role => "system", :content => "You are a helpful assistant"},
   {:role => "user", :content => "Hello!"},
-  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 } }
+  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => { id=resp_abc... model=gpt-5.1 tokens=12 } }
 ]
 ```
 
@@ -183,25 +183,14 @@ d.generate!                         # Generate a response
 
 ### Model
 
-By default, the gem uses OpenAI's `gpt-4.1-nano` model. If you want to use a different model, you can set it:
+By default, the gem uses OpenAI's `gpt-5.1` model. If you want to use a different model, you can set it:
 
 ```ruby
 e = AI::Chat.new
-e.model = "o4-mini"
+e.model = "gpt-4o"
 ```
 
-As of 2025-07-29, the list of chat models that you probably want to choose from are:
-
-#### Foundation models 
-
-- gpt-4.1-nano
-- gpt-4.1-mini
-- gpt-4.1
-
-#### Reasoning models
-
-- o4-mini
-- o3
+See [OpenAI's model documentation](https://platform.openai.com/docs/models) for available models.
 
 ### API key
 
@@ -248,24 +237,13 @@ h.last[:content]
 
 ## Web Search
 
-To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search_preview` tool.
+To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search` tool.
 
 ```ruby
 m = AI::Chat.new
 m.web_search = true
 m.user("What are the latest developments in the Ruby language?")
 m.generate! # This may use web search to find current information
-```
-
-**Note:** This feature requires a model that supports the `web_search_preview` tool, such as `gpt-4o` or `gpt-4o-mini`. The gem will attempt to use a compatible model if you have `web_search` enabled.
-
-If you don't want the model to use web search, set `web_search` to `false` (this is the default):
-
-```ruby
-m = AI::Chat.new
-m.web_search = false
-m.user("What are the latest developments in the Ruby language?")
-m.generate! # This definitely won't use web search to find current information
 ```
 
 ## Structured Output
@@ -474,27 +452,6 @@ l.generate!
 
 **Note**: Images should use `image:`/`images:` parameters, while documents should use `file:`/`files:` parameters.
 
-## Re-sending old images and files
-
-Note: if you generate another API request using the same chat, old images and files in the conversation history will not be re-sent by default. If you really want to re-send old images and files, then you must set `previous_response_id` to `nil`:
-
-```ruby
-a = AI::Chat.new
-a.user("What color is the object in this photo?", image: "thing.png")
-a.generate! # => "Red"
-a.user("What is the object in the photo?")
-a.generate! # => { :content => "I don't see a photo", ... }
-
-b = AI::Chat.new
-b.user("What color is the object in this photo?", image: "thing.png")
-b.generate! # => "Red"
-b.user("What is the object in the photo?")
-b.previous_response_id = nil
-b.generate! # => { :content => "An apple", ... }
-```
-
-If you don't set `previous_response_id` to `nil`, the model won't have the old image(s) to work with.
-
 ## Image generation
 
 You can enable OpenAI's image generation tool:
@@ -608,25 +565,24 @@ puts response
 
 With this, you can loop through any conversation's history (perhaps after retrieving it from your database), recreate an `AI::Chat`, and then continue it.
 
-## Reasoning Models
+## Reasoning Effort
 
-When using reasoning models like `o3` or `o4-mini`, you can specify a reasoning effort level to control how much reasoning the model does before producing its final response:
+You can control how much reasoning the model does before producing its response:
 
 ```ruby
 l = AI::Chat.new
-l.model = "o3-mini"
-l.reasoning_effort = "medium" # Can be "low", "medium", or "high"
+l.reasoning_effort = "low" # Can be "low", "medium", or "high"
 
 l.user("What does this error message mean? <insert error message>")
 l.generate!
 ```
 
-The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate before creating a response to the prompt. Options are:
+The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate. Options are:
 - `"low"`: Favors speed and economical token usage.
-- `"medium"`: (Default) Balances speed and reasoning accuracy.
+- `"medium"`: Balances speed and reasoning accuracy.
 - `"high"`: Favors more complete reasoning.
 
-Setting to `nil` disables the reasoning parameter.
+By default, `reasoning_effort` is `nil`, which means no reasoning parameter is sent to the API. For `gpt-5.1` (the default model), this is equivalent to `"none"` reasoning.
 
 ## Advanced: Response Details
 
@@ -642,13 +598,13 @@ pp t.messages.last
 # => {
 #      :role => "assistant",
 #      :content => "Hello! How can I help you today?",
-#      :response => { id=resp_abc... model=gpt-4.1-nano tokens=12 }
+#      :response => { id=resp_abc... model=gpt-5.1 tokens=12 }
 #    }
 
 # Access detailed information
 response = t.last[:response]
 response[:id]           # => "resp_abc123..."
-response[:model]        # => "gpt-4.1-nano"
+response[:model]        # => "gpt-5.1"
 response[:usage]        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
 ```
 
@@ -658,26 +614,24 @@ This information is useful for:
 - Understanding which model was actually used.
 - Future features like cost tracking.
 
-You can also, if you know a response ID, continue an old conversation by setting the `previous_response_id`:
+### Last Response ID
+
+In addition to the `response` object inside each message, the `AI::Chat` instance also provides a convenient reader, `last_response_id`, which always holds the ID of the most recent response.
 
 ```ruby
-t = AI::Chat.new
-t.user("Hello!")
-t.generate!
-old_id = t.last[:response][:id] # => "resp_abc123..."
+chat = AI::Chat.new
+chat.user("Hello")
+chat.generate!
 
-# Some time in the future...
+puts chat.last_response_id # => "resp_abc123..."
 
-u = AI::Chat.new
-u.previous_response_id = "resp_abc123..."
-u.user("What did I just say?")
-u.generate! # Will have context from the previous conversation}
-#    ]
-u.user("What should we do next?")
-u.generate!
+chat.user("Goodbye")
+chat.generate!
+
+puts chat.last_response_id # => "resp_xyz789..." (a new ID)
 ```
 
-Unless you've stored the previous messages somewhere yourself, this technique won't bring them back. But OpenAI remembers what they were, so that you can at least continue the conversation. (If you're using a reasoning model, this technique also preserves all of the model's reasoning.)
+This is particularly useful for managing background tasks. When you make a request in background mode, you can immediately get the `last_response_id` to track, retrieve, or cancel that specific job later from a different process.
 
 ### Automatic Conversation Management
 
@@ -706,8 +660,6 @@ chat.conversation_id = @thread.conversation_id  # From your database
 chat.user("Continue our discussion")
 chat.generate!  # Uses the loaded conversation
 ```
-
-**Note on forking:** If you want to "fork" a conversation (create a branch), you can still use `previous_response_id`. If both `conversation_id` and `previous_response_id` are set, the gem will use `previous_response_id` and warn you.
 
 ## Inspecting Conversation Details
 
@@ -812,9 +764,36 @@ q.messages = [
 
 ## Other Features Being Considered
 
-- **Session management**: Save and restore conversations by ID
 - **Streaming responses**: Real-time streaming as the AI generates its response
 - **Cost tracking**: Automatic calculation and tracking of API costs
+- **Token usage helpers**: Convenience methods like `total_tokens` to sum usage across all responses in a conversation
+
+## TODO: Missing Test Coverage
+
+The following gem-specific logic would benefit from additional RSpec test coverage:
+
+1. **Schema format normalization** - The `wrap_schema_if_needed` method detects and wraps 3 different input formats (raw, named, already-wrapped). This complex conditional logic could silently regress.
+
+2. **Multimodal content array building** - The `add` method builds nested structures when images/files are provided, handling `image`/`images` and `file`/`files` parameters with specific ordering (text → images → files).
+
+3. **File classification and processing** - `classify_obj` and `process_file_input` distinguish URLs vs file paths vs file-like objects, with MIME type detection determining encoding behavior.
+
+4. **Message preparation after response** - `prepare_messages_for_api` has slicing logic that only sends messages after the last response, preventing re-sending entire conversation history.
+
+These are all gem-specific transformations (not just OpenAI pass-through) that could regress without proper test coverage.
+
+## TODO: Code Quality
+
+Address Reek warnings (`bundle exec reek`). Currently 29 warnings for code smells like:
+
+- `TooManyStatements` in several methods
+- `DuplicateMethodCall` in `extract_and_save_files`, `verbose`, etc.
+- `RepeatedConditional` for `proxy` checks
+- `FeatureEnvy` in `parse_response` and `wait_for_response`
+
+These don't affect functionality but indicate areas for refactoring.
+
+Then, add `quality` back as a CI check.
 
 ## Testing with Real API Calls
 

@@ -1,6 +1,6 @@
 # Development Journey
 
-This document captures the design decisions and implementation notes for the OpenAI::Chat gem.
+This document captures the design decisions and implementation notes for the AI::Chat gem.
 
 ## Core Design Philosophy
 
@@ -28,166 +28,142 @@ The gem is designed with beginners in mind, specifically to:
 - Transparent: students can inspect exactly what they're building
 - Natural progression to ActiveRecord relations in Rails apps
 
-## Leveraging the Responses API
+## Leveraging the Conversations API
 
 ### Background
-OpenAI's Responses API provides stateful conversation management, meaning the API maintains conversation context server-side. This is a significant improvement over the traditional approach of sending the full conversation history with each request.
+OpenAI's Conversations API provides stateful conversation management, meaning the API maintains conversation context server-side. This is a significant improvement over the traditional approach of sending the full conversation history with each request.
 
 ### Our Hybrid Approach
-We maintain the array of hashes for pedagogical value while leveraging the Responses API under the hood:
+We maintain the array of hashes for pedagogical value while leveraging the Conversations API under the hood:
 
 ```ruby
-a = OpenAI::Chat.new
-a.user("Write a Ruby method to calculate factorial")
-a.assistant!
+chat = AI::Chat.new
+chat.user("Write a Ruby method to calculate factorial")
+chat.generate!
 
-pp a.messages
+pp chat.messages
 # => [
 #      {
-#        "role" => "user",
-#        "content" => "Write a Ruby method to calculate factorial"
+#        role: "user",
+#        content: "Write a Ruby method to calculate factorial"
 #      },
 #      {
-#        "role" => "assistant",
-#        "content" => "Here's a Ruby method to calculate factorial:\n\n```ruby\ndef factorial(n)...",
-#        "response" => #<Response id=resp_abc... model=gpt-4.1-nano tokens=135>
+#        role: "assistant",
+#        content: "Here's a Ruby method to calculate factorial:\n\n```ruby\ndef factorial(n)...",
+#        response: { id: "resp_abc...", model: "gpt-5-nano", ... }
 #      }
 #    ]
 ```
 
-### Custom Response Class
+### Conversation Continuity
+The first `generate!` call creates a conversation on the server. Subsequent calls automatically use the same `conversation_id` to maintain context:
 
 ```ruby
-module OpenAI
-  class Chat
-    class Response
-      attr_reader :id, :model, :created_at, :usage, :raw_response
+chat = AI::Chat.new
+chat.user("My name is Alice")
+chat.generate!
 
-      def initialize(raw_response)
-        @raw_response = raw_response
-        @id = raw_response.id
-        @model = raw_response.model
-        @created_at = Time.at(raw_response.created)
-        @usage = {
-          "prompt_tokens" => raw_response.usage.prompt_tokens,
-          "completion_tokens" => raw_response.usage.completion_tokens,
-          "total_tokens" => raw_response.usage.total_tokens,
-          "reasoning_tokens" => raw_response.usage.reasoning_tokens
-        }
-      end
+# The conversation_id is now set
+puts chat.conversation_id  # => "conv_abc123..."
 
-      # Clean output for beginners
-      def to_s
-        "#<Response id=#{id[0..7]}... model=#{model} tokens=#{usage['total_tokens']}>"
-      end
+# Subsequent messages use the same conversation
+chat.user("What's my name?")
+chat.generate!  # Knows the name is Alice
 
-      def inspect
-        "#<OpenAI::Chat::Response:0x#{object_id.to_s(16)} " \
-        "id=\"#{id}\", " \
-        "model=\"#{model}\", " \
-        "tokens=#{usage['total_tokens']}>"
-      end
-
-      # Future feature - once we have pricing data
-      def cost
-        # TODO: Implement based on model and token usage
-        nil
-      end
-    end
-  end
-end
+# You can also continue in a new instance
+chat2 = AI::Chat.new
+chat2.conversation_id = chat.conversation_id
+chat2.user("What did we discuss?")
+chat2.generate!  # Has full conversation context
 ```
 
-### Implementation Strategy for assistant!
+### Response Structure
+
+After `generate!` is called, the assistant message includes a `:response` hash with metadata:
 
 ```ruby
-def assistant!
-  # If we have a previous assistant response, use its ID for context
-  previous_response_id = messages.reverse.find { |m| m["role"] == "assistant" }&.dig("response", "id")
-  
-  if previous_response_id
-    # Continue the conversation with preserved context
-    response = client.responses.create(
-      model: @model,
-      input: messages.last["content"],
-      previous_response_id: previous_response_id,
-      reasoning_effort: @reasoning_effort
-    )
-  else
-    # New conversation - need to include full context
-    response = client.responses.create(
-      model: @model,
-      input: build_input_from_messages,
-      reasoning_effort: @reasoning_effort
-    )
-  end
-  
-  # Extract the text content
+chat.messages.last[:response]
+# => {
+#      id: "resp_abc123...",
+#      model: "gpt-5-nano",
+#      usage: {
+#        input_tokens: 25,
+#        output_tokens: 150,
+#        total_tokens: 175
+#      },
+#      # ... other metadata
+#    }
+```
+
+### Implementation Strategy for generate!
+
+The `generate!` method uses the Conversations API. The first call creates a conversation, subsequent calls continue it:
+
+```ruby
+def generate!
+  # Prepare messages that haven't been sent yet
+  input_messages = prepare_messages_for_api
+
+  # Create the response using conversation_id for continuity
+  response = client.responses.create(
+    model: @model,
+    input: input_messages,
+    conversation_id: @conversation_id,  # nil on first call
+    # ... other options
+  )
+
+  # Store the conversation_id for subsequent calls
+  @conversation_id ||= response.conversation_id
+  @last_response_id = response.id
+
+  # Extract content and add to messages
   content = extract_content_from_response(response)
-  
-  # Add to messages with response object
   messages << {
-    "role" => "assistant",
-    "content" => content,
-    "response" => Response.new(response)
+    role: "assistant",
+    content: content,
+    response: response_metadata(response)
   }
-  
-  content
+
+  { content: content, response: response }
 end
 ```
 
 ### Helper Methods
 
 ```ruby
-class OpenAI::Chat
-  def last_response
-    messages.reverse.find { |m| m["response"] }&.dig("response")
+class AI::Chat
+  # Get the last message (user or assistant)
+  def last
+    messages.last
   end
 
-  def last_response_id
-    last_response&.id
-  end
+  # Get the ID of the most recent response (useful for background mode)
+  attr_reader :last_response_id
 
-  def last_usage
-    last_response&.usage
-  end
-
-  def total_tokens
-    messages
-      .filter_map { |m| m["response"]&.usage&.fetch("total_tokens", 0) }
-      .sum
-  end
-
-  # Future methods once we have pricing
-  def last_cost
-    last_response&.cost
-  end
-
-  def total_cost
-    messages
-      .filter_map { |m| m["response"]&.cost }
-      .sum
+  # Retrieve conversation items from the API
+  def items(order: :asc)
+    client.conversations.items.list(
+      conversation_id: @conversation_id,
+      order: order
+    )
   end
 end
 ```
+
+For token usage, access via `chat.last[:response][:usage]`. Helper methods like `total_tokens` and `last_cost` are planned for future versions.
 
 ## Image Handling Design
 
 ### API Design
 ```ruby
 # Simple single image
-a.user("What's this?", image: "photo.jpg")
+chat.user("What's this?", image: "photo.jpg")
 
 # Multiple images
-a.user("Compare these", images: ["photo1.jpg", "photo2.jpg"])
+chat.user("Compare these", images: ["photo1.jpg", "photo2.jpg"])
 
-# Complex interwoven content
-a.user([
-  {"text" => "What is in the above image?"},
-  {"image" => "whale.jpg"},
-  {"text" => "What is in the below image?"},
-  {"image" => "elephant.jpg"}
-])
+# URLs work too
+chat.user("Describe this", image: "https://example.com/image.png")
 ```
 
 ### Implementation Notes
@@ -206,88 +182,78 @@ a.user([
    - Handle MIME type detection
    - Base64 encoding for local files
 
-## ActiveRecord Integration
+## ActiveRecord Integration (Dropped)
 
-### Simplified Approach
+### Original Plan
 
-Based on feedback, we're simplifying the ActiveRecord integration:
+We originally planned extensive ActiveRecord integration:
+- Re-hydrating chat instances from stored messages
+- Custom serialization for Response objects
+- Active Storage support for attachments
 
-1. **No complex interwoven messages** - Keep the image API simple
-2. **Automatic Active Storage handling** - Detect and handle Rails attachments
-3. **Response persistence** - Use ActiveRecord serialization for Response objects
-4. **No streaming from database** - Users handle their own pagination
+### Why We Dropped It
 
-### Implementation Details
+The Conversations API made this unnecessary. OpenAI now maintains conversation state server-side, so continuing a conversation is trivial:
 
 ```ruby
-class OpenAI::Chat
-  def self.from_active_record(relation, **options)
-    new(**options).tap do |chat|
-      chat.messages = relation
-    end
-  end
-  
-  def save_last_response_to(relation, **options)
-    options = {
-      role_column: :role,
-      content_column: :content,
-      response_column: :openai_response
-    }.merge(options)
-    
-    relation.create!(
-      options[:role_column] => "assistant",
-      options[:content_column] => messages.last["content"],
-      options[:response_column] => last_response
-    )
-  end
+# Just store the conversation_id in your database
+class ChatSession < ApplicationRecord
+  # conversation_id :string
 end
+
+# To continue later, just set the conversation_id
+chat = AI::Chat.new
+chat.conversation_id = stored_session.conversation_id
+chat.user("Continue where we left off")
+chat.generate!  # Has full context from the API
 ```
 
-### Response Serialization
+No need to:
+- Store and re-hydrate message history
+- Serialize complex Response objects
+- Manage conversation state locally
 
+The API handles it all. Store a single string (`conversation_id`) and you're done.
+
+## Implemented Features
+
+### Web Search (Implemented)
 ```ruby
-class OpenAI::Chat::Response
-  # For ActiveRecord serialize
-  def self.load(data)
-    return nil if data.nil?
-    # Reconstruct from stored hash
-    new(OpenStruct.new(data))
-  end
-  
-  def self.dump(obj)
-    return nil if obj.nil?
-    {
-      'id' => obj.id,
-      'model' => obj.model,
-      'created' => obj.created_at.to_i,
-      'usage' => obj.usage
-    }
-  end
-end
+chat = AI::Chat.new
+chat.web_search = true
+chat.user("What's the latest Ruby news?")
+chat.generate!  # Can search the web
 ```
 
-### Active Storage Support
-
+### Session Management (Implemented via Conversations API)
 ```ruby
-def process_image(image_input)
-  case image_input
-  when /^https?:\/\//
-    # URL - use as-is
-    image_input
-  when ActiveStorage::Attached::One
-    # Rails Active Storage single attachment
-    process_active_storage_attachment(image_input)
-  when ActiveStorage::Blob
-    # Direct blob reference
-    rails_blob_url(image_input)
-  when String
-    # File path - read and encode
-    encode_local_file(image_input)
-  when ->(obj) { obj.respond_to?(:read) }
-    # File-like object
-    encode_file_object(image_input)
-  end
-end
+# Conversations are automatically managed
+chat = AI::Chat.new
+chat.user("Help me learn Ruby")
+chat.generate!
+
+# Store conversation_id, continue later
+conversation_id = chat.conversation_id
+
+# Later...
+chat2 = AI::Chat.new
+chat2.conversation_id = conversation_id
+chat2.user("What's next?")
+chat2.generate!  # Full context preserved
+```
+
+### Schema Generation (Implemented)
+```ruby
+# Generate JSON schemas from natural language
+schema = AI::Chat.generate_schema!("A user with name, email, and age")
+chat.schema = schema
+```
+
+### Proxy Support (Implemented)
+```ruby
+# Route through proxy server for student accounts
+chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat.proxy = true
 ```
 
 ## Future Enhancements
@@ -297,42 +263,20 @@ end
 - Show costs after each request
 - Track cumulative costs
 
-### Web Search Integration
-```ruby
-b = OpenAI::Chat.new
-b.enable_web_search!
-b.user("What's the latest Ruby news?")
-b.assistant! # Can search the web
-```
-
-### Session Management
-```ruby
-# Save/load conversations
-c = OpenAI::Chat.new
-c.user("Help me learn Ruby")
-c.assistant!
-session_id = c.save!
-
-# Later...
-d = OpenAI::Chat.load(session_id)
-d.user("What's next?")
-```
-
 ### Streaming Responses
 ```ruby
 # Real-time response streaming
-e = OpenAI::Chat.new
-e.user("Write a long story") do |chunk|
-  print chunk # Prints as generated
+chat = AI::Chat.new
+chat.user("Write a long story") do |chunk|
+  print chunk  # Prints as generated
 end
 ```
 
 ## Testing Strategy
 
 1. **Unit tests** for core functionality
-2. **Integration tests** with mocked API responses
+2. **Integration tests** with real API calls
 3. **Example scripts** for manual testing
-4. **ActiveRecord integration tests** with dummy models
 
 ## Error Handling Philosophy
 

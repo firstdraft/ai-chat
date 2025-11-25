@@ -53,19 +53,19 @@ response = chat3.generate![:content]
 puts "   #{response}"
 puts
 
-# 4. Previous response ID (conversation memory)
+# 4. Conversation memory across instances
 puts "4. Conversation memory across instances:"
 chat4 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat4.proxy = true
 chat4.user("My name is Alice and I like Ruby programming")
 chat4.generate!
-response_id = chat4.previous_response_id
-puts "previous_response_id -> #{response_id}"
+conv_id = chat4.conversation_id
+puts "conversation_id -> #{conv_id}"
 
 # New chat instance with memory
 chat5 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat5.proxy = true
-chat5.previous_response_id = response_id
+chat5.conversation_id = conv_id
 chat5.user("What's my name and what do I like?")
 response = chat5.generate![:content]
 puts "   #{response}"
@@ -92,7 +92,6 @@ puts
 # 6. Web search
 chat6 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat6.proxy = true
-chat6.model = "gpt-4o"
 chat6.web_search = true
 chat6.user("What's the latest Ruby on Rails version released?")
 message = chat6.generate![:content]
@@ -150,7 +149,7 @@ sleep 15
 message = chat9.get_response
 
 puts "#{(message[:status] == :completed) ? "✓ " : "✗"} Assistant message status is: #{message[:status].inspect}"
-puts "#{(chat9.messages.select { |msg| msg[:role] == "assistant" }.count == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
+puts "#{(chat9.messages.count { |msg| msg[:role] == "assistant" } == 1) ? "✓ " : "✗"} Messages contains exactly 1 Assistant message."
 puts "#{(!message[:content].empty?) ? "✓ " : "✗"} Assistant message is present: #{message[:content].inspect}"
 
 puts "\n" * 2
@@ -207,7 +206,6 @@ puts "A conversation is automatically created on the first generate! call."
 puts
 
 chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat.model = "gpt-4o-mini"
 chat.web_search = true
 chat.proxy = true
 puts "Before first generate!: conversation_id = #{chat.conversation_id.inspect}"

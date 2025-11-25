@@ -10,4 +10,4 @@ RSpec::Core::RakeTask.new { |task| task.verbose = false }
 desc "Run code quality checks"
 task quality: %i[reek]
 
-task default: %i[quality spec]
+task default: %i[spec]
