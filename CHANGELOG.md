@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-12-05
+
+### Breaking Changes
+
+- **Renamed `items` to `get_items`**: The method now clearly indicates it makes an API call. Returns an `AI::Items` wrapper that delegates to the underlying response while providing nice display formatting.
+
+### Added
+
+- **Reasoning summaries**: When `reasoning_effort` is set, the API now returns chain-of-thought summaries in `get_items`. These show the model's reasoning process (e.g., "Planning Ruby version search", "Confirming image tool usage").
+
+- **Improved console display**: `AI::Chat`, `AI::Message`, and `AI::Items` now display nicely in IRB and Rails console with colorized, formatted output via AmazingPrint.
+
+- **HTML output for ERB templates**: All display objects have a `to_html` method for rendering in views. Includes dark terminal-style background for readability.
+
+- **`AI::Message` class**: Messages are now `AI::Message` instances (a Hash subclass) with custom display methods.
+
+- **`AI::Items` class**: Wraps the conversation items API response with nice display methods while delegating all other methods (like `.data`, `.has_more`, etc.) to the underlying response.
+
+- **TTY-aware display**: Console output automatically detects TTY and disables colors when output is piped or redirected.
+
+- **New example**: `examples/16_get_items.rb` demonstrates inspecting conversation items including reasoning, web searches, and image generation.
+
 ## [0.4.0] - 2025-11-25
 
 ### Breaking Changes

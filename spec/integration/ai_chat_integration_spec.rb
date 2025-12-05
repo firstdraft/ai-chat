@@ -204,7 +204,7 @@ RSpec.describe "AI::Chat Integration", :integration do
       chat.user("Say hello")
       chat.generate!
 
-      items = chat.items
+      items = chat.get_items
 
       expect(items).to respond_to(:data)
       expect(items.data).to be_an(Array)

@@ -231,10 +231,10 @@ puts
 # Feature 3: Programmatic access to items
 puts "c. Accessing Conversation Items (Programmatically)"
 puts "-" * 60
-puts "Use chat.items to get conversation data for processing or display."
+puts "Use chat.get_items to get conversation data for processing or display."
 puts
 
-page = chat.items
+page = chat.get_items
 puts "Total items: #{page.data.length}"
 puts "Item breakdown:"
 

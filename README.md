@@ -39,6 +39,7 @@ The `examples/` directory contains focused examples for specific features:
 - `13_conversation_features_comprehensive.rb` - Conversation features (auto-creation, continuity, inspection)
 - `14_schema_generation.rb` - Generate JSON schemas from natural language
 - `15_proxy.rb` - Proxy support for student accounts
+- `16_get_items.rb` - Inspecting conversation items (reasoning, web searches, image generation)
 
 Each example is self-contained and can be run individually:
 ```bash
@@ -83,22 +84,44 @@ a = AI::Chat.new
 a.add("If the Ruby community had an official motto, what might it be?")
 
 # See the convo so far - it's just an array of hashes!
-pp a.messages
-# => [{:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"}]
+a.messages
+# => [
+#        {
+#               :role => "user",
+#            :content => "If the Ruby community had an official motto, what might it be?"
+#        }
+#    ]
 
 # Generate the next message using AI
-a.generate! # => { :role => "assistant", :content => "Matz is nice and so we are nice" (or similar) }
+a.generate!
+# => {
+#           :role => "assistant",
+#        :content => "Matz is nice and so we are nice",
+#       :response => { ... }
+#    }
 
 # Your array now includes the assistant's response
-pp a.messages
+a.messages
 # => [
-#      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"},
-#      {:role=>"assistant", :content=>"Matz is nice and so we are nice", :response => { id=resp_abc... model=gpt-5.1 tokens=12 } }
+#        {
+#               :role => "user",
+#            :content => "If the Ruby community had an official motto, what might it be?"
+#        },
+#        {
+#               :role => "assistant",
+#            :content => "Matz is nice and so we are nice",
+#           :response => { id: "resp_abc...", model: "gpt-5.1", ... }
+#        }
 #    ]
 
 # Continue the conversation
 a.add("What about Rails?")
-a.generate! # => { :role => "assistant", :content => "Convention over configuration."} 
+a.generate!
+# => {
+#           :role => "assistant",
+#        :content => "Convention over configuration.",
+#       :response => { ... }
+#    } 
 ```
 
 ## Understanding the Data Structure
@@ -111,9 +134,19 @@ That's it! You're building something like this:
 
 ```ruby
 [
-  {:role => "system", :content => "You are a helpful assistant"},
-  {:role => "user", :content => "Hello!"},
-  {:role => "assistant", :content => "Hi there! How can I help you today?", :response => { id=resp_abc... model=gpt-5.1 tokens=12 } }
+    {
+           :role => "system",
+        :content => "You are a helpful assistant"
+    },
+    {
+           :role => "user",
+        :content => "Hello!"
+    },
+    {
+           :role => "assistant",
+        :content => "Hi there! How can I help you today?",
+        :response => { id: "resp_abc...", model: "gpt-5.1", ... }
+    }
 ]
 ```
 
@@ -133,14 +166,25 @@ b.add("You are a helpful assistant that talks like Shakespeare.", role: "system"
 b.add("If the Ruby community had an official motto, what might it be?")
 
 # Check what we've built
-pp b.messages
+b.messages
 # => [
-#      {:role=>"system", :content=>"You are a helpful assistant that talks like Shakespeare."},
-#      {:role=>"user", :content=>"If the Ruby community had an official motto, what might it be?"}
+#        {
+#               :role => "system",
+#            :content => "You are a helpful assistant that talks like Shakespeare."
+#        },
+#        {
+#               :role => "user",
+#            :content => "If the Ruby community had an official motto, what might it be?"
+#        }
 #    ]
 
 # Generate a response
-b.generate! # => { :role => "assistant", :content => "Methinks 'tis 'Ruby doth bring joy to all who craft with care'" }
+b.generate!
+# => {
+#           :role => "assistant",
+#        :content => "Methinks 'tis 'Ruby doth bring joy to all who craft with care'",
+#       :response => { ... }
+#    }
 ```
 
 ### Convenience Methods
@@ -219,11 +263,20 @@ h.user("How do I boil an egg?")
 h.generate!
 
 # See the whole conversation
-pp h.messages
+h.messages
 # => [
-#      {:role=>"system", :content=>"You are a helpful cooking assistant"},
-#      {:role=>"user", :content=>"How do I boil an egg?"},
-#      {:role=>"assistant", :content=>"Here's how to boil an egg..."}
+#        {
+#               :role => "system",
+#            :content => "You are a helpful cooking assistant"
+#        },
+#        {
+#               :role => "user",
+#            :content => "How do I boil an egg?"
+#        },
+#        {
+#               :role => "assistant",
+#            :content => "Here's how to boil an egg..."
+#        }
 #    ]
 
 # Get just the last response
@@ -460,7 +513,11 @@ You can enable OpenAI's image generation tool:
 a = AI::Chat.new
 a.image_generation = true
 a.user("Draw a picture of a kitten")
-a.generate! # => { :content => "Here is your picture of a kitten:", ... }
+a.generate!
+# => {
+#        :content => "Here is your picture of a kitten:",
+#       :response => { ... }
+#    }
 ```
 
 By default, images are saved to `./images`. You can configure a different location:
@@ -470,7 +527,11 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./my_images"
 a.user("Draw a picture of a kitten")
-a.generate! # => { :content => "Here is your picture of a kitten:", ... }
+a.generate!
+# => {
+#        :content => "Here is your picture of a kitten:",
+#       :response => { ... }
+#    }
 ```
 
 Images are saved in timestamped subfolders using ISO 8601 basic format. For example:
@@ -482,11 +543,19 @@ The folder structure ensures images are organized chronologically and by respons
 The messages array will now look like this:
 
 ```ruby
-pp a.messages
+a.messages
 # => [
-#   {:role=>"user", :content=>"Draw a picture of a kitten"},
-#   {:role=>"assistant", :content=>"Here is your picture of a kitten:", :images => ["./images/20250804T11303912_resp_abc123/001.png"], :response => #<Response ...>}
-# ]
+#        {
+#               :role => "user",
+#            :content => "Draw a picture of a kitten"
+#        },
+#        {
+#               :role => "assistant",
+#            :content => "Here is your picture of a kitten:",
+#             :images => [ "./images/20250804T11303912_resp_abc123/001.png" ],
+#           :response => { ... }
+#        }
+#    ]
 ```
 
 You can access the image filenames in several ways:
@@ -497,7 +566,7 @@ images = a.messages.last[:images]
 # => ["./images/20250804T11303912_resp_abc123/001.png"]
 
 # From the response object
-images = a.messages.last[:response].images
+images = a.messages.last.dig(:response, :images)
 # => ["./images/20250804T11303912_resp_abc123/001.png"]
 ```
 
@@ -508,9 +577,11 @@ a = AI::Chat.new
 a.image_generation = true
 a.image_folder = "./images"
 a.user("Draw a picture of a kitten")
-a.generate! # => { :content => "Here is a picture of a kitten:", ... }
+a.generate!
+# => { :content => "Here is a picture of a kitten:", ... }
 a.user("Make it even cuter")
-a.generate! # => { :content => "Here is the kitten, but even cuter:", ... }
+a.generate!
+# => { :content => "Here is the kitten, but even cuter:", ... }
 ```
 
 ## Code Interpreter
@@ -519,7 +590,23 @@ a.generate! # => { :content => "Here is the kitten, but even cuter:", ... }
 y = AI::Chat.new
 y.code_interpreter = true
 y.user("Plot y = 2x*3 when x is -5 to 5.")
-y.generate! # => {:content => "Here is the graph.", ... }
+y.generate!
+# => { :content => "Here is the graph.", ... }
+```
+
+## Background mode
+
+If you want to start a response and poll for it later, set `background = true` before calling `generate!`:
+
+```ruby
+chat = AI::Chat.new
+chat.background = true
+chat.user("Write a short description about a sci-fi novel about a rat in space.")
+chat.generate!
+
+# Poll until it completes (this updates the existing assistant message)
+message = chat.get_response(wait: true, timeout: 600)
+puts message[:content]
 ```
 
 ## Proxying Through prepend.me
@@ -586,7 +673,7 @@ By default, `reasoning_effort` is `nil`, which means no reasoning parameter is s
 
 ## Advanced: Response Details
 
-When you call `generate!` or `generate!`, the gem stores additional information about the API response:
+When you call `generate!` (or later call `get_response` in background mode), the gem stores additional information about the API response:
 
 ```ruby
 t = AI::Chat.new
@@ -594,18 +681,18 @@ t.user("Hello!")
 t.generate!
 
 # Each assistant message includes a response object
-pp t.messages.last
+t.messages.last
 # => {
-#      :role => "assistant",
-#      :content => "Hello! How can I help you today?",
-#      :response => { id=resp_abc... model=gpt-5.1 tokens=12 }
+#           :role => "assistant",
+#        :content => "Hello! How can I help you today?",
+#       :response => { id: "resp_abc...", model: "gpt-5.1", ... }
 #    }
 
 # Access detailed information
 response = t.last[:response]
 response[:id]           # => "resp_abc123..."
 response[:model]        # => "gpt-5.1"
-response[:usage]        # => {:prompt_tokens=>5, :completion_tokens=>7, :total_tokens=>12}
+response[:usage]        # => {:input_tokens=>5, :output_tokens=>7, :total_tokens=>12}
 ```
 
 This information is useful for:
@@ -631,7 +718,18 @@ chat.generate!
 puts chat.last_response_id # => "resp_xyz789..." (a new ID)
 ```
 
-This is particularly useful for managing background tasks. When you make a request in background mode, you can immediately get the `last_response_id` to track, retrieve, or cancel that specific job later from a different process.
+This is particularly useful for background mode workflows. If you want to retrieve or cancel a background response from a different process, use `OpenAI::Client` directly:
+
+```ruby
+require "openai"
+
+client = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"))
+
+response_id = "resp_abc123..." # e.g., load from your database
+response = client.responses.retrieve(response_id)
+
+client.responses.cancel(response_id) unless response.status.to_s == "completed"
+```
 
 ### Automatic Conversation Management
 
@@ -663,64 +761,117 @@ chat.generate!  # Uses the loaded conversation
 
 ## Inspecting Conversation Details
 
-The gem provides two methods to inspect what happened during a conversation:
-
-### `items` - Programmatic Access
-
-Returns the raw conversation items for programmatic use (displaying in views, filtering, etc.):
+The `get_items` method fetches all conversation items (messages, tool calls, reasoning, etc.) from the API for both programmatic use and debugging:
 
 ```ruby
 chat = AI::Chat.new
+chat.reasoning_effort = "high"  # Enable reasoning summaries
 chat.web_search = true
 chat.user("Search for Ruby tutorials")
 chat.generate!
 
 # Get all conversation items (chronological order by default)
-page = chat.items
+chat.get_items
 
-# Access item data
-page.data.each do |item|
+# Output in IRB/Rails console:
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │ Conversation: conv_6903c1eea6cc819695af3a1b1ebf9b390c3db5e8ec021c9a        │
+# │ Items: 8                                                                   │
+# └────────────────────────────────────────────────────────────────────────────┘
+#
+# [detailed colorized output of all items including web searches,
+#  reasoning summaries, tool calls, messages, etc.]
+
+# Iterate over items programmatically
+chat.get_items.data.each do |item|
   case item.type
   when :message
     puts "#{item.role}: #{item.content.first.text}"
   when :web_search_call
-    puts "Web search: #{item.action.query}"
-    puts "Results: #{item.results.length}"
+    puts "Web search: #{item.action.query}" if item.action.respond_to?(:query) && item.action.query
   when :reasoning
-    puts "Reasoning: #{item.summary.first.text}"
+    # Reasoning summaries show a high-level view of the model's reasoning
+    if item.summary&.first
+      puts "Reasoning: #{item.summary.first.text}"
+    end
+  when :image_generation_call
+    puts "Image generated" if item.result
   end
 end
 
 # For long conversations, you can request reverse chronological order
 # (useful for pagination to get most recent items first)
-recent_items = chat.items(order: :desc)
+recent_items = chat.get_items(order: :desc)
 ```
 
-### `verbose` - Terminal Output
-
-Pretty-prints the entire conversation with all details for debugging and learning:
-
-```ruby
-chat.verbose
-
-# Output:
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │ Conversation: conv_6903c1eea6cc819695af3a1b1ebf9b390c3db5e8ec021c9a        │
-# │ Items: 3                                                                   │
-# └────────────────────────────────────────────────────────────────────────────┘
-#
-# [detailed colorized output of all items including web searches,
-#  reasoning, tool calls, messages, etc.]
-```
+When `reasoning_effort` is set, the API returns reasoning summaries (e.g., "Planning Ruby version search", "Confirming image tool usage"). Note that not all reasoning items have summaries - some intermediate steps may be empty.
 
 This is useful for:
 - **Learning** how the model uses tools (web search, code interpreter, etc.)
 - **Debugging** why the model made certain decisions
 - **Understanding** the full context beyond just the final response
+- **Transparency** into the model's reasoning process
+
+### HTML Output for ERB Templates
+
+All display objects have a `to_html` method for rendering in ERB templates:
+
+```erb
+<%# Display a chat object %>
+<%= @chat.to_html %>
+
+<%# Display individual messages %>
+<% @chat.messages.each do |msg| %>
+  <%= msg.to_html %>
+<% end %>
+
+<%# Display conversation items (quick debug view) %>
+<%= @chat.get_items.to_html %>
+```
+
+The HTML output includes a dark background to match the terminal aesthetic.
+
+You can also loop over `get_items.data` to build custom displays showing reasoning steps, tool calls, etc.:
+
+```erb
+<% @chat.get_items.data.each do |item| %>
+  <% case item.type.to_s %>
+  <% when "message" %>
+    <div class="message <%= item.role %>">
+      <strong><%= item.role.capitalize %>:</strong>
+      <% if item.content&.first %>
+        <% content = item.content.first %>
+        <% if content.type.to_s == "input_text" %>
+          <%= content.text %>
+        <% elsif content.type.to_s == "output_text" %>
+          <%= content.text %>
+        <% end %>
+      <% end %>
+    </div>
+  <% when "reasoning" %>
+    <% if item.summary&.first %>
+      <details class="reasoning">
+        <summary>Reasoning</summary>
+        <%= item.summary.first.text %>
+      </details>
+    <% end %>
+  <% when "web_search_call" %>
+    <% if item.action.respond_to?(:query) && item.action.query %>
+      <div class="web-search">
+        Searched: "<%= item.action.query %>"
+      </div>
+    <% end %>
+  <% when "image_generation_call" %>
+    <div class="image-generation">
+      Image generated
+    </div>
+  <% end %>
+<% end %>
+```
 
 ## Setting messages directly
 
-You can use `.messages=()` to assign an `Array` of `Hashes`. Each `Hash` must have keys `:role` and `:content`, and optionally `:image` or `:images`:
+You can use `.messages=()` to assign an `Array` of `Hashes` (text-only). Each `Hash` must have keys `:role` and `:content`:
 
 ```ruby
 # Using the planet example with array of hashes
@@ -743,80 +894,8 @@ response = p.generate!
 puts response
 ```
 
-You can still include images:
-
-```ruby
-# Create a new chat instance
-q = AI::Chat.new
-
-# With images
-q.messages = [
-  { role: "system", content: "You are a helpful assistant." },
-  { role: "user", content: "What's in this image?", image: "path/to/image.jpg" },
-]
-
-# With multiple images
-q.messages = [
-  { role: "system", content: "You are a helpful assistant." },
-  { role: "user", content: "Compare these images", images: ["image1.jpg", "image2.jpg"] }
-]
-```
-
-## Other Features Being Considered
-
-- **Streaming responses**: Real-time streaming as the AI generates its response
-- **Cost tracking**: Automatic calculation and tracking of API costs
-- **Token usage helpers**: Convenience methods like `total_tokens` to sum usage across all responses in a conversation
-
-## TODO: Missing Test Coverage
-
-The following gem-specific logic would benefit from additional RSpec test coverage:
-
-1. **Schema format normalization** - The `wrap_schema_if_needed` method detects and wraps 3 different input formats (raw, named, already-wrapped). This complex conditional logic could silently regress.
-
-2. **Multimodal content array building** - The `add` method builds nested structures when images/files are provided, handling `image`/`images` and `file`/`files` parameters with specific ordering (text → images → files).
-
-3. **File classification and processing** - `classify_obj` and `process_file_input` distinguish URLs vs file paths vs file-like objects, with MIME type detection determining encoding behavior.
-
-4. **Message preparation after response** - `prepare_messages_for_api` has slicing logic that only sends messages after the last response, preventing re-sending entire conversation history.
-
-These are all gem-specific transformations (not just OpenAI pass-through) that could regress without proper test coverage.
-
-## TODO: Code Quality
-
-Address Reek warnings (`bundle exec reek`). Currently 29 warnings for code smells like:
-
-- `TooManyStatements` in several methods
-- `DuplicateMethodCall` in `extract_and_save_files`, `verbose`, etc.
-- `RepeatedConditional` for `proxy` checks
-- `FeatureEnvy` in `parse_response` and `wait_for_response`
-
-These don't affect functionality but indicate areas for refactoring.
-
-Then, add `quality` back as a CI check.
-
-## Testing with Real API Calls
-
-While this gem includes specs, they use mocked API responses. To test with real API calls:
-
-1. Create a `.env` file at the project root with your API credentials:
-    ```
-    # Your OpenAI API key
-    OPENAI_API_KEY=your_openai_api_key_here
-    ```
-2. Install dependencies: `bundle install`
-3. Run the examples: `bundle exec ruby examples/all.rb`
-
-This test program runs through all the major features of the gem, making real API calls to OpenAI.
+For images/files, prefer using `chat.user(..., image:/images:/file:/files:)` so the gem can build the correct multimodal structure.
 
 ## Contributing
 
-When contributing to this project:
-
-1. **Code Style**: This project uses StandardRB for linting. Run `bundle exec standardrb --fix` before committing to automatically fix style issues.
-
-2. **Testing**: Ensure all specs pass with `bundle exec rspec`.
-
-3. **Examples**: If adding a feature, consider adding an example in the `examples/` directory.
-
-4. **Documentation**: Update the README if your changes affect the public API.
+See [CONTRIBUTING.md](CONTRIBUTING.md).

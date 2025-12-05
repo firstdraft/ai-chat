@@ -3,7 +3,7 @@
 # This example demonstrates all conversation-related features:
 # - Automatic conversation creation
 # - Conversation continuity across multiple turns
-# - Inspecting conversation items (programmatically and verbose)
+# - Inspecting conversation items with get_items
 # - Loading existing conversations
 
 require_relative "../lib/ai-chat"
@@ -47,10 +47,10 @@ puts
 # Feature 3: Programmatic access to items
 puts "3. Accessing Conversation Items (Programmatically)"
 puts "-" * 60
-puts "Use chat.items to get conversation data for processing or display."
+puts "Use chat.get_items to get conversation data for processing or display."
 puts
 
-page = chat.items
+page = chat.get_items
 puts "Total items: #{page.data.length}"
 puts "Item breakdown:"
 page.data.each_with_index do |item, i|
@@ -79,7 +79,9 @@ web_searches = page.data.select { |item| item.type == :web_search_call }
 if web_searches.any?
   search = web_searches.first
   puts "Web search found:"
-  puts "  Query: #{search.action.query}"
+  if search.action.respond_to?(:query) && search.action.query
+    puts "  Query: #{search.action.query}"
+  end
   puts "  Status: #{search.status}"
   if search.respond_to?(:results) && search.results
     puts "  Results: #{search.results.length} found"
@@ -98,8 +100,8 @@ puts "-" * 60
 puts "Items default to chronological order (:asc), but you can request :desc."
 puts
 
-asc_items = chat.items
-desc_items = chat.items(order: :desc)
+asc_items = chat.get_items
+desc_items = chat.get_items(order: :desc)
 
 puts "First item in chronological order:"
 first = asc_items.data.first
@@ -111,12 +113,12 @@ puts "  #{first_desc.type} #{first_desc.role if first_desc.respond_to?(:role)}"
 puts "\n(Reverse order is useful for pagination in long conversations)"
 puts
 
-# Feature 6: Verbose inspection
-puts "6. Verbose Inspection (Terminal Output)"
+# Feature 6: Formatted inspection
+puts "6. Formatted Items Display (Terminal Output)"
 puts "-" * 60
-puts "Use chat.verbose for a detailed, colorized view of all conversation items."
+puts "get_items returns an AI::Items object with nice inspect output."
 puts
-chat.verbose
+puts chat.get_items
 puts
 
 # Feature 7: Loading existing conversation

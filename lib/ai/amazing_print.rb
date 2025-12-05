@@ -1,4 +1,22 @@
 require "amazing_print"
+
+# Fix AmazingPrint's colorless method to strip HTML tags in addition to ANSI codes.
+# Without this, alignment is broken when html: true because colorless_size
+# doesn't account for <kbd> tag lengths.
+# TODO: Remove if https://github.com/amazing-print/amazing_print/pull/146 is merged.
+module AmazingPrint
+  module Formatters
+    class BaseFormatter
+      alias_method :original_colorless, :colorless
+
+      def colorless(string)
+        result = original_colorless(string)
+        result.gsub(/<kbd[^>]*>|<\/kbd>/, "")
+      end
+    end
+  end
+end
+
 # :reek:IrresponsibleModule
 module AmazingPrint
   module AI
@@ -27,33 +45,11 @@ module AmazingPrint
       end
     end
 
-    # :reek:DuplicateMethodCall
     # :reek:FeatureEnvy
-    # :reek:NilCheck
-    # :reek:TooManyStatements
     def format_ai_chat(chat)
-      vars = []
-
-      # Format messages with truncation
-      if chat.instance_variable_defined?(:@messages)
-        messages = chat.instance_variable_get(:@messages).map do |msg|
-          truncated_msg = msg.dup
-          if msg[:content].is_a?(String) && msg[:content].length > 80
-            truncated_msg[:content] = msg[:content][0..77] + "..."
-          end
-          truncated_msg
-        end
-        vars << ["@messages", messages]
+      vars = chat.inspectable_attributes.map do |(name, value)|
+        [name.to_s, value]
       end
-
-      # Add other variables (except sensitive ones)
-      skip_vars = [:@api_key, :@client, :@messages]
-      chat.instance_variables.sort.each do |var|
-        next if skip_vars.include?(var)
-        value = chat.instance_variable_get(var)
-        vars << [var.to_s, value] unless value.nil?
-      end
-
       format_object(chat, vars)
     end
 
@@ -65,10 +61,13 @@ module AmazingPrint
         "#{name}: #{inspector.awesome(value)}"
       end
 
+      lt = @options[:html] ? "&lt;" : "<"
+      gt = @options[:html] ? "&gt;" : ">"
+
       if @options[:multiline]
-        "#<#{object.class}\n#{data.map { |line| "  #{line}" }.join("\n")}\n>"
+        "##{lt}#{object.class}\n#{data.map { |line| "  #{line}" }.join("\n")}\n#{gt}"
       else
-        "#<#{object.class} #{data.join(", ")}>"
+        "##{lt}#{object.class} #{data.join(", ")}#{gt}"
       end
     end
   end

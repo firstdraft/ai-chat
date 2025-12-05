@@ -12,7 +12,6 @@ require "tty-spinner"
 require "timeout"
 
 require_relative "http"
-include AI::Http
 
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
@@ -21,6 +20,8 @@ module AI
   # :reek:InstanceVariableAssumption
   # :reek:IrresponsibleModule
   class Chat
+    include AI::Http
+
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :proxy, :reasoning_effort, :web_search
     attr_reader :client, :last_response_id, :schema, :schema_file
@@ -84,15 +85,12 @@ module AI
     # :reek:TooManyStatements
     # :reek:NilCheck
     def add(content, role: "user", response: nil, status: nil, image: nil, images: nil, file: nil, files: nil)
-      if image.nil? && images.nil? && file.nil? && files.nil?
-        message = {
-          role: role,
-          content: content,
-          response: response
-        }
-        message[:content] = content if content
-        message[:status] = status if status
-        messages.push(message)
+      message = if image.nil? && images.nil? && file.nil? && files.nil?
+        msg = Message[role: role]
+        msg[:content] = content if content
+        msg[:response] = response if response
+        msg[:status] = status if status
+        msg
       else
         text_and_files_array = [
           {
@@ -122,14 +120,15 @@ module AI
           text_and_files_array.push(process_file_input(file))
         end
 
-        messages.push(
-          {
-            role: role,
-            content: text_and_files_array,
-            status: status
-          }
-        )
+        Message[
+          role: role,
+          content: text_and_files_array,
+          status: status
+        ]
       end
+
+      messages.push(message)
+      message
     end
 
     def system(message)
@@ -189,10 +188,10 @@ module AI
       messages.last
     end
 
-    def items(order: :asc)
+    def get_items(order: :asc)
       raise "No conversation_id set. Call generate! first to create a conversation." unless conversation_id
 
-      if proxy
+      raw_items = if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/conversations/#{conversation_id}/items?order=#{order}")
         response_hash = send_request(uri, content_type: "json", method: "get")
 
@@ -215,62 +214,50 @@ module AI
       else
         client.conversations.items.list(conversation_id, order: order)
       end
+
+      Items.new(raw_items, conversation_id: conversation_id)
     end
 
-    def verbose
-      page = items
+    def inspectable_attributes
+      attrs = []
 
-      box_width = 78
-      inner_width = box_width - 4
+      # 1. Model and reasoning (configuration)
+      attrs << [:@model, @model]
+      attrs << [:@reasoning_effort, @reasoning_effort]
 
-      puts
-      puts "┌#{"─" * (box_width - 2)}┐"
-      puts "│ Conversation: #{conversation_id.ljust(inner_width - 14)} │"
-      puts "│ Items: #{page.data.length.to_s.ljust(inner_width - 7)} │"
-      puts "└#{"─" * (box_width - 2)}┘"
-      puts
+      # 2. Conversation state
+      attrs << [:@conversation_id, @conversation_id]
+      attrs << [:@last_response_id, @last_response_id] if @last_response_id
 
-      ap page.data, limit: 10, indent: 2
+      # 3. Messages (the main content, without response details)
+      display_messages = @messages.map { |msg| msg.except(:response) }
+      attrs << [:@messages, display_messages]
+
+      # 4. Optional features (only if enabled/changed from default)
+      attrs << [:@proxy, @proxy] if @proxy != false
+      attrs << [:@image_generation, @image_generation] if @image_generation != false
+      attrs << [:@image_folder, @image_folder] if @image_folder != "./images"
+
+      # 5. Optional state (only if set)
+      attrs << [:@background, @background] if @background
+      attrs << [:@code_interpreter, @code_interpreter] if @code_interpreter
+      attrs << [:@web_search, @web_search] if @web_search
+      attrs << [:@schema, @schema] if @schema
+      attrs << [:@schema_file, @schema_file] if @schema_file
+
+      attrs
     end
 
     def inspect
-      "#<#{self.class.name} @messages=#{messages.inspect} @model=#{@model.inspect} @schema=#{@schema.inspect} @reasoning_effort=#{@reasoning_effort.inspect}>"
+      ai(plain: !$stdout.tty?, multiline: true)
     end
 
-    # Support for Ruby's pp (pretty print)
-    # :reek:TooManyStatements
-    # :reek:NilCheck
-    # :reek:FeatureEnvy
-    # :reek:DuplicateMethodCall
-    # :reek:UncommunicativeParameterName
-    def pretty_print(q)
-      q.group(1, "#<#{self.class}", ">") do
-        q.breakable
+    def to_html
+      AI.wrap_html(ai(html: true, multiline: true))
+    end
 
-        # Show messages with truncation
-        q.text "@messages="
-        truncated_messages = @messages.map do |msg|
-          truncated_msg = msg.dup
-          if msg[:content].is_a?(String) && msg[:content].length > 80
-            truncated_msg[:content] = msg[:content][0..77] + "..."
-          end
-          truncated_msg
-        end
-        q.pp truncated_messages
-
-        # Show other instance variables (except sensitive ones)
-        skip_vars = [:@messages, :@api_key, :@client]
-        instance_variables.sort.each do |var|
-          next if skip_vars.include?(var)
-          value = instance_variable_get(var)
-          unless value.nil?
-            q.text ","
-            q.breakable
-            q.text "#{var}="
-            q.pp value
-          end
-        end
-      end
+    def pretty_inspect
+      "#{inspect}\n"
     end
 
     private
@@ -312,7 +299,7 @@ module AI
       parameters[:background] = background if background
       parameters[:tools] = tools unless tools.empty?
       parameters[:text] = schema if schema
-      parameters[:reasoning] = {effort: reasoning_effort} if reasoning_effort
+      parameters[:reasoning] = {effort: reasoning_effort, summary: "auto"} if reasoning_effort
 
       create_conversation unless conversation_id
       parameters[:conversation] = conversation_id
@@ -387,12 +374,12 @@ module AI
         message.dig(:response, :id) == response_id
       end
 
-      message = {
+      message = Message[
         role: "assistant",
         content: response_content,
         response: chat_response,
         status: response_status
-      }
+      ]
 
       message.store(:images, image_filenames) unless image_filenames.empty?
 
@@ -400,8 +387,9 @@ module AI
         messages[existing_message_position] = message
       else
         messages.push(message)
-        message
       end
+
+      message
     end
 
     def cancel_request

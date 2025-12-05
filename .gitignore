@@ -15,10 +15,6 @@ tmp/
 .bundle/
 vendor/bundle/
 
-# Development dependencies cloned locally
-amazing_print/
-openai-ruby/
-
 # Temp demo scripts
 demo2/
 
