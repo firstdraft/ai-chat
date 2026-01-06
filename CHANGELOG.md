@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Reasoning summaries**: When `reasoning_effort` is set, the API now returns chain-of-thought summaries in `get_items`. These show the model's reasoning process (e.g., "Planning Ruby version search", "Confirming image tool usage").
+- **Reasoning summaries**: When `reasoning_effort` is set, the API now returns reasoning summaries in `get_items` (e.g., "Planning Ruby version search", "Confirming image tool usage").
 
 - **Improved console display**: `AI::Chat`, `AI::Message`, and `AI::Items` now display nicely in IRB and Rails console with colorized, formatted output via AmazingPrint.
 
@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TTY-aware display**: Console output automatically detects TTY and disables colors when output is piped or redirected.
 
 - **New example**: `examples/16_get_items.rb` demonstrates inspecting conversation items including reasoning, web searches, and image generation.
+
+### Changed
+
+- **Default model**: Changed from `gpt-5.1` to `gpt-5.2`.
 
 ## [0.4.0] - 2025-11-25
 

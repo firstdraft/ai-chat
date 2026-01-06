@@ -110,7 +110,7 @@ a.messages
 #        {
 #               :role => "assistant",
 #            :content => "Matz is nice and so we are nice",
-#           :response => { id: "resp_abc...", model: "gpt-5.1", ... }
+#           :response => { id: "resp_abc...", model: "gpt-5.2", ... }
 #        }
 #    ]
 
@@ -145,7 +145,7 @@ That's it! You're building something like this:
     {
            :role => "assistant",
         :content => "Hi there! How can I help you today?",
-        :response => { id: "resp_abc...", model: "gpt-5.1", ... }
+        :response => { id: "resp_abc...", model: "gpt-5.2", ... }
     }
 ]
 ```
@@ -227,7 +227,7 @@ d.generate!                         # Generate a response
 
 ### Model
 
-By default, the gem uses OpenAI's `gpt-5.1` model. If you want to use a different model, you can set it:
+By default, the gem uses OpenAI's `gpt-5.2` model. If you want to use a different model, you can set it:
 
 ```ruby
 e = AI::Chat.new
@@ -669,7 +669,7 @@ The `reasoning_effort` parameter guides the model on how many reasoning tokens t
 - `"medium"`: Balances speed and reasoning accuracy.
 - `"high"`: Favors more complete reasoning.
 
-By default, `reasoning_effort` is `nil`, which means no reasoning parameter is sent to the API. For `gpt-5.1` (the default model), this is equivalent to `"none"` reasoning.
+By default, `reasoning_effort` is `nil`, which means no reasoning parameter is sent to the API. For `gpt-5.2` (the default model), this is equivalent to `"none"` reasoning.
 
 ## Advanced: Response Details
 
@@ -685,13 +685,13 @@ t.messages.last
 # => {
 #           :role => "assistant",
 #        :content => "Hello! How can I help you today?",
-#       :response => { id: "resp_abc...", model: "gpt-5.1", ... }
+#       :response => { id: "resp_abc...", model: "gpt-5.2", ... }
 #    }
 
 # Access detailed information
 response = t.last[:response]
 response[:id]           # => "resp_abc123..."
-response[:model]        # => "gpt-5.1"
+response[:model]        # => "gpt-5.2"
 response[:usage]        # => {:input_tokens=>5, :output_tokens=>7, :total_tokens=>12}
 ```
 

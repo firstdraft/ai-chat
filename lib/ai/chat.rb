@@ -32,7 +32,7 @@ module AI
       @api_key = api_key || ENV.fetch(api_key_env_var)
       @messages = []
       @reasoning_effort = nil
-      @model = "gpt-5.1"
+      @model = "gpt-5.2"
       @client = OpenAI::Client.new(api_key: @api_key)
       @last_response_id = nil
       @proxy = false
@@ -48,7 +48,7 @@ module AI
       json = if proxy
         uri = URI(PROXY_URL + "api.openai.com/v1/responses")
         parameters = {
-          model: "gpt-5.1",
+          model: "gpt-5.2",
           input: [
             {role: :system, content: system_prompt},
             {role: :user, content: description}
@@ -61,7 +61,7 @@ module AI
       else
         client = OpenAI::Client.new(api_key: api_key)
         response = client.responses.create(
-          model: "gpt-5.1",
+          model: "gpt-5.2",
           input: [
             {role: :system, content: system_prompt},
             {role: :user, content: description}
