@@ -11,8 +11,6 @@ require "fileutils"
 require "tty-spinner"
 require "timeout"
 
-require_relative "http"
-
 module AI
   # :reek:MissingSafeMethod { exclude: [ generate! ] }
   # :reek:TooManyMethods
@@ -20,8 +18,6 @@ module AI
   # :reek:InstanceVariableAssumption
   # :reek:IrresponsibleModule
   class Chat
-    include AI::Http
-
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :reasoning_effort, :web_search
     attr_reader :client, :last_response_id, :proxy, :schema, :schema_file
