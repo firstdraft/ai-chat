@@ -138,6 +138,22 @@ chat2.generate!
 puts "Response from loaded conversation: #{chat2.last[:content]}"
 puts
 
+puts "8. Creating multiple system messages:"
+chat3 = AI::Chat.new
+chat3.web_search = true
+puts "Message after first system message:"
+chat3.system("You speak like spider-man.")
+chat3.user("Where is the best place to get pizza in Chicago?")
+chat3.generate!
+puts "Response: #{chat3.last[:content]}"
+puts "\n\n"
+chat3.system("End every sentence with ✨")
+chat3.generate!
+puts "Message after second system message:"
+puts "Response: #{chat3.last[:content]}"
+puts
+
 puts "=" * 60
 puts "All conversation features demonstrated!"
 puts "=" * 60
+
