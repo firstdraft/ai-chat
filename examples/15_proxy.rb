@@ -11,6 +11,14 @@ require "amazing_print"
 puts "\n=== AI::Chat Proxy Examples ==="
 puts
 
+puts "0. Validate API key:"
+chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat.proxy = true
+chat.user("What's the capital of Florida?")
+chat.generate![:content]
+puts "   API Key validated: #{chat.instance_variable_get(:@api_key_validated)}"
+puts
+
 puts "1. Basic conversation:"
 chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat.proxy = true

@@ -34,6 +34,7 @@ module AI
       @last_response_id = nil
       @image_generation = false
       @image_folder = "./images"
+      @api_key_validated = false
     end
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
@@ -133,7 +134,7 @@ module AI
     # :reek:NilCheck
     # :reek:TooManyStatements
     def generate!
-      validate_api_key
+      validate_api_key unless @api_key_validated
       response = create_response
       parse_response(response)
 
@@ -568,25 +569,17 @@ module AI
     end
 
     def validate_api_key
-      openai_api_key_used = @api_key.start_with?("sk-proj")
-      proxy_api_key_used = !openai_api_key_used
-      proxy_enabled = proxy
-      proxy_disabled = !proxy
-
-      if openai_api_key_used && proxy_enabled
+      # Simple API call to validate the token
+      client.models.list
+      @api_key_validated = true
+    rescue OpenAI::Errors::AuthenticationError => e
+      if proxy
         raise WrongAPITokenUsedError, <<~STRING
-          It looks like you're using an official API key from OpenAI with proxying enabled. When proxying is enabled you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
+          It looks like you're using an invalid API key. Proxying is enabled, so you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
         STRING
-      elsif proxy_api_key_used && proxy_disabled
+      else
         raise WrongAPITokenUsedError, <<~STRING
-          It looks like you're using an unofficial OpenAI API key from prepend.me. When using an unofficial API key you must enable proxy before generating a response. Proxying is currently disabled, please enable it before generating a response.
-
-          Example:
-
-            chat = AI::Chat.new
-            chat.proxy = true
-            chat.user(...)
-            chat.generate!
+          It looks like you're using an invalid API key. Check to make sure your API key is valid before generating a response.
         STRING
       end
     end
