@@ -156,10 +156,15 @@ module AI
 
     def proxy=(value)
       @proxy = value
-      @client = OpenAI::Client.new(
+      if value
+        @client = OpenAI::Client.new(
           api_key: @api_key,
           base_url: BASE_PROXY_URL
         )
+      else
+        @client = OpenAI::Client.new(api_key: @api_key)
+      end
+      value
     end
 
     def schema=(value)
