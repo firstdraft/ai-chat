@@ -108,7 +108,7 @@ puts AI::Chat.generate_schema!("A user with full name (required), first_name (re
 puts
 chat = AI::Chat.new
 chat.schema_file = "schema.json"
-if chat.schema.present?
+if chat.schema.is_a?(Hash)
   puts "✓ AI::Chat#schema_file= assigns AI::Chat#schema"
 else
   puts "✗ AI::Chat#schema_file= does not assign AI::Chat#schema"
