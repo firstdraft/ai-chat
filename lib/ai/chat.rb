@@ -572,16 +572,17 @@ module AI
       # Simple API call to validate the token
       client.models.list
       @api_key_validated = true
-    rescue OpenAI::Errors::AuthenticationError => e
-      if proxy
-        raise WrongAPITokenUsedError, <<~STRING
+    rescue OpenAI::Errors::AuthenticationError
+      message = if proxy
+         <<~STRING
           It looks like you're using an invalid API key. Proxying is enabled, so you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
         STRING
       else
-        raise WrongAPITokenUsedError, <<~STRING
+        <<~STRING
           It looks like you're using an invalid API key. Check to make sure your API key is valid before generating a response.
         STRING
       end
+      raise WrongAPITokenUsedError, message, cause: nil
     end
 
     # :reek:FeatureEnvy

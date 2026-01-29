@@ -11,14 +11,37 @@ require "amazing_print"
 puts "\n=== AI::Chat Proxy Examples ==="
 puts
 
-puts "0. Validate API key:"
-chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat.proxy = true
-chat.user("What's the capital of Florida?")
-chat.generate![:content]
-puts "   API Key validated: #{chat.instance_variable_get(:@api_key_validated)}"
+puts "0. Validates API key:"
+chat0 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat0.proxy = true
+chat0.user("What's the capital of Florida?")
+chat0.generate![:content]
+puts "   API Key validated: #{chat0.instance_variable_get(:@api_key_validated)}"
 puts
 
+puts "0.a Validates API key when invalid key used and proxy disabled:"
+chat0a = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat0a.user("What's the capital of Florida?")
+begin
+  chat0a.generate![:content]
+  puts "✗ API validation should have failed"
+rescue AI::Chat::WrongAPITokenUsedError => e
+  puts "✓ API validation correctly rejects call: #{e.message}"
+end
+puts
+
+puts "0.b Validates API key when invalid key used and proxy enabled:"
+chat0b = AI::Chat.new
+chat0b.proxy = true
+chat0b.user("What's the capital of Florida?")
+begin
+  chat0b.generate![:content]
+  puts "✗ API validation should have failed"
+rescue AI::Chat::WrongAPITokenUsedError => e
+  puts "✓ API validation correctly rejects call: #{e.message}"
+end
+puts
+exit 0
 puts "1. Basic conversation:"
 chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat.proxy = true
