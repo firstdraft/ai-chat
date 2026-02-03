@@ -671,6 +671,15 @@ The `reasoning_effort` parameter guides the model on how many reasoning tokens t
 
 By default, `reasoning_effort` is `nil`, which means no reasoning parameter is sent to the API. For `gpt-5.2` (the default model), this is equivalent to `"none"` reasoning.
 
+## Verbosity
+
+Verbosity determines how many output tokens are generated. Lowering the number of tokens reduces overall latency. While the model's reasoning approach stays mostly the same, the model finds ways to answer more concisely—which can either improve or diminish answer quality, depending on your use case. Here are some scenarios for both ends of the verbosity spectrum:
+
+- High verbosity: Use when you need the model to provide thorough explanations of documents or perform extensive code refactoring.
+- Low verbosity: Best for situations where you want concise answers or simple code generation, such as SQL queries.
+
+The supported values are `:high`, `:medium`, or `:low`. The default value is `:medium` for `gpt-5.2`. **Older models (like `gpt-4.1-nano`) only support `:medium`**.
+
 ## Advanced: Response Details
 
 When you call `generate!` (or later call `get_response` in background mode), the gem stores additional information about the API response:

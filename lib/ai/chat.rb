@@ -19,7 +19,7 @@ module AI
   class Chat
     # :reek:Attribute
     attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :reasoning_effort, :web_search
-    attr_reader :client, :last_response_id, :proxy, :schema, :schema_file
+    attr_reader :client, :last_response_id, :proxy, :schema, :schema_file, :verbosity
 
     BASE_PROXY_URL = "https://prepend.me/api.openai.com/v1"
 
@@ -34,6 +34,7 @@ module AI
       @image_generation = false
       @image_folder = "./images"
       @api_key_validated = false
+      @verbosity = "medium"
     end
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
@@ -183,6 +184,14 @@ module AI
       self.schema = content
     end
 
+    def verbosity=(value)
+      if ["low", "medium", "high"].include?(value.to_s)
+        @verbosity = value.to_sym
+      else
+        raise ArgumentError, "Invalid verbosity value:'#{value}'. Must be one of :low, :medium, :high."
+      end
+    end
+
     def last
       messages.last
     end
@@ -221,6 +230,7 @@ module AI
       attrs << [:@web_search, @web_search] if @web_search
       attrs << [:@schema, @schema] if @schema
       attrs << [:@schema_file, @schema_file] if @schema_file
+      attrs << [:@verbosity, verbosity] if verbosity
 
       attrs
     end
@@ -274,6 +284,7 @@ module AI
 
       create_conversation unless conversation_id
       parameters[:conversation] = conversation_id
+      parameters[:text] = (parameters[:text] || {}).merge(verbosity: verbosity) if verbosity
 
       messages_to_send = prepare_messages_for_api
       parameters[:input] = strip_responses(messages_to_send) unless messages_to_send.empty?
