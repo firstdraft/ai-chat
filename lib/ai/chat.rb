@@ -4,7 +4,6 @@ require "base64"
 require "json"
 require "marcel"
 require "openai"
-require "ostruct"
 require "pathname"
 require "stringio"
 require "fileutils"
@@ -157,15 +156,14 @@ module AI
 
     def proxy=(value)
       @proxy = value
-      if value
-        @client = OpenAI::Client.new(
+      @client = if value
+        OpenAI::Client.new(
           api_key: @api_key,
           base_url: BASE_PROXY_URL
         )
       else
-        @client = OpenAI::Client.new(api_key: @api_key)
+        OpenAI::Client.new(api_key: @api_key)
       end
-      value
     end
 
     def schema=(value)
@@ -525,8 +523,8 @@ module AI
       image_filenames = []
 
       image_outputs = response.output.select { |output|
-          output.respond_to?(:type) && output.type == :image_generation_call
-        }
+        output.respond_to?(:type) && output.type == :image_generation_call
+      }
 
       return image_filenames if image_outputs.empty?
 
@@ -574,7 +572,7 @@ module AI
       @api_key_validated = true
     rescue OpenAI::Errors::AuthenticationError
       message = if proxy
-         <<~STRING
+        <<~STRING
           It looks like you're using an invalid API key. Proxying is enabled, so you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
         STRING
       else

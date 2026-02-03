@@ -7,7 +7,7 @@ gemspec
 group :quality do
   gem "reek", "~> 6.5", require: false
   gem "simplecov", "~> 0.22", require: false
-  gem "standard", "1.50.0", require: false
+  gem "standard", "~> 1.53", require: false
 end
 
 group :development do
@@ -16,10 +16,11 @@ end
 
 group :test do
   gem "rspec", "~> 3.13"
+  gem "ostruct", "~> 0.6"
 end
 
 group :tools do
-  gem "amazing_print", "~> 1.8"
+  gem "amazing_print", "~> 2.0"
   gem "debug", "~> 1.11"
   gem "repl_type_completor", "~> 0.1"
 end

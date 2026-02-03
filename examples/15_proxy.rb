@@ -8,6 +8,11 @@ require "dotenv"
 Dotenv.load(File.expand_path("../.env", __dir__))
 require "amazing_print"
 
+unless ENV["PROXY_API_KEY"]
+  puts "Skipping proxy tests - set PROXY_API_KEY environment variable to run these examples"
+  exit 0
+end
+
 puts "\n=== AI::Chat Proxy Examples ==="
 puts
 
@@ -41,7 +46,7 @@ rescue AI::Chat::WrongAPITokenUsedError => e
   puts "✓ API validation correctly rejects call: #{e.message}"
 end
 puts
-exit 0
+
 puts "1. Basic conversation:"
 chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
 chat.proxy = true

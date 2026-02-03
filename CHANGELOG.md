@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-02-03
+
+### Changed
+
+- **Updated dependencies**:
+  - `openai` gem updated from `~> 0.34` to `~> 0.43` (fixes `CGI.parse` issue in Ruby 4)
+  - `standard` (dev) updated from `1.50.0` to `~> 1.53`
+
+### Removed
+
+- **Unused dependencies**:
+  - Removed `ostruct` runtime dependency (not used in library code)
+  - Removed `refinements` dev dependency (not used)
+
 ## [0.5.3] - 2026-02-03
 
 ### Added
@@ -22,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Ruby version requirement**: Now supports Ruby 4.0+ (changed from `~> 3.2` to `>= 3.2`).
+
+- **Updated dependencies**:
+  - `amazing_print` updated from `~> 1.8` to `~> 2.0`
 
 ## [0.5.0] - 2025-12-05
 

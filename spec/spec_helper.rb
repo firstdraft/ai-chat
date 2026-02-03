@@ -2,6 +2,7 @@
 
 require "simplecov"
 require "dotenv/load"
+require "ostruct"
 
 unless ENV["NO_COVERAGE"]
   SimpleCov.start do
