@@ -228,13 +228,11 @@ module AI
     end
 
     def inspect
-      ensure_amazing_print_loaded!
-      ai(plain: !$stdout.tty?, multiline: true)
+      pretty_format(plain: !$stdout.tty?, multiline: true)
     end
 
     def to_html
-      ensure_amazing_print_loaded!
-      AI.wrap_html(ai(html: true, multiline: true))
+      AI.wrap_html(pretty_format(html: true, multiline: true))
     end
 
     def pretty_inspect
@@ -247,12 +245,38 @@ module AI
 
     class WrongAPITokenUsedError < StandardError; end
 
-    def ensure_amazing_print_loaded!
-      return if defined?(AmazingPrint::AI)
+    # Build a pretty representation without calling `ai` on `self`.
+    # This avoids a recursion loop when AmazingPrint falls back to `#inspect`.
+    # :reek:DuplicateMethodCall
+    # :reek:TooManyStatements
+    def pretty_format(html: false, plain: false, multiline: true)
+      inspector = AmazingPrint::Inspector.new(html: html, plain: plain, multiline: multiline)
 
-      require_relative "amazing_print"
-    rescue LoadError
-      # amazing_print is optional; skip custom formatting if not available
+      attrs = inspectable_attributes.map do |(name, value)|
+        [name.to_s, value]
+      end
+
+      data = attrs.map do |(name, value)|
+        "#{name}: #{inspector.awesome(value)}"
+      end
+
+      lt = html ? "&lt;" : "<"
+      gt = html ? "&gt;" : ">"
+
+      output = if multiline
+        "##{lt}#{self.class}\n#{data.map { |line| "  #{line}" }.join("\n")}\n#{gt}"
+      else
+        "##{lt}#{self.class} #{data.join(", ")}#{gt}"
+      end
+
+      html ? "<pre>#{output}</pre>" : output
+    rescue NameError, LoadError
+      fallback = if multiline
+        "#<#{self.class}\n#{inspectable_attributes.map { |(n, v)| "  #{n}: #{v.inspect}" }.join("\n")}\n>"
+      else
+        "#<#{self.class} #{inspectable_attributes.map { |(n, v)| "#{n}: #{v.inspect}" }.join(", ")}>"
+      end
+      html ? "<pre>#{fallback}</pre>" : fallback
     end
 
     # :reek:FeatureEnvy
