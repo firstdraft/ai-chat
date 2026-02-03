@@ -36,6 +36,19 @@ RSpec.describe AI::Message do
 
       expect(message.inspect).not_to eq({role: "user", content: "Hello"}.inspect)
     end
+
+    it "truncates base64 data URIs in content" do
+      base64_image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk"
+      message = AI::Message[
+        role: "user",
+        content: [
+          {type: "input_text", text: "What is this?"},
+          {type: "input_image", image_url: base64_image}
+        ]
+      ]
+
+      expect(message.inspect).to include("data:image/png;base64,iVBORw0KGgoAAAANSUhE... (60 chars)")
+    end
   end
 
   describe "#pretty_inspect" do

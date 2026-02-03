@@ -208,8 +208,8 @@ module AI
       attrs << [:@conversation_id, @conversation_id]
       attrs << [:@last_response_id, @last_response_id] if @last_response_id
 
-      # 3. Messages (the main content, without response details)
-      display_messages = @messages.map { |msg| msg.except(:response) }
+      # 3. Messages (the main content, without response details, with truncated data URIs)
+      display_messages = @messages.map { |msg| AI.truncate_data_uris(msg.except(:response)) }
       attrs << [:@messages, display_messages]
 
       # 4. Optional features (only if enabled/changed from default)

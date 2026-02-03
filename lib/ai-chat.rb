@@ -13,6 +13,31 @@ module AI
   def self.amazing_print(object, **options)
     AmazingPrint::Inspector.new(**options).awesome(object)
   end
+
+  # Recursively truncate base64 data URIs in nested structures for cleaner output
+  def self.truncate_data_uris(obj)
+    case obj
+    when Hash
+      obj.transform_values { |v| truncate_data_uris(v) }
+    when Array
+      obj.map { |v| truncate_data_uris(v) }
+    when String
+      truncate_data_uri(obj)
+    else
+      obj
+    end
+  end
+
+  def self.truncate_data_uri(str)
+    return str unless str.is_a?(String) && str.start_with?("data:") && str.include?(";base64,")
+
+    match = str.match(/\A(data:[^;]+;base64,)(.+)\z/)
+    return str unless match
+
+    prefix = match[1]
+    data = match[2]
+    "#{prefix}#{data[0, 20]}... (#{data.length} chars)"
+  end
 end
 
 require_relative "ai/message"

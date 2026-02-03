@@ -3,7 +3,7 @@
 module AI
   class Message < Hash
     def inspect
-      AI.amazing_print(self, plain: !$stdout.tty?, index: false)
+      AI.amazing_print(display_hash, plain: !$stdout.tty?, index: false)
     end
 
     def pretty_inspect
@@ -17,7 +17,13 @@ module AI
     end
 
     def to_html
-      AI.wrap_html(AI.amazing_print(self, html: true, index: false))
+      AI.wrap_html(AI.amazing_print(display_hash, html: true, index: false))
+    end
+
+    private
+
+    def display_hash
+      AI.truncate_data_uris(to_h)
     end
   end
 end

@@ -168,6 +168,42 @@ RSpec.describe AI::Chat do
       expect(attr_names).to include(:@web_search)
       expect(attr_names).to include(:@schema)
     end
+
+    it "truncates base64 data URIs in message content" do
+      base64_image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk"
+      chat.add([
+        {type: "input_text", text: "What is this?"},
+        {type: "input_image", image_url: base64_image}
+      ], role: "user")
+
+      attrs = chat.inspectable_attributes
+      messages_attr = attrs.find { |name, _| name == :@messages }
+      display_messages = messages_attr[1]
+      image_content = display_messages[0][:content][1]
+
+      expect(image_content[:image_url]).to eq("data:image/png;base64,iVBORw0KGgoAAAANSUhE... (60 chars)")
+    end
+
+    it "does not truncate regular strings" do
+      chat.add("Hello, this is a normal message", role: "user")
+
+      attrs = chat.inspectable_attributes
+      messages_attr = attrs.find { |name, _| name == :@messages }
+      display_messages = messages_attr[1]
+
+      expect(display_messages[0][:content]).to eq("Hello, this is a normal message")
+    end
+
+    it "does not truncate non-base64 data URIs" do
+      data_uri = "data:text/plain,Hello%20World"
+      chat.add([{type: "input_text", text: data_uri}], role: "user")
+
+      attrs = chat.inspectable_attributes
+      messages_attr = attrs.find { |name, _| name == :@messages }
+      display_messages = messages_attr[1]
+
+      expect(display_messages[0][:content][0][:text]).to eq(data_uri)
+    end
   end
 
   describe "#inspect" do
