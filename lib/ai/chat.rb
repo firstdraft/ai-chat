@@ -228,10 +228,12 @@ module AI
     end
 
     def inspect
+      ensure_amazing_print_loaded!
       ai(plain: !$stdout.tty?, multiline: true)
     end
 
     def to_html
+      ensure_amazing_print_loaded!
       AI.wrap_html(ai(html: true, multiline: true))
     end
 
@@ -244,6 +246,14 @@ module AI
     class InputClassificationError < StandardError; end
 
     class WrongAPITokenUsedError < StandardError; end
+
+    def ensure_amazing_print_loaded!
+      return if defined?(AmazingPrint::AI)
+
+      require_relative "amazing_print"
+    rescue LoadError
+      # amazing_print is optional; skip custom formatting if not available
+    end
 
     # :reek:FeatureEnvy
     # :reek:ManualDispatch

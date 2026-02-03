@@ -187,5 +187,13 @@ RSpec.describe AI::Chat do
     it "returns a String" do
       expect(chat.to_html).to be_a(String)
     end
+
+    it "renders the full chat object (not the recursion placeholder)" do
+      html = chat.to_html
+
+      expect(html).to include("AI::Chat")
+      expect(html).to include("@messages")
+      expect(html).not_to include("...AI::Chat...")
+    end
   end
 end
