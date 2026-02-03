@@ -29,7 +29,7 @@ module AI
 
     def build_output(html: false, plain: false)
       box = build_box
-      items_output = data.ai(html: html, plain: plain, limit: 100, indent: 2, index: true)
+      items_output = AI.amazing_print(data, html: html, plain: plain, limit: 100, indent: 2, index: true)
 
       if html
         "<pre>#{box}</pre>\n#{items_output}"

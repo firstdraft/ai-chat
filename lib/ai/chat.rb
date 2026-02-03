@@ -228,11 +228,11 @@ module AI
     end
 
     def inspect
-      ai(plain: !$stdout.tty?, multiline: true)
+      AI.amazing_print(self, plain: !$stdout.tty?, multiline: true)
     end
 
     def to_html
-      AI.wrap_html(ai(html: true, multiline: true))
+      AI.wrap_html(AI.amazing_print(self, html: true, multiline: true))
     end
 
     def pretty_inspect
