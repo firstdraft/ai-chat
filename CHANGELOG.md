@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-02-03
+
+### Fixed
+
+- **`to_html` compatibility with awesome_print**: Use `AmazingPrint::Inspector` directly instead of the `ai()` method to avoid conflicts when the `awesome_print` gem is also present in a project.
+
+- **`to_html` formatting**: Wrap output in `<pre>` tags with proper styling to preserve newlines and formatting in HTML views.
+
+### Changed
+
+- **Ruby version requirement**: Now supports Ruby 4.0+ (changed from `~> 3.2` to `>= 3.2`).
+
 ## [0.5.0] - 2025-12-05
 
 ### Breaking Changes
