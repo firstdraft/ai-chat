@@ -53,3 +53,9 @@ require_relative "14_schema_generation"
 
 # Proxy
 require_relative "15_proxy"
+
+# Get items
+require_relative "16_get_items"
+
+# Verbosity
+require_relative "17_verbosity"
