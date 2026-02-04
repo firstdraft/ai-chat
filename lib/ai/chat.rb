@@ -34,7 +34,7 @@ module AI
       @image_generation = false
       @image_folder = "./images"
       @api_key_validated = false
-      @verbosity = "medium"
+      @verbosity = :medium
     end
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
