@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "ai-chat"
-  spec.version = "0.5.4"
+  spec.version = "0.5.5"
   spec.authors = ["Raghu Betina", "Jelani Woods"]
   spec.email = ["raghu@firstdraft.com", "jelani@firstdraft.com"]
   spec.homepage = "https://github.com/firstdraft/ai-chat"

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "pp"
 
 RSpec.describe AI::Items do
   let(:sample_data) do
@@ -49,6 +50,16 @@ RSpec.describe AI::Items do
     it "returns a String ending with newline" do
       expect(items.pretty_inspect).to be_a(String)
       expect(items.pretty_inspect).to end_with("\n")
+    end
+  end
+
+  describe "#pretty_print" do
+    it "is used by PP/IRB and outputs the custom formatted view" do
+      out = +""
+      PP.pp(items, out)
+
+      expect(out).to include("Conversation: conv_abc123")
+      expect(out).to include("Items: 2")
     end
   end
 

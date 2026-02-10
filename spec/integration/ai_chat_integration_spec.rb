@@ -65,7 +65,19 @@ RSpec.describe "AI::Chat Integration", :integration do
       chat2.user("What's the secret word?")
       chat2.generate!
 
-      expect(chat2.last[:content]).to match(/banana/i)
+      # Don't assert on the model repeating the word (model behavior can change).
+      # Instead, verify the second instance is truly operating on the same
+      # conversation by checking the earlier user message still exists in the
+      # conversation items.
+      expect(chat2.conversation_id).to eq(conv_id)
+
+      items_text = chat2.get_items.data.filter_map do |item|
+        next unless item.type == :message
+
+        item.content&.filter_map { |c| c.respond_to?(:text) ? c.text.to_s : nil }
+      end.flatten.join("\n")
+
+      expect(items_text).to match(/banana/i)
     end
   end
 

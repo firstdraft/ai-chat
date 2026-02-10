@@ -1,12 +1,26 @@
 # frozen_string_literal: true
 
-require "delegate"
-
 module AI
-  class Items < SimpleDelegator
+  # NOTE: This is intentionally *not* a SimpleDelegator.
+  #
+  # IRB's default inspector uses PP, and PP has special handling for Delegator
+  # instances that unwraps them (via __getobj__) before printing. That causes
+  # IRB to display the underlying OpenAI cursor page instead of our custom
+  # formatted output.
+  #
+  # By using a plain wrapper + method_missing delegation, `chat.get_items`
+  # displays nicely in IRB/Rails console while still forwarding API helpers
+  # like `.data`, `.has_more`, etc.
+  class Items
     def initialize(response, conversation_id:)
-      super(response)
+      @response = response
       @conversation_id = conversation_id
+    end
+
+    attr_reader :response
+
+    def data
+      response.data
     end
 
     def to_html
@@ -23,6 +37,16 @@ module AI
 
     def pretty_print(q)
       q.output << inspect
+    end
+
+    def method_missing(method_name, *args, &block)
+      return super unless response.respond_to?(method_name)
+
+      response.public_send(method_name, *args, &block)
+    end
+
+    def respond_to_missing?(method_name, include_private = false)
+      response.respond_to?(method_name, include_private) || super
     end
 
     private
