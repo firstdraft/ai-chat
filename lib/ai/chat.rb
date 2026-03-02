@@ -23,8 +23,8 @@ module AI
 
     BASE_PROXY_URL = "https://prepend.me/api.openai.com/v1"
 
-    def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
-      @api_key = api_key || ENV.fetch(api_key_env_var)
+    def initialize(api_key: nil, api_key_env_var: nil)
+      @api_key = self.class.resolve_api_key(api_key: api_key, api_key_env_var: api_key_env_var)
       @proxy = ENV["AICHAT_PROXY"] == "true"
       @messages = []
       @reasoning_effort = nil
@@ -39,8 +39,8 @@ module AI
       @verbosity = :medium
     end
 
-    def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: nil)
-      api_key ||= ENV.fetch(api_key_env_var)
+    def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: nil, proxy: nil)
+      api_key = resolve_api_key(api_key: api_key, api_key_env_var: api_key_env_var)
       proxy = ENV["AICHAT_PROXY"] == "true" if proxy.nil?
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.read(prompt_path)
@@ -71,6 +71,16 @@ module AI
         File.binwrite(location, content)
       end
       content
+    end
+
+    def self.resolve_api_key(api_key: nil, api_key_env_var: nil)
+      return api_key if api_key
+      return ENV.fetch(api_key_env_var) if api_key_env_var
+
+      aichat_api_key = ENV["AICHAT_API_KEY"]
+      return aichat_api_key if aichat_api_key && !aichat_api_key.empty?
+
+      ENV.fetch("OPENAI_API_KEY")
     end
 
     # :reek:TooManyStatements

@@ -2,8 +2,8 @@
 
 RSpec.configure do |config|
   config.before(:each, :integration) do
-    if ENV["OPENAI_API_KEY"].nil?
-      skip "Integration tests require OPENAI_API_KEY environment variable"
+    if ENV["AICHAT_API_KEY"].to_s.empty? && ENV["OPENAI_API_KEY"].to_s.empty?
+      skip "Integration tests require AICHAT_API_KEY or OPENAI_API_KEY environment variable"
     end
   end
 end

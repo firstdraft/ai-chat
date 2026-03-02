@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2026-03-02
+
+### Changed
+
+- **Default API key lookup order**: `AI::Chat.new` and `AI::Chat.generate_schema!` now look for `AICHAT_API_KEY` first, then fall back to `OPENAI_API_KEY` when the first value is missing or empty.
+
+- **Explicit API key override behavior**: Passing `api_key:` still takes highest precedence, and passing `api_key_env_var:` still uses that environment variable exactly.
+
+### Added
+
+- **Unit coverage for API key precedence**: Added tests covering default env order, empty `AICHAT_API_KEY` fallback, explicit `api_key_env_var:`, and explicit `api_key:` behavior.
+
+### Updated
+
+- **Integration test setup**: Integration tests now run when either `AICHAT_API_KEY` or `OPENAI_API_KEY` is present.
+
+- **Documentation**: README now documents the new default key lookup order and updates the direct `OpenAI::Client` example to match.
+
 ## [0.5.6] - 2026-03-02
 
 ### Changed

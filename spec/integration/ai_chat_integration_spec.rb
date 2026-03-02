@@ -225,12 +225,12 @@ RSpec.describe "AI::Chat Integration", :integration do
   end
 
   describe "API key configuration" do
-    it "uses OPENAI_API_KEY environment variable by default" do
+    it "uses the default API key env lookup by default" do
       expect { AI::Chat.new }.not_to raise_error
     end
 
     it "accepts a custom environment variable name" do
-      ENV["CUSTOM_OPENAI_KEY"] = ENV["OPENAI_API_KEY"]
+      ENV["CUSTOM_OPENAI_KEY"] = ENV["AICHAT_API_KEY"] || ENV["OPENAI_API_KEY"]
 
       chat = AI::Chat.new(api_key_env_var: "CUSTOM_OPENAI_KEY")
       chat.user("Hi")
@@ -241,7 +241,7 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
 
     it "accepts an API key directly" do
-      chat = AI::Chat.new(api_key: ENV["OPENAI_API_KEY"])
+      chat = AI::Chat.new(api_key: ENV["AICHAT_API_KEY"] || ENV["OPENAI_API_KEY"])
       chat.user("Hi")
 
       expect { chat.generate! }.not_to raise_error

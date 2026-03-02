@@ -238,7 +238,7 @@ See [OpenAI's model documentation](https://platform.openai.com/docs/models) for 
 
 ### API key
 
-The gem by default looks for an environment variable called `OPENAI_API_KEY` and uses that if it finds it.
+The gem by default looks for `AICHAT_API_KEY` first. If that is missing (or empty), it falls back to `OPENAI_API_KEY`.
 
 You can specify a different environment variable name:
 
@@ -404,7 +404,7 @@ AI::Chat.generate_schema!("A user profile with name (required), email (required)
 
 This method returns a String containing the JSON schema. The JSON schema also writes (or overwrites) to `schema.json` at the root of the project.
 
-Similar to generating messages with `AI::Chat` objects, this class method will assume that you have an API key called `OPENAI_API_KEY` defined. You can also pass the API key directly or choose a different environment variable key for it to use.
+Similar to generating messages with `AI::Chat` objects, this class method will look for `AICHAT_API_KEY` first, then fall back to `OPENAI_API_KEY` if needed. You can also pass the API key directly or choose a different environment variable key for it to use.
 
 ```rb
 # Passing the API key directly
@@ -748,7 +748,9 @@ This is particularly useful for background mode workflows. If you want to retrie
 ```ruby
 require "openai"
 
-client = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"))
+api_key = ENV["AICHAT_API_KEY"]
+api_key = ENV.fetch("OPENAI_API_KEY") if api_key.nil? || api_key.empty?
+client = OpenAI::Client.new(api_key: api_key)
 
 response_id = "resp_abc123..." # e.g., load from your database
 response = client.responses.retrieve(response_id)
