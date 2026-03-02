@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] - 2026-03-02
+
+### Changed
+
+- **Proxy default from env**: `AI::Chat.new` now enables proxy mode by default when `AICHAT_PROXY` is exactly `"true"`.
+
+- **Schema generation proxy default**: `AI::Chat.generate_schema!` now uses the same `AICHAT_PROXY` default when `proxy:` is omitted.
+
+- **Explicit override precedence**: Explicit `chat.proxy = ...` and `generate_schema!(..., proxy: ...)` continue to override env defaults.
+
+### Added
+
+- **Unit coverage for proxy defaults**: Added tests for env parsing (`"true"` exact match), explicit override behavior, and `generate_schema!` precedence.
+
+- **Proxy env documentation**: README now documents `AICHAT_PROXY` behavior for both chat generation and schema generation.
+
 ## [0.5.5] - 2026-02-10
 
 ### Fixed

@@ -414,6 +414,14 @@ AI::Chat.generate_schema!("A user with full name (required), first_name (require
 AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key_env_var: "CUSTOM_KEY")
 ```
 
+`generate_schema!` also follows proxy defaults from the `AICHAT_PROXY` environment variable. Proxy is enabled only when `AICHAT_PROXY` is exactly `"true"`.
+
+```bash
+export AICHAT_PROXY=true
+```
+
+If you pass `proxy: true` or `proxy: false`, that explicit value overrides the env default.
+
 You can choose a location for the schema to save by using the `location` keyword argument.
 
 ```rb
@@ -621,6 +629,14 @@ chat.generate!
 puts chat.last[:content]
 # => "Once upon a time..."
 ```
+
+You can also default proxy mode from the environment for both `AI::Chat.new` and `AI::Chat.generate_schema!`:
+
+```bash
+export AICHAT_PROXY=true
+```
+
+Proxy is enabled only when `AICHAT_PROXY` is exactly `"true"`. Any other value (including `"TRUE"` or `"1"`) leaves proxy disabled unless you explicitly set `chat.proxy = true` or pass `proxy: true`.
 
 When proxy is enabled, **you must use the API key provided by prepend.me** in place of a real OpenAI API key. Refer to [the section on API keys](#api-key) for options on how to set your key.
 

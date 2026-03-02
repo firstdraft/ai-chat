@@ -5,6 +5,140 @@ require "spec_helper"
 RSpec.describe AI::Chat do
   let(:chat) { AI::Chat.new }
 
+  def with_env_var(name, value)
+    original = ENV.key?(name) ? ENV[name] : :__undefined__
+
+    if value.nil?
+      ENV.delete(name)
+    else
+      ENV[name] = value
+    end
+
+    yield
+  ensure
+    if original == :__undefined__
+      ENV.delete(name)
+    else
+      ENV[name] = original
+    end
+  end
+
+  def schema_client_double
+    response = double("response", output_text: '{"type":"object","properties":{},"required":[],"additionalProperties":false}')
+    responses = double("responses")
+    allow(responses).to receive(:create).and_return(response)
+    double("client", responses: responses)
+  end
+
+  around do |example|
+    with_env_var("AICHAT_PROXY", nil) do
+      example.run
+    end
+  end
+
+  describe "proxy defaults" do
+    it "defaults proxy to false when AICHAT_PROXY is not set" do
+      with_env_var("AICHAT_PROXY", nil) do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(api_key: "test-key").and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key")
+
+        expect(instance.proxy).to be(false)
+      end
+    end
+
+    it "defaults proxy to true when AICHAT_PROXY is exactly true" do
+      with_env_var("AICHAT_PROXY", "true") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key")
+
+        expect(instance.proxy).to be(true)
+      end
+    end
+
+    it "does not enable proxy for non-exact truthy values" do
+      with_env_var("AICHAT_PROXY", "TRUE") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(api_key: "test-key").and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key")
+
+        expect(instance.proxy).to be(false)
+      end
+    end
+
+    it "allows explicit override to false even when env default is true" do
+      with_env_var("AICHAT_PROXY", "true") do
+        client_double = instance_double(OpenAI::Client)
+        allow(OpenAI::Client).to receive(:new).and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key")
+        instance.proxy = false
+
+        expect(OpenAI::Client).to have_received(:new).with(api_key: "test-key", base_url: AI::Chat::BASE_PROXY_URL)
+        expect(OpenAI::Client).to have_received(:new).with(api_key: "test-key")
+        expect(instance.proxy).to be(false)
+      end
+    end
+
+    it "allows explicit override to true when env default is false" do
+      with_env_var("AICHAT_PROXY", nil) do
+        client_double = instance_double(OpenAI::Client)
+        allow(OpenAI::Client).to receive(:new).and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key")
+        instance.proxy = true
+
+        expect(OpenAI::Client).to have_received(:new).with(api_key: "test-key")
+        expect(OpenAI::Client).to have_received(:new).with(api_key: "test-key", base_url: AI::Chat::BASE_PROXY_URL)
+        expect(instance.proxy).to be(true)
+      end
+    end
+  end
+
+  describe ".generate_schema!" do
+    it "uses env proxy default when proxy keyword is omitted" do
+      with_env_var("AICHAT_PROXY", "true") do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        result = AI::Chat.generate_schema!("A tiny schema", api_key: "test-key", location: false)
+
+        expect(result).to include("\"type\": \"object\"")
+      end
+    end
+
+    it "lets explicit proxy false override env proxy default" do
+      with_env_var("AICHAT_PROXY", "true") do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(api_key: "test-key").and_return(client_double)
+
+        AI::Chat.generate_schema!("A tiny schema", api_key: "test-key", location: false, proxy: false)
+      end
+    end
+
+    it "lets explicit proxy true override env proxy default" do
+      with_env_var("AICHAT_PROXY", nil) do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        AI::Chat.generate_schema!("A tiny schema", api_key: "test-key", location: false, proxy: true)
+      end
+    end
+  end
+
   describe "#add" do
     it "returns the added message, not the messages array" do
       result = chat.add("Hello", role: "user")

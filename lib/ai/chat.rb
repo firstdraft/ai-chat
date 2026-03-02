@@ -25,11 +25,13 @@ module AI
 
     def initialize(api_key: nil, api_key_env_var: "OPENAI_API_KEY")
       @api_key = api_key || ENV.fetch(api_key_env_var)
-      @proxy = false
+      @proxy = ENV["AICHAT_PROXY"] == "true"
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-5.2"
-      @client = OpenAI::Client.new(api_key: @api_key)
+      client_options = {api_key: @api_key}
+      client_options[:base_url] = BASE_PROXY_URL if @proxy
+      @client = OpenAI::Client.new(**client_options)
       @last_response_id = nil
       @image_generation = false
       @image_folder = "./images"
@@ -37,8 +39,9 @@ module AI
       @verbosity = :medium
     end
 
-    def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: false)
+    def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: "OPENAI_API_KEY", proxy: nil)
       api_key ||= ENV.fetch(api_key_env_var)
+      proxy = ENV["AICHAT_PROXY"] == "true" if proxy.nil?
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.read(prompt_path)
 
