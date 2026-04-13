@@ -22,10 +22,15 @@ module AI
     attr_reader :client, :last_response_id, :proxy, :schema, :schema_file, :verbosity
 
     BASE_PROXY_URL = "https://prepend.me/api.openai.com/v1"
+    PROXY_ENV = "AICHAT_PROXY"
+    PROXY_KEY_ENV = "AICHAT_PROXY_KEY"
+    OPENAI_KEY_ENV = "OPENAI_API_KEY"
 
-    def initialize(api_key: nil, api_key_env_var: nil)
-      @api_key = self.class.resolve_api_key(api_key: api_key, api_key_env_var: api_key_env_var)
-      @proxy = ENV["AICHAT_PROXY"] == "true"
+    def initialize(api_key: nil, api_key_env_var: nil, proxy: nil)
+      @api_key_arg = api_key
+      @api_key_env_var_arg = api_key_env_var
+      @proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
+      @api_key = resolve_api_key
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-5.2"
@@ -40,8 +45,8 @@ module AI
     end
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: nil, proxy: nil)
-      api_key = resolve_api_key(api_key: api_key, api_key_env_var: api_key_env_var)
-      proxy = ENV["AICHAT_PROXY"] == "true" if proxy.nil?
+      proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
+      api_key = api_key || ENV.fetch(api_key_env_var || (proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV))
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.read(prompt_path)
 
@@ -71,16 +76,6 @@ module AI
         File.binwrite(location, content)
       end
       content
-    end
-
-    def self.resolve_api_key(api_key: nil, api_key_env_var: nil)
-      return api_key if api_key
-      return ENV.fetch(api_key_env_var) if api_key_env_var
-
-      aichat_api_key = ENV["AICHAT_PROXY_KEY"]
-      return aichat_api_key if aichat_api_key && !aichat_api_key.empty?
-
-      ENV.fetch("OPENAI_API_KEY")
     end
 
     # :reek:TooManyStatements
@@ -169,15 +164,20 @@ module AI
     end
 
     def proxy=(value)
-      @proxy = value
-      @client = if value
-        OpenAI::Client.new(
-          api_key: @api_key,
-          base_url: BASE_PROXY_URL
-        )
-      else
-        OpenAI::Client.new(api_key: @api_key)
-      end
+      new_proxy = !!value
+      previous_proxy = @proxy
+      @proxy = new_proxy
+      new_key = resolve_api_key
+      client_options = {api_key: new_key}
+      client_options[:base_url] = BASE_PROXY_URL if new_proxy
+      new_client = OpenAI::Client.new(**client_options)
+
+      @api_key = new_key
+      @api_key_validated = false
+      @client = new_client
+    rescue => error
+      @proxy = previous_proxy
+      raise
     end
 
     def schema=(value)
@@ -261,6 +261,21 @@ module AI
     end
 
     private
+
+    def resolve_api_key
+      env_var = @api_key_env_var_arg || (@proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV)
+      @api_key_arg || ENV.fetch(env_var) {
+        if @proxy
+          raise KeyError, "Proxy mode is enabled but #{PROXY_KEY_ENV} is not set. " \
+            "Create an environment variable called #{PROXY_KEY_ENV} " \
+            "with your API key from Prepend.me."
+        else
+          raise KeyError, "#{OPENAI_KEY_ENV} is not set. " \
+            "Create an environment variable called #{OPENAI_KEY_ENV} " \
+            "with your API key from https://platform.openai.com/api-keys."
+        end
+      }
+    end
 
     class InputClassificationError < StandardError; end
 
@@ -597,11 +612,11 @@ module AI
     rescue OpenAI::Errors::AuthenticationError
       message = if proxy
         <<~STRING
-          It looks like you're using an invalid API key. Proxying is enabled, so you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
+          Your API key was not accepted by Prepend.me. Since proxy mode is enabled, you need a valid API key from Prepend.me in the #{PROXY_KEY_ENV} environment variable.
         STRING
       else
         <<~STRING
-          It looks like you're using an invalid API key. Check to make sure your API key is valid before generating a response.
+          Your API key was not accepted by OpenAI. Make sure the #{OPENAI_KEY_ENV} environment variable contains a valid key from https://platform.openai.com/api-keys.
         STRING
       end
       raise WrongAPITokenUsedError, message, cause: nil

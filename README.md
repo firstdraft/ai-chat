@@ -238,7 +238,7 @@ See [OpenAI's model documentation](https://platform.openai.com/docs/models) for 
 
 ### API key
 
-The gem by default looks for `AICHAT_PROXY_KEY` first. If that is missing (or empty), it falls back to `OPENAI_API_KEY`.
+By default, the gem uses `OPENAI_API_KEY`. When proxy mode is enabled (`AICHAT_PROXY=true`), it uses `AICHAT_PROXY_KEY` instead.
 
 You can specify a different environment variable name:
 
@@ -404,7 +404,7 @@ AI::Chat.generate_schema!("A user profile with name (required), email (required)
 
 This method returns a String containing the JSON schema. The JSON schema also writes (or overwrites) to `schema.json` at the root of the project.
 
-Similar to generating messages with `AI::Chat` objects, this class method will look for `AICHAT_PROXY_KEY` first, then fall back to `OPENAI_API_KEY` if needed. You can also pass the API key directly or choose a different environment variable key for it to use.
+This class method uses the same API key and proxy resolution as `AI::Chat.new`. You can also pass the API key directly or choose a different environment variable:
 
 ```rb
 # Passing the API key directly
@@ -414,7 +414,7 @@ AI::Chat.generate_schema!("A user with full name (required), first_name (require
 AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key_env_var: "CUSTOM_KEY")
 ```
 
-`generate_schema!` also follows proxy defaults from the `AICHAT_PROXY` environment variable. Proxy is enabled only when `AICHAT_PROXY` is exactly `"true"`.
+`generate_schema!` also follows proxy defaults from the `AICHAT_PROXY` environment variable.
 
 ```bash
 export AICHAT_PROXY=true
@@ -617,28 +617,30 @@ message = chat.get_response(wait: true, timeout: 600)
 puts message[:content]
 ```
 
-## Proxying Through prepend.me
+## Proxying Through Prepend.me
 
-You can proxy API calls through [prepend.me](https://prepend.me/).
+You can proxy API calls through [Prepend.me](https://prepend.me/). When proxy mode is enabled, the gem uses the `AICHAT_PROXY_KEY` environment variable instead of `OPENAI_API_KEY`.
+
+You can enable proxy mode at construction time:
 
 ```rb
-chat = AI::Chat.new
-chat.proxy = true
-chat.user("Tell me a story")
-chat.generate!
-puts chat.last[:content]
-# => "Once upon a time..."
+chat = AI::Chat.new(proxy: true)
 ```
 
-You can also default proxy mode from the environment for both `AI::Chat.new` and `AI::Chat.generate_schema!`:
+Or default it from the environment (case-insensitive):
 
 ```bash
 export AICHAT_PROXY=true
 ```
 
-Proxy is enabled only when `AICHAT_PROXY` is exactly `"true"`. Any other value (including `"TRUE"` or `"1"`) leaves proxy disabled unless you explicitly set `chat.proxy = true` or pass `proxy: true`.
+Or toggle it on an existing instance:
 
-When proxy is enabled, **you must use the API key provided by prepend.me** in place of a real OpenAI API key. Refer to [the section on API keys](#api-key) for options on how to set your key.
+```rb
+chat = AI::Chat.new
+chat.proxy = true
+```
+
+When proxy is enabled, **you must set `AICHAT_PROXY_KEY`** with your API key from Prepend.me.
 
 ## Building Conversations Without API Calls
 
@@ -748,9 +750,7 @@ This is particularly useful for background mode workflows. If you want to retrie
 ```ruby
 require "openai"
 
-api_key = ENV["AICHAT_PROXY_KEY"]
-api_key = ENV.fetch("OPENAI_API_KEY") if api_key.nil? || api_key.empty?
-client = OpenAI::Client.new(api_key: api_key)
+client = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"))
 
 response_id = "resp_abc123..." # e.g., load from your database
 response = client.responses.retrieve(response_id)

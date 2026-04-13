@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-04-13
+
+### Breaking
+
+- **Proxy-aware API key resolution**: The gem no longer falls back from `AICHAT_PROXY_KEY` to `OPENAI_API_KEY`. When proxy is off, it uses `OPENAI_API_KEY`. When proxy is on (`AICHAT_PROXY=true`), it uses `AICHAT_PROXY_KEY`. Missing the expected var raises a `KeyError` with guidance on which variable to create.
+
+### Added
+
+- **`proxy:` keyword argument on `initialize`**: Override the `AICHAT_PROXY` env default at construction time, e.g. `AI::Chat.new(proxy: true)`.
+
+- **Case-insensitive `AICHAT_PROXY`**: `TRUE`, `True`, etc. are now accepted.
+
+- **Transactional `proxy=` setter**: Toggling proxy re-resolves the API key and resets validation. If key resolution fails, the instance is rolled back to its previous state.
+
+- **Beginner-friendly error messages**: Missing env var and auth failure errors now name the specific variable and where to get a key.
+
+### Changed
+
+- **Boolean coercion for proxy values**: `proxy:` kwarg and `proxy=` setter coerce values with `!!`. Only `nil` defers to the env var.
+
+- **Env var names extracted to constants**: `PROXY_ENV`, `PROXY_KEY_ENV`, `OPENAI_KEY_ENV` defined once on the class.
+
 ## [0.5.8] - 2026-03-02
 
 ### Fixed
