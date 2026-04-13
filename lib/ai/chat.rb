@@ -22,10 +22,15 @@ module AI
     attr_reader :client, :last_response_id, :proxy, :schema, :schema_file, :verbosity
 
     BASE_PROXY_URL = "https://prepend.me/api.openai.com/v1"
+    PROXY_ENV = "AICHAT_PROXY"
+    PROXY_KEY_ENV = "AICHAT_PROXY_KEY"
+    OPENAI_KEY_ENV = "OPENAI_API_KEY"
 
     def initialize(api_key: nil, api_key_env_var: nil, proxy: nil)
-      @proxy = proxy.nil? ? ENV["AICHAT_PROXY"]&.downcase == "true" : !!proxy
-      @api_key = api_key || ENV.fetch(api_key_env_var || (@proxy ? "AICHAT_PROXY_KEY" : "OPENAI_API_KEY"))
+      @api_key_arg = api_key
+      @api_key_env_var_arg = api_key_env_var
+      @proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
+      @api_key = resolve_api_key
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-5.2"
@@ -40,12 +45,8 @@ module AI
     end
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: nil, proxy: nil)
-      proxy = if proxy.nil?
-        ENV["AICHAT_PROXY"]&.downcase == "true"
-      else
-        !!proxy
-      end
-      api_key = api_key || ENV.fetch(api_key_env_var || (proxy ? "AICHAT_PROXY_KEY" : "OPENAI_API_KEY"))
+      proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
+      api_key = api_key || ENV.fetch(api_key_env_var || (proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV))
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.read(prompt_path)
 
@@ -164,14 +165,10 @@ module AI
 
     def proxy=(value)
       @proxy = !!value
-      @client = if value
-        OpenAI::Client.new(
-          api_key: @api_key,
-          base_url: BASE_PROXY_URL
-        )
-      else
-        OpenAI::Client.new(api_key: @api_key)
-      end
+      @api_key = resolve_api_key
+      client_options = {api_key: @api_key}
+      client_options[:base_url] = BASE_PROXY_URL if @proxy
+      @client = OpenAI::Client.new(**client_options)
     end
 
     def schema=(value)
@@ -255,6 +252,10 @@ module AI
     end
 
     private
+
+    def resolve_api_key
+      @api_key_arg || ENV.fetch(@api_key_env_var_arg || (@proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV))
+    end
 
     class InputClassificationError < StandardError; end
 
