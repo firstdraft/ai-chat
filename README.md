@@ -30,12 +30,12 @@ A Ruby gem that makes it easy to use OpenAI's generative AI models. Designed for
 
     chat = AI::Chat.new
     chat.user("What is Ruby?")
-    chat.generate!
+    response = chat.generate!
 
-    pp chat.messages
+    ap response
     ```
 
-That's it. `chat.messages` is an `Array` of `Hash`es that you can inspect, loop through, or store in a database.
+That's it. `generate!` returns the assistant's reply as a `Hash`, and `chat.messages` holds the full conversation as an `Array` of `Hash`es you can inspect, loop through, or store in a database.
 
 ## It's Just an Array of Hashes
 
@@ -49,9 +49,16 @@ Here's what a conversation looks like:
 ```ruby
 chat = AI::Chat.new
 chat.user("If Ruby had an official motto, what might it be?")
-chat.generate!
+response = chat.generate!
 
-pp chat.messages
+ap response
+# => {
+#           :role => "assistant",
+#        :content => "Matz is nice and so we are nice.",
+#       :response => { id: "resp_abc...", model: "gpt-5.2", ... }
+#    }
+
+ap chat.messages
 # => [
 #        {
 #               :role => "user",
@@ -65,11 +72,11 @@ pp chat.messages
 #    ]
 ```
 
-The assistant's hash includes a `:response` key with metadata from the API (token usage, response ID, model used, etc.). The user and system hashes are just `:role` and `:content`.
+`generate!` returns the assistant's message as a `Hash`. The `:response` key holds metadata from the API (token usage, response ID, model used, etc.). The user and system hashes are just `:role` and `:content`.
 
 This design is intentional:
 
-- **You can see what you're building.** `pp chat.messages` at any point shows the exact data structure.
+- **You can see what you're building.** `ap chat.messages` at any point shows the exact data structure.
 - **It reinforces Ruby fundamentals.** Arrays, hashes, symbols -- you already know these.
 - **It's flexible.** The same structure works when loading messages from a database:
 
@@ -82,16 +89,16 @@ chat.generate!
 
 ## Adding Messages
 
-The `user` method adds a message with `role: "user"` and `generate!` sends the conversation to the API:
+The `user` method adds a message with `role: "user"` and `generate!` sends the conversation to the API and returns the assistant's reply:
 
 ```ruby
 chat = AI::Chat.new
 chat.user("Hello!")
-chat.generate!
+ap chat.generate!
 
 # Continue the conversation
 chat.user("What about Rails?")
-chat.generate!
+ap chat.generate!
 ```
 
 You can also add system instructions (to guide the model's behavior) and manually add assistant messages (to reconstruct past conversations):
@@ -322,14 +329,14 @@ You can look at the conversation at any point:
 chat = AI::Chat.new
 chat.system("You are a helpful cooking assistant")
 chat.user("How do I boil an egg?")
-chat.generate!
+response = chat.generate!
+
+# The return value is the assistant's reply
+response[:content]
+# => "Here's how to boil an egg..."
 
 # See the whole conversation
-pp chat.messages
-
-# Get just the last message
-chat.last[:content]
-# => "Here's how to boil an egg..."
+ap chat.messages
 ```
 
 ## Building Conversations Without API Calls
