@@ -230,7 +230,7 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
 
     it "accepts a custom environment variable name" do
-      preferred_key = ENV["AICHAT_API_KEY"]
+      preferred_key = ENV["AICHAT_PROXY_KEY"]
       preferred_key = ENV["OPENAI_API_KEY"] if preferred_key.to_s.empty?
       ENV["CUSTOM_OPENAI_KEY"] = preferred_key
 
@@ -243,7 +243,7 @@ RSpec.describe "AI::Chat Integration", :integration do
     end
 
     it "accepts an API key directly" do
-      api_key = ENV["AICHAT_API_KEY"]
+      api_key = ENV["AICHAT_PROXY_KEY"]
       api_key = ENV["OPENAI_API_KEY"] if api_key.to_s.empty?
       chat = AI::Chat.new(api_key: api_key)
       chat.user("Hi")
