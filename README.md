@@ -26,6 +26,7 @@ A Ruby gem that makes it easy to use OpenAI's generative AI models. Designed for
 3. Use it:
 
     ```ruby
+    require "dotenv/load"
     require "ai-chat"
 
     chat = AI::Chat.new
