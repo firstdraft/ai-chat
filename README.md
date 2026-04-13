@@ -1,927 +1,533 @@
 # AI Chat
 
-This gem provides a class called `AI::Chat` that is intended to make it as easy as possible to use OpenAI's cutting-edge generative AI models.
+A Ruby gem that makes it easy to use OpenAI's generative AI models. Designed for learners: conversations are just arrays of hashes, so you can see exactly what's happening at every step.
 
-## Examples
+## Quick Start
 
-This gem includes comprehensive example scripts that showcase all features and serve as both documentation and validation tests. To explore the capabilities:
+1. Add to your Gemfile and install:
 
-### Quick Start
+    ```ruby
+    gem "ai-chat", "< 1.0.0"
+    ```
 
-```bash
-# Run a quick overview of key features (takes ~1 minute)
-bundle exec ruby examples/01_quick.rb
-```
+    ```
+    bundle install
+    ```
 
-### Run All Examples
+2. Set up your API key in a `.env` file at the root of your project:
 
-```bash
-# Run the complete test suite demonstrating all features
-bundle exec ruby examples/all.rb
-```
+    ```
+    AICHAT_PROXY=true
+    AICHAT_PROXY_KEY=your-key-from-prepend-me
+    ```
 
-### Individual Feature Examples
+    (If you have your own OpenAI account, you can skip proxy mode and set `OPENAI_API_KEY` instead.)
 
-The `examples/` directory contains focused examples for specific features:
+3. Use it:
 
-- `01_quick.rb` - Quick overview of key features
-- `02_core.rb` - Core functionality (basic chat, messages, responses)
-- `03_multimodal.rb` - Basic file and image handling
-- `04_file_handling_comprehensive.rb` - Advanced file handling (PDFs, text files, Rails uploads)
-- `05_structured_output.rb` - Basic structured output with schemas
-- `06_structured_output_comprehensive.rb` - All 6 supported schema formats
-- `07_edge_cases.rb` - Error handling and edge cases
-- `08_additional_patterns.rb` - Less common usage patterns (direct add method, web search + schema, etc.)
-- `09_mixed_content.rb` - Combining text and images in messages
-- `10_image_generation.rb` - Using the image generation tool
-- `11_code_interpreter.rb` - Using the code interpreter tool
-- `12_background_mode.rb` - Running responses in background mode
-- `13_conversation_features_comprehensive.rb` - Conversation features (auto-creation, continuity, inspection)
-- `14_schema_generation.rb` - Generate JSON schemas from natural language
-- `15_proxy.rb` - Proxy support for student accounts
-- `16_get_items.rb` - Inspecting conversation items (reasoning, web searches, image generation)
+    ```ruby
+    require "ai-chat"
 
-Each example is self-contained and can be run individually:
-```bash
-bundle exec ruby examples/[filename]
-```
+    chat = AI::Chat.new
+    chat.user("What is Ruby?")
+    chat.generate!
 
-## Installation
+    pp chat.messages
+    ```
 
-### Gemfile way (preferred)
+That's it. `chat.messages` is an `Array` of `Hash`es that you can inspect, loop through, or store in a database.
 
-Add this line to your application's Gemfile:
+## It's Just an Array of Hashes
+
+Every conversation with an AI model is an array of hashes. Each hash has two keys:
+
+- `:role` -- who's speaking (`"system"`, `"user"`, or `"assistant"`)
+- `:content` -- what they said
+
+Here's what a conversation looks like:
 
 ```ruby
-gem "ai-chat", "< 1.0.0"
-```
+chat = AI::Chat.new
+chat.user("If Ruby had an official motto, what might it be?")
+chat.generate!
 
-And then, at a command prompt:
-
-```
-bundle install
-```
-
-### Direct way
-
-Or, install it directly with:
-
-```
-gem install ai-chat
-```
-
-## Simplest usage
-
-In your Ruby program:
-
-```ruby
-require "ai-chat"
-
-# Create an instance of AI::Chat
-a = AI::Chat.new
-
-# Build up your conversation by adding messages
-a.add("If the Ruby community had an official motto, what might it be?")
-
-# See the convo so far - it's just an array of hashes!
-a.messages
+pp chat.messages
 # => [
 #        {
 #               :role => "user",
-#            :content => "If the Ruby community had an official motto, what might it be?"
-#        }
-#    ]
-
-# Generate the next message using AI
-a.generate!
-# => {
-#           :role => "assistant",
-#        :content => "Matz is nice and so we are nice",
-#       :response => { ... }
-#    }
-
-# Your array now includes the assistant's response
-a.messages
-# => [
-#        {
-#               :role => "user",
-#            :content => "If the Ruby community had an official motto, what might it be?"
+#            :content => "If Ruby had an official motto, what might it be?"
 #        },
 #        {
 #               :role => "assistant",
-#            :content => "Matz is nice and so we are nice",
+#            :content => "Matz is nice and so we are nice.",
 #           :response => { id: "resp_abc...", model: "gpt-5.2", ... }
 #        }
 #    ]
+```
+
+The assistant's hash includes a `:response` key with metadata from the API (token usage, response ID, model used, etc.). The user and system hashes are just `:role` and `:content`.
+
+This design is intentional:
+
+- **You can see what you're building.** `pp chat.messages` at any point shows the exact data structure.
+- **It reinforces Ruby fundamentals.** Arrays, hashes, symbols -- you already know these.
+- **It's flexible.** The same structure works when loading messages from a database:
+
+```ruby
+chat = AI::Chat.new
+chat.messages = @conversation.messages  # Load from your database
+chat.user("What should I do next?")
+chat.generate!
+```
+
+## Adding Messages
+
+The `user` method adds a message with `role: "user"` and `generate!` sends the conversation to the API:
+
+```ruby
+chat = AI::Chat.new
+chat.user("Hello!")
+chat.generate!
 
 # Continue the conversation
-a.add("What about Rails?")
-a.generate!
-# => {
-#           :role => "assistant",
-#        :content => "Convention over configuration.",
-#       :response => { ... }
-#    } 
+chat.user("What about Rails?")
+chat.generate!
 ```
 
-## Understanding the Data Structure
-
-Every OpenAI chat is just an array of hashes. Each hash needs:
-- `:role`: who's speaking ("system", "user", or "assistant")
-- `:content`: what they're saying
-
-That's it! You're building something like this:
+You can also add system instructions (to guide the model's behavior) and manually add assistant messages (to reconstruct past conversations):
 
 ```ruby
-[
-    {
-           :role => "system",
-        :content => "You are a helpful assistant"
-    },
-    {
-           :role => "user",
-        :content => "Hello!"
-    },
-    {
-           :role => "assistant",
-        :content => "Hi there! How can I help you today?",
-        :response => { id: "resp_abc...", model: "gpt-5.2", ... }
-    }
-]
+chat = AI::Chat.new
+chat.system("You are a helpful assistant that talks like Shakespeare.")
+chat.user("What is Ruby?")
+chat.generate!
 ```
 
-That last bit, under `:response`, is an object that represents the JSON that the OpenAI API sent back to us. It contains information about the number of tokens consumed, as well as a response ID that we can use later if we want to pick up the conversation at that point. More on that later.
-
-## Adding Different Types of Messages
+Under the hood, these are shortcuts for the `add` method:
 
 ```ruby
-require "ai-chat"
-
-b = AI::Chat.new
-
-# Add system instructions
-b.add("You are a helpful assistant that talks like Shakespeare.", role: "system")
-
-# Add a user message (role defaults to "user")
-b.add("If the Ruby community had an official motto, what might it be?")
-
-# Check what we've built
-b.messages
-# => [
-#        {
-#               :role => "system",
-#            :content => "You are a helpful assistant that talks like Shakespeare."
-#        },
-#        {
-#               :role => "user",
-#            :content => "If the Ruby community had an official motto, what might it be?"
-#        }
-#    ]
-
-# Generate a response
-b.generate!
-# => {
-#           :role => "assistant",
-#        :content => "Methinks 'tis 'Ruby doth bring joy to all who craft with care'",
-#       :response => { ... }
-#    }
-```
-
-### Convenience Methods
-
-Instead of always specifying the role, you can use these shortcuts:
-
-```ruby
-c = AI::Chat.new
+# These are equivalent:
+chat.system("You are helpful")
+chat.add("You are helpful", role: "system")
 
 # These are equivalent:
-c.add("You are helpful", role: "system")
-c.system("You are helpful")
+chat.user("Hello!")
+chat.add("Hello!")              # role defaults to "user"
 
 # These are equivalent:
-c.add("Hello there!")
-c.user("Hello there!")
-
-# These are equivalent:
-c.add("Hi! How can I help?", role: "assistant")
-c.assistant("Hi! How can I help?")
-```
-
-## Why This Design?
-
-We use the `add` method (and its shortcuts) to build up an array because:
-
-1. **It's educational**: You can see exactly what data structure you're building
-2. **It's debuggable**: Use `pp a.messages` anytime to inspect your conversation
-3. **It's flexible**: The same pattern works when loading existing conversations:
-
-```ruby
-# In a Rails app, you might do:
-d = AI::Chat.new
-d.messages = @conversation.messages  # Load existing messages
-d.user("What should I do next?")     # Add a new question
-d.generate!                         # Generate a response
+chat.assistant("Here's what I think...")
+chat.add("Here's what I think...", role: "assistant")
 ```
 
 ## Configuration
 
 ### Model
 
-By default, the gem uses OpenAI's `gpt-5.2` model. If you want to use a different model, you can set it:
-
-```ruby
-e = AI::Chat.new
-e.model = "gpt-4o"
-```
-
-See [OpenAI's model documentation](https://platform.openai.com/docs/models) for available models.
-
-### API key
-
-By default, the gem uses `OPENAI_API_KEY`. When proxy mode is enabled (`AICHAT_PROXY=true`), it uses `AICHAT_PROXY_KEY` instead.
-
-You can specify a different environment variable name:
-
-```ruby
-f = AI::Chat.new(api_key_env_var: "MY_OPENAI_TOKEN")
-```
-
-Or, you can pass an API key in directly:
-
-```ruby
-g = AI::Chat.new(api_key: "your-api-key-goes-here")
-```
-
-## Inspecting Your Conversation
-
-You can call `.messages` to get an array containing the conversation so far:
-
-```ruby
-h = AI::Chat.new
-h.system("You are a helpful cooking assistant")
-h.user("How do I boil an egg?")
-h.generate!
-
-# See the whole conversation
-h.messages
-# => [
-#        {
-#               :role => "system",
-#            :content => "You are a helpful cooking assistant"
-#        },
-#        {
-#               :role => "user",
-#            :content => "How do I boil an egg?"
-#        },
-#        {
-#               :role => "assistant",
-#            :content => "Here's how to boil an egg..."
-#        }
-#    ]
-
-# Get just the last response
-h.messages.last[:content]
-# => "Here's how to boil an egg..."
-
-# Or use the convenient shortcut
-h.last[:content]
-# => "Here's how to boil an egg..."
-```
-
-## Web Search
-
-To give the model access to real-time information from the internet, you can enable web searching. This uses OpenAI's built-in `web_search` tool.
-
-```ruby
-m = AI::Chat.new
-m.web_search = true
-m.user("What are the latest developments in the Ruby language?")
-m.generate! # This may use web search to find current information
-```
-
-## Structured Output
-
-Get back Structured Output by setting the `schema` attribute (I suggest using [OpenAI's handy tool for generating the JSON Schema](https://platform.openai.com/docs/guides/structured-outputs)):
-
-```ruby
-i = AI::Chat.new
-
-i.system("You are an expert nutritionist. The user will describe a meal. Estimate the calories, carbs, fat, and protein.")
-
-# The schema should be a JSON string (use OpenAI's tool to generate: https://platform.openai.com/docs/guides/structured-outputs)
-i.schema = '{"name": "nutrition_values","strict": true,"schema": {"type": "object","properties": {"fat": {"type": "number","description": "The amount of fat in grams."},"protein": {"type": "number","description": "The amount of protein in grams."},"carbs": {"type": "number","description": "The amount of carbohydrates in grams."},"total_calories": {"type": "number","description": "The total calories calculated based on fat, protein, and carbohydrates."}},"required": ["fat","protein","carbs","total_calories"],"additionalProperties": false}}'
-
-i.user("1 slice of pizza")
-
-response = i.generate!
-data = response[:content]
-# => {:fat=>15, :protein=>12, :carbs=>35, :total_calories=>285}
-
-# The response is parsed JSON, not a string!
-data[:total_calories]  # => 285
-```
-
-### Schema Formats
-
-The gem supports multiple schema formats to accommodate different preferences and use cases. The gem will automatically wrap your schema in the correct format for the API.
-
-#### 1. Full Schema with `format` Key (Most Explicit)
-```ruby
-# When you need complete control over the schema structure
-i.schema = {
-  format: {
-    type: :json_schema,
-    name: "nutrition_values",
-    strict: true,
-    schema: {
-      type: "object",
-      properties: {
-        fat: { type: "number", description: "The amount of fat in grams." },
-        protein: { type: "number", description: "The amount of protein in grams." }
-      },
-      required: ["fat", "protein"],
-      additionalProperties: false
-    }
-  }
-}
-```
-
-#### 2. Schema with `name`, `strict`, and `schema` Keys
-```ruby
-# The format shown in OpenAI's documentation
-i.schema = {
-  name: "nutrition_values",
-  strict: true,
-  schema: {
-    type: "object",
-    properties: {
-      fat: { type: "number", description: "The amount of fat in grams." },
-      protein: { type: "number", description: "The amount of protein in grams." }
-    },
-    required: [:fat, :protein],
-    additionalProperties: false
-  }
-}
-```
-
-#### 3. Simple JSON Schema Object
-```ruby
-# The simplest format - just provide the schema itself
-# The gem will wrap it with sensible defaults (name: "response", strict: true)
-i.schema = {
-  type: "object",
-  properties: {
-    fat: { type: "number", description: "The amount of fat in grams." },
-    protein: { type: "number", description: "The amount of protein in grams." }
-  },
-  required: ["fat", "protein"],
-  additionalProperties: false
-}
-```
-
-#### 4. JSON String Formats
-All the above formats also work as JSON strings:
-
-```ruby
-# As a JSON string with full format
-i.schema = '{"format":{"type":"json_schema","name":"nutrition_values","strict":true,"schema":{...}}}'
-
-# As a JSON string with name/strict/schema
-i.schema = '{"name":"nutrition_values","strict":true,"schema":{...}}'
-
-# As a simple JSON schema string
-i.schema = '{"type":"object","properties":{...}}'
-```
-
-### Generating a Schema
-
-You can call the class method `AI::Chat.generate_schema!` to use OpenAI to generate a JSON schema for you given a `String` describing the schema you want.
-
-```rb
-AI::Chat.generate_schema!("A user profile with name (required), email (required), age (number), and bio (optional text).")
-# => "{ ... }"
-```
-
-This method returns a String containing the JSON schema. The JSON schema also writes (or overwrites) to `schema.json` at the root of the project.
-
-This class method uses the same API key and proxy resolution as `AI::Chat.new`. You can also pass the API key directly or choose a different environment variable:
-
-```rb
-# Passing the API key directly
-AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key: "MY_SECRET_API_KEY")
-
-# Choosing a different API key name
-AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", api_key_env_var: "CUSTOM_KEY")
-```
-
-`generate_schema!` also follows proxy defaults from the `AICHAT_PROXY` environment variable.
-
-```bash
-export AICHAT_PROXY=true
-```
-
-If you pass `proxy: true` or `proxy: false`, that explicit value overrides the env default.
-
-You can choose a location for the schema to save by using the `location` keyword argument.
-
-```rb
-AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", location: "my_schemas/user.json")
-```
-
-If you don't want to write the output to a file, you can pass `false` to `location`.
-
-```rb
-AI::Chat.generate_schema!("A user with full name (required), first_name (required), and last_name (required).", location: false)
-# => { ... }
-```
-
-### Schema Notes
-
-- The keys can be `String`s or `Symbol`s.
-- The gem automatically converts your schema to the format expected by the API.
-- When a schema is set, `generate!` returns a parsed Ruby Hash with symbolized keys, not a String.
-
-## Including Images
-
-You can include images in your chat messages using the `user` method with the `image` or `images` parameter:
-
-```ruby
-j = AI::Chat.new
-
-# Send a single image
-j.user("What's in this image?", image: "path/to/local/image.jpg")
-j.generate!  # => "I can see a sunset over the ocean..."
-
-# Send multiple images
-j.user("Compare these images", images: ["image1.jpg", "image2.jpg"])
-j.generate!  # => "The first image shows... while the second..."
-
-# Mix URLs and local files
-j.user("What's the difference?", images: [
-  "local_photo.jpg",
-  "https://example.com/remote_photo.jpg"
-])
-j.generate!
-```
-
-The gem supports three types of image inputs:
-
-- **URLs**: Pass an image URL starting with `http://` or `https://`
-- **File paths**: Pass a string with a path to a local image file
-- **File-like objects**: Pass an object that responds to `read` (like `File.open("image.jpg")` or Rails uploaded files)
-
-## Including Files
-
-You can include files (PDFs, text files, etc.) in your messages using the `file` or `files` parameter:
-
-```ruby
-k = AI::Chat.new
-
-# Send a single file
-k.user("Summarize this document", file: "report.pdf")
-k.generate!
-
-# Send multiple files
-k.user("Compare these documents", files: ["doc1.pdf", "doc2.txt", "data.json"])
-k.generate!
-```
-
-Files are handled intelligently based on their type:
-- **PDFs**: Sent as file attachments for the model to analyze
-- **Text files**: Content is automatically extracted and sent as text
-- **Other formats**: The gem attempts to read them as text if possible
-
-## Mixed Content (Images + Files)
-
-You can send images and files together in a single message:
-
-```ruby
-l = AI::Chat.new
-
-# Mix image and file in one message
-l.user("Compare this photo with the document", 
-       image: "photo.jpg", 
-       file: "document.pdf")
-l.generate!
-
-# Mix multiple images and files
-l.user("Analyze all these materials",
-       images: ["chart1.png", "chart2.png"],
-       files: ["report.pdf", "data.csv"])
-l.generate!
-```
-
-**Note**: Images should use `image:`/`images:` parameters, while documents should use `file:`/`files:` parameters.
-
-## Image generation
-
-You can enable OpenAI's image generation tool:
-
-```ruby
-a = AI::Chat.new
-a.image_generation = true
-a.user("Draw a picture of a kitten")
-a.generate!
-# => {
-#        :content => "Here is your picture of a kitten:",
-#       :response => { ... }
-#    }
-```
-
-By default, images are saved to `./images`. You can configure a different location:
-
-```ruby
-a = AI::Chat.new
-a.image_generation = true
-a.image_folder = "./my_images"
-a.user("Draw a picture of a kitten")
-a.generate!
-# => {
-#        :content => "Here is your picture of a kitten:",
-#       :response => { ... }
-#    }
-```
-
-Images are saved in timestamped subfolders using ISO 8601 basic format. For example:
-- `./images/20250804T11303912_resp_abc123/001.png`
-- `./images/20250804T11303912_resp_abc123/002.png` (if multiple images)
-
-The folder structure ensures images are organized chronologically and by response.
-
-The messages array will now look like this:
-
-```ruby
-a.messages
-# => [
-#        {
-#               :role => "user",
-#            :content => "Draw a picture of a kitten"
-#        },
-#        {
-#               :role => "assistant",
-#            :content => "Here is your picture of a kitten:",
-#             :images => [ "./images/20250804T11303912_resp_abc123/001.png" ],
-#           :response => { ... }
-#        }
-#    ]
-```
-
-You can access the image filenames in several ways:
-
-```ruby
-# From the last message
-images = a.messages.last[:images]
-# => ["./images/20250804T11303912_resp_abc123/001.png"]
-
-# From the response object
-images = a.messages.last.dig(:response, :images)
-# => ["./images/20250804T11303912_resp_abc123/001.png"]
-```
-
-Note: Unlike with user-provided input images, OpenAI _does_ store AI-generated output images. So, if you make another API request using the same chat, previous images generated by the model in the conversation history will automatically be used — you don't have to re-send them. This allows you to easily refine an image with user input over multi-turn chats.
-
-```ruby
-a = AI::Chat.new
-a.image_generation = true
-a.image_folder = "./images"
-a.user("Draw a picture of a kitten")
-a.generate!
-# => { :content => "Here is a picture of a kitten:", ... }
-a.user("Make it even cuter")
-a.generate!
-# => { :content => "Here is the kitten, but even cuter:", ... }
-```
-
-## Code Interpreter
-
-```ruby
-y = AI::Chat.new
-y.code_interpreter = true
-y.user("Plot y = 2x*3 when x is -5 to 5.")
-y.generate!
-# => { :content => "Here is the graph.", ... }
-```
-
-## Background mode
-
-If you want to start a response and poll for it later, set `background = true` before calling `generate!`:
+The gem defaults to `gpt-5.2`. You can change it:
 
 ```ruby
 chat = AI::Chat.new
-chat.background = true
-chat.user("Write a short description about a sci-fi novel about a rat in space.")
-chat.generate!
-
-# Poll until it completes (this updates the existing assistant message)
-message = chat.get_response(wait: true, timeout: 600)
-puts message[:content]
+chat.model = "gpt-4o"
 ```
 
-## Proxying Through Prepend.me
+### API Key
 
-You can proxy API calls through [Prepend.me](https://prepend.me/). When proxy mode is enabled, the gem uses the `AICHAT_PROXY_KEY` environment variable instead of `OPENAI_API_KEY`.
+By default, the gem looks for an environment variable based on whether proxy mode is on or off:
 
-You can enable proxy mode at construction time:
+| Mode | Environment variable |
+|---|---|
+| Proxy on (`AICHAT_PROXY=true`) | `AICHAT_PROXY_KEY` |
+| Proxy off (default) | `OPENAI_API_KEY` |
 
-```rb
+You can also specify a custom environment variable name or pass the key directly:
+
+```ruby
+# Use a different environment variable
+chat = AI::Chat.new(api_key_env_var: "MY_OPENAI_TOKEN")
+
+# Or pass the key directly
+chat = AI::Chat.new(api_key: "sk-...")
+```
+
+## Proxy (Prepend.me)
+
+If you're using a [Prepend.me](https://prepend.me/) proxy key (common in classroom settings), add these to your `.env` file:
+
+```
+AICHAT_PROXY=true
+AICHAT_PROXY_KEY=your-key-from-prepend-me
+```
+
+You can also enable proxy mode in code:
+
+```ruby
+# At construction time
 chat = AI::Chat.new(proxy: true)
-```
 
-Or default it from the environment (case-insensitive):
-
-```bash
-export AICHAT_PROXY=true
-```
-
-Or toggle it on an existing instance:
-
-```rb
+# Or toggle it on an existing instance
 chat = AI::Chat.new
 chat.proxy = true
 ```
 
-When proxy is enabled, **you must set `AICHAT_PROXY_KEY`** with your API key from Prepend.me.
+When proxy is enabled, API calls are routed through Prepend.me, and the gem uses `AICHAT_PROXY_KEY` instead of `OPENAI_API_KEY`.
+
+## Web Search
+
+Give the model access to current information from the internet:
+
+```ruby
+chat = AI::Chat.new
+chat.web_search = true
+chat.user("What are the latest developments in the Ruby language?")
+chat.generate!
+```
+
+## Including Images
+
+Use the `image:` or `images:` parameter to send images along with your message:
+
+```ruby
+chat = AI::Chat.new
+
+# Single image
+chat.user("What's in this image?", image: "photo.jpg")
+chat.generate!
+
+# Multiple images
+chat.user("Compare these", images: ["image1.jpg", "image2.jpg"])
+chat.generate!
+```
+
+You can pass local file paths, URLs (`https://...`), or file-like objects (such as `File.open(...)` or Rails uploaded files).
+
+## Including Files
+
+Use the `file:` or `files:` parameter to send documents:
+
+```ruby
+chat = AI::Chat.new
+
+# Single file
+chat.user("Summarize this document", file: "report.pdf")
+chat.generate!
+
+# Multiple files
+chat.user("Compare these", files: ["doc1.pdf", "doc2.txt"])
+chat.generate!
+```
+
+PDFs are sent as attachments. Text-based files have their content extracted and sent as text.
+
+You can combine images and files in one message:
+
+```ruby
+chat.user("Analyze these materials",
+          images: ["chart1.png", "chart2.png"],
+          files: ["report.pdf", "data.csv"])
+chat.generate!
+```
+
+## Structured Output
+
+Instead of getting back a plain text response, you can ask the model to return data in a specific shape by setting a JSON schema:
+
+```ruby
+chat = AI::Chat.new
+chat.system("You are an expert nutritionist. Estimate the nutritional content of the meal the user describes.")
+
+chat.schema = {
+  type: "object",
+  properties: {
+    fat:      { type: "number", description: "Fat in grams" },
+    protein:  { type: "number", description: "Protein in grams" },
+    carbs:    { type: "number", description: "Carbohydrates in grams" },
+    calories: { type: "number", description: "Total calories" }
+  },
+  required: ["fat", "protein", "carbs", "calories"],
+  additionalProperties: false
+}
+
+chat.user("1 slice of pizza")
+response = chat.generate!
+
+data = response[:content]
+# => { fat: 15, protein: 12, carbs: 35, calories: 285 }
+
+data[:calories]  # => 285
+```
+
+When a schema is set, `generate!` returns a parsed Ruby `Hash` with symbolized keys instead of a `String`.
+
+The gem accepts several schema formats and automatically wraps them for the API. You can also pass schemas as JSON strings. See the `examples/` directory for all supported formats.
+
+### Generating a Schema
+
+You can use AI to generate a schema from a plain English description:
+
+```ruby
+AI::Chat.generate_schema!("A user profile with name (required), email (required), age (number), and bio (optional).")
+```
+
+This returns the JSON schema as a `String` and saves it to `schema.json`. Pass `location: false` to skip saving, or `location: "path/to/file.json"` to save elsewhere.
+
+## Image Generation
+
+Enable OpenAI's image generation tool to create images from descriptions:
+
+```ruby
+chat = AI::Chat.new
+chat.image_generation = true
+chat.user("Draw a picture of a kitten")
+chat.generate!
+```
+
+Generated images are saved to `./images` by default (in timestamped subfolders like `./images/20250804T113039_resp_abc123/001.png`). You can change the folder:
+
+```ruby
+chat.image_folder = "./my_images"
+```
+
+The assistant's message will include an `:images` key with the saved file paths:
+
+```ruby
+chat.last[:images]
+# => ["./images/20250804T113039_resp_abc123/001.png"]
+```
+
+AI-generated images are stored by OpenAI, so you can refine them in follow-up messages without re-sending:
+
+```ruby
+chat.user("Make it even cuter")
+chat.generate!
+```
+
+## Code Interpreter
+
+Enable the code interpreter to let the model write and execute Python code on OpenAI's servers. This is useful for math, data analysis, and generating charts:
+
+```ruby
+chat = AI::Chat.new
+chat.code_interpreter = true
+chat.user("Plot y = 2x^3 for x from -5 to 5")
+chat.generate!
+```
+
+The model will write a Python script, execute it, and return the result (including any generated files like charts).
+
+## Inspecting Your Conversation
+
+You can look at the conversation at any point:
+
+```ruby
+chat = AI::Chat.new
+chat.system("You are a helpful cooking assistant")
+chat.user("How do I boil an egg?")
+chat.generate!
+
+# See the whole conversation
+pp chat.messages
+
+# Get just the last message
+chat.last[:content]
+# => "Here's how to boil an egg..."
+```
 
 ## Building Conversations Without API Calls
 
-You can manually add assistant messages without making API calls, which is useful when reconstructing a past conversation:
+You can manually build up a conversation without calling the API, which is useful for reconstructing a past conversation from your database:
 
 ```ruby
-# Create a new chat instance
-k = AI::Chat.new
+chat = AI::Chat.new
+chat.system("You are a helpful assistant who provides information about planets.")
 
-# Add previous messages
-k.system("You are a helpful assistant who provides information about planets.")
+chat.user("Tell me about Mars.")
+chat.assistant("Mars is the fourth planet from the Sun....")
 
-k.user("Tell me about Mars.")
-k.assistant("Mars is the fourth planet from the Sun....")
+chat.user("What's the atmosphere like?")
+chat.assistant("Mars has a very thin atmosphere compared to Earth....")
 
-k.user("What's the atmosphere like?")
-k.assistant("Mars has a very thin atmosphere compared to Earth....")
-
-k.user("Could it support human life?")
-k.assistant("Mars currently can't support human life without....")
-
-# Now continue the conversation with an API-generated response
-k.user("Are there any current missions to go there?")
-response = k.generate!
-puts response
+# Now continue with an API-generated response
+chat.user("Are there any current missions?")
+chat.generate!
 ```
 
-With this, you can loop through any conversation's history (perhaps after retrieving it from your database), recreate an `AI::Chat`, and then continue it.
-
-## Reasoning Effort
-
-You can control how much reasoning the model does before producing its response:
+You can also set all messages at once with an array of hashes:
 
 ```ruby
-l = AI::Chat.new
-l.reasoning_effort = "low" # Can be "low", "medium", or "high"
+chat = AI::Chat.new
+chat.messages = [
+  { role: "system", content: "You are a helpful assistant." },
+  { role: "user", content: "Tell me about Mars." },
+  { role: "assistant", content: "Mars is the fourth planet from the Sun...." },
+  { role: "user", content: "What's the atmosphere like?" },
+  { role: "assistant", content: "Mars has a very thin atmosphere...." }
+]
 
-l.user("What does this error message mean? <insert error message>")
-l.generate!
+chat.user("Could it support human life?")
+chat.generate!
 ```
 
-The `reasoning_effort` parameter guides the model on how many reasoning tokens to generate. Options are:
-- `"low"`: Favors speed and economical token usage.
-- `"medium"`: Balances speed and reasoning accuracy.
-- `"high"`: Favors more complete reasoning.
+For messages with images or files, use `chat.user(..., image:, file:)` instead so the gem can build the correct multimodal structure.
 
-By default, `reasoning_effort` is `nil`, which means no reasoning parameter is sent to the API. For `gpt-5.2` (the default model), this is equivalent to `"none"` reasoning.
+## Advanced
 
-## Verbosity
+### Reasoning Effort
 
-Verbosity determines how many output tokens are generated. Lowering the number of tokens reduces overall latency. While the model's reasoning approach stays mostly the same, the model finds ways to answer more concisely—which can either improve or diminish answer quality, depending on your use case. Here are some scenarios for both ends of the verbosity spectrum:
-
-- High verbosity: Use when you need the model to provide thorough explanations of documents or perform extensive code refactoring.
-- Low verbosity: Best for situations where you want concise answers or simple code generation, such as SQL queries.
-
-The supported values are `:high`, `:medium`, or `:low`. The default value is `:medium` for `gpt-5.2`. **Older models (like `gpt-4.1-nano`) only support `:medium`**.
-
-## Advanced: Response Details
-
-When you call `generate!` (or later call `get_response` in background mode), the gem stores additional information about the API response:
+Control how much reasoning the model does before responding:
 
 ```ruby
-t = AI::Chat.new
-t.user("Hello!")
-t.generate!
+chat = AI::Chat.new
+chat.reasoning_effort = "high"  # "low", "medium", or "high"
 
-# Each assistant message includes a response object
-t.messages.last
-# => {
-#           :role => "assistant",
-#        :content => "Hello! How can I help you today?",
-#       :response => { id: "resp_abc...", model: "gpt-5.2", ... }
-#    }
-
-# Access detailed information
-response = t.last[:response]
-response[:id]           # => "resp_abc123..."
-response[:model]        # => "gpt-5.2"
-response[:usage]        # => {:input_tokens=>5, :output_tokens=>7, :total_tokens=>12}
+chat.user("Explain the tradeoffs between microservices and monoliths.")
+chat.generate!
 ```
 
-This information is useful for:
+By default, `reasoning_effort` is `nil` (no reasoning parameter is sent). For `gpt-5.2`, this is equivalent to no reasoning.
 
-- Debugging and monitoring token usage.
-- Understanding which model was actually used.
-- Future features like cost tracking.
+### Verbosity
 
-### Last Response ID
+Control how concise or thorough the model's response is:
 
-In addition to the `response` object inside each message, the `AI::Chat` instance also provides a convenient reader, `last_response_id`, which always holds the ID of the most recent response.
+```ruby
+chat = AI::Chat.new
+chat.verbosity = :low   # :low, :medium, or :high
+```
+
+Low verbosity is good for short answers and simple code generation. High verbosity is better for thorough explanations and detailed analysis. Defaults to `:medium`.
+
+### Background Mode
+
+Start a response and poll for it later:
+
+```ruby
+chat = AI::Chat.new
+chat.background = true
+chat.user("Write a detailed analysis of Ruby's GC implementation.")
+chat.generate!
+
+# Poll until it completes
+message = chat.get_response(wait: true, timeout: 600)
+puts message[:content]
+```
+
+### Conversation Management
+
+The gem automatically creates a server-side conversation on your first `generate!` call:
 
 ```ruby
 chat = AI::Chat.new
 chat.user("Hello")
 chat.generate!
 
-puts chat.last_response_id # => "resp_abc123..."
+chat.conversation_id  # => "conv_abc123..."
 
-chat.user("Goodbye")
-chat.generate!
-
-puts chat.last_response_id # => "resp_xyz789..." (a new ID)
-```
-
-This is particularly useful for background mode workflows. If you want to retrieve or cancel a background response from a different process, use `OpenAI::Client` directly:
-
-```ruby
-require "openai"
-
-client = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"))
-
-response_id = "resp_abc123..." # e.g., load from your database
-response = client.responses.retrieve(response_id)
-
-client.responses.cancel(response_id) unless response.status.to_s == "completed"
-```
-
-### Automatic Conversation Management
-
-Starting with your first `generate!` call, the gem automatically creates and manages a conversation with OpenAI. This conversation is stored server-side and tracks all messages, tool calls, reasoning, and other items.
-
-```ruby
-chat = AI::Chat.new
-chat.user("Hello")
-chat.generate!
-
-# Conversation ID is automatically set
-puts chat.conversation_id  # => "conv_abc123..."
-
-# Continue the conversation - context is automatically maintained
+# The model remembers context across messages
 chat.user("What did I just say?")
-chat.generate!  # Uses the same conversation automatically
+chat.generate!
 ```
 
-You can also load an existing conversation from your database:
+You can load an existing conversation:
 
 ```ruby
-# Load stored conversation_id from your database
 chat = AI::Chat.new
 chat.conversation_id = @thread.conversation_id  # From your database
 
 chat.user("Continue our discussion")
-chat.generate!  # Uses the loaded conversation
+chat.generate!
 ```
 
-## Inspecting Conversation Details
+### Response Details
 
-The `get_items` method fetches all conversation items (messages, tool calls, reasoning, etc.) from the API for both programmatic use and debugging:
+Each assistant message includes an API response hash with metadata:
 
 ```ruby
 chat = AI::Chat.new
-chat.reasoning_effort = "high"  # Enable reasoning summaries
+chat.user("Hello!")
+chat.generate!
+
+response = chat.last[:response]
+response[:id]     # => "resp_abc123..."
+response[:model]  # => "gpt-5.2"
+response[:usage]  # => { input_tokens: 5, output_tokens: 7, total_tokens: 12 }
+```
+
+The `last_response_id` reader always holds the most recent response ID:
+
+```ruby
+chat.last_response_id  # => "resp_abc123..."
+```
+
+### Inspecting Conversation Items
+
+The `get_items` method fetches all conversation items from the API, including messages, tool calls, reasoning steps, and web searches:
+
+```ruby
+chat = AI::Chat.new
+chat.reasoning_effort = "high"
 chat.web_search = true
 chat.user("Search for Ruby tutorials")
 chat.generate!
 
-# Get all conversation items (chronological order by default)
+# Pretty-printed in IRB/console
 chat.get_items
 
-# Output in IRB/Rails console:
-# ┌────────────────────────────────────────────────────────────────────────────┐
-# │ Conversation: conv_6903c1eea6cc819695af3a1b1ebf9b390c3db5e8ec021c9a        │
-# │ Items: 8                                                                   │
-# └────────────────────────────────────────────────────────────────────────────┘
-#
-# [detailed colorized output of all items including web searches,
-#  reasoning summaries, tool calls, messages, etc.]
-
-# Iterate over items programmatically
+# Iterate programmatically
 chat.get_items.data.each do |item|
   case item.type
   when :message
     puts "#{item.role}: #{item.content.first.text}"
   when :web_search_call
-    puts "Web search: #{item.action.query}" if item.action.respond_to?(:query) && item.action.query
+    puts "Searched: #{item.action.query}" if item.action.respond_to?(:query)
   when :reasoning
-    # Reasoning summaries show a high-level view of the model's reasoning
-    if item.summary&.first
-      puts "Reasoning: #{item.summary.first.text}"
-    end
-  when :image_generation_call
-    puts "Image generated" if item.result
+    puts "Reasoning: #{item.summary.first.text}" if item.summary&.first
   end
 end
-
-# For long conversations, you can request reverse chronological order
-# (useful for pagination to get most recent items first)
-recent_items = chat.get_items(order: :desc)
 ```
 
-When `reasoning_effort` is set, the API returns reasoning summaries (e.g., "Planning Ruby version search", "Confirming image tool usage"). Note that not all reasoning items have summaries - some intermediate steps may be empty.
-
-This is useful for:
-- **Learning** how the model uses tools (web search, code interpreter, etc.)
-- **Debugging** why the model made certain decisions
-- **Understanding** the full context beyond just the final response
-- **Transparency** into the model's reasoning process
-
-### HTML Output for ERB Templates
+### HTML Output
 
 All display objects have a `to_html` method for rendering in ERB templates:
 
 ```erb
-<%# Display a chat object %>
 <%= @chat.to_html %>
-
-<%# Display individual messages %>
-<% @chat.messages.each do |msg| %>
-  <%= msg.to_html %>
-<% end %>
-
-<%# Display conversation items (quick debug view) %>
 <%= @chat.get_items.to_html %>
 ```
 
-The HTML output includes a dark background to match the terminal aesthetic.
+## Examples
 
-You can also loop over `get_items.data` to build custom displays showing reasoning steps, tool calls, etc.:
+The `examples/` directory contains self-contained scripts demonstrating each feature:
 
-```erb
-<% @chat.get_items.data.each do |item| %>
-  <% case item.type.to_s %>
-  <% when "message" %>
-    <div class="message <%= item.role %>">
-      <strong><%= item.role.capitalize %>:</strong>
-      <% if item.content&.first %>
-        <% content = item.content.first %>
-        <% if content.type.to_s == "input_text" %>
-          <%= content.text %>
-        <% elsif content.type.to_s == "output_text" %>
-          <%= content.text %>
-        <% end %>
-      <% end %>
-    </div>
-  <% when "reasoning" %>
-    <% if item.summary&.first %>
-      <details class="reasoning">
-        <summary>Reasoning</summary>
-        <%= item.summary.first.text %>
-      </details>
-    <% end %>
-  <% when "web_search_call" %>
-    <% if item.action.respond_to?(:query) && item.action.query %>
-      <div class="web-search">
-        Searched: "<%= item.action.query %>"
-      </div>
-    <% end %>
-  <% when "image_generation_call" %>
-    <div class="image-generation">
-      Image generated
-    </div>
-  <% end %>
-<% end %>
+```bash
+# Run a quick overview (~1 minute)
+bundle exec ruby examples/01_quick.rb
+
+# Run all examples
+bundle exec ruby examples/all.rb
+
+# Run any individual example
+bundle exec ruby examples/02_core.rb
 ```
 
-## Setting messages directly
-
-You can use `.messages=()` to assign an `Array` of `Hashes` (text-only). Each `Hash` must have keys `:role` and `:content`:
-
-```ruby
-# Using the planet example with array of hashes
-p = AI::Chat.new
-
-# Set all messages at once instead of calling methods sequentially
-p.messages = [
-  { role: "system", content: "You are a helpful assistant who provides information about planets." },
-  { role: "user", content: "Tell me about Mars." },
-  { role: "assistant", content: "Mars is the fourth planet from the Sun...." },
-  { role: "user", content: "What's the atmosphere like?" },
-  { role: "assistant", content: "Mars has a very thin atmosphere compared to Earth...." },
-  { role: "user", content: "Could it support human life?" },
-  { role: "assistant", content: "Mars currently can't support human life without...." }
-]
-
-# Now continue the conversation with an API-generated response
-p.user("Are there any current missions to go there?")
-response = p.generate!
-puts response
-```
-
-For images/files, prefer using `chat.user(..., image:/images:/file:/files:)` so the gem can build the correct multimodal structure.
+| File | Feature |
+|---|---|
+| `01_quick.rb` | Quick overview of key features |
+| `02_core.rb` | Basic chat, messages, and responses |
+| `03_multimodal.rb` | Images and basic file handling |
+| `04_file_handling_comprehensive.rb` | PDFs, text files, Rails uploads |
+| `05_structured_output.rb` | Basic structured output |
+| `06_structured_output_comprehensive.rb` | All supported schema formats |
+| `07_edge_cases.rb` | Error handling and edge cases |
+| `08_additional_patterns.rb` | Direct `add` method, web search + schema |
+| `09_mixed_content.rb` | Combining text and images |
+| `10_image_generation.rb` | Image generation tool |
+| `11_code_interpreter.rb` | Code interpreter tool |
+| `12_background_mode.rb` | Background mode |
+| `13_conversation_features_comprehensive.rb` | Conversation auto-creation and continuity |
+| `14_schema_generation.rb` | Generate schemas from descriptions |
+| `15_proxy.rb` | Proxy support |
+| `16_get_items.rb` | Inspecting conversation items |
+| `17_verbosity.rb` | Verbosity control |
 
 ## Contributing
 
