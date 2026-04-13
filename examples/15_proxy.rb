@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 
-# Quick example showcasing key features of AI::Chat
-# Run this for a fast overview of capabilities
+# Examples showcasing proxy mode with AI::Chat
+# Requires AICHAT_PROXY_KEY to be set (your key from Prepend.me)
 
 require_relative "../lib/ai-chat"
 require "dotenv"
 Dotenv.load(File.expand_path("../.env", __dir__))
 require "amazing_print"
 
-unless ENV["PROXY_API_KEY"]
-  puts "Skipping proxy tests - set PROXY_API_KEY environment variable to run these examples"
+unless ENV["AICHAT_PROXY_KEY"]
+  puts "Skipping proxy tests - set AICHAT_PROXY_KEY environment variable to run these examples"
   exit 0
 end
 
@@ -17,15 +17,14 @@ puts "\n=== AI::Chat Proxy Examples ==="
 puts
 
 puts "0. Validates API key:"
-chat0 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat0.proxy = true
+chat0 = AI::Chat.new(proxy: true)
 chat0.user("What's the capital of Florida?")
 chat0.generate![:content]
 puts "   API Key validated: #{chat0.instance_variable_get(:@api_key_validated)}"
 puts
 
-puts "0.a Validates API key when invalid key used and proxy disabled:"
-chat0a = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+puts "0.a Validates API key when proxy key used without proxy enabled:"
+chat0a = AI::Chat.new(api_key_env_var: "AICHAT_PROXY_KEY")
 chat0a.user("What's the capital of Florida?")
 begin
   chat0a.generate![:content]
@@ -35,9 +34,8 @@ rescue AI::Chat::WrongAPITokenUsedError => e
 end
 puts
 
-puts "0.b Validates API key when invalid key used and proxy enabled:"
-chat0b = AI::Chat.new
-chat0b.proxy = true
+puts "0.b Validates API key when OpenAI key used with proxy enabled:"
+chat0b = AI::Chat.new(proxy: true, api_key_env_var: "OPENAI_API_KEY")
 chat0b.user("What's the capital of Florida?")
 begin
   chat0b.generate![:content]
@@ -48,8 +46,7 @@ end
 puts
 
 puts "1. Basic conversation:"
-chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat.proxy = true
+chat = AI::Chat.new(proxy: true)
 chat.user("What's the capital of Florida?")
 message = chat.generate![:content]
 puts "   Message: #{message}"
@@ -57,8 +54,7 @@ puts
 
 # 2. Structured output
 puts "2. Structured output (extracting data):"
-chat2 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat2.proxy = true
+chat2 = AI::Chat.new(proxy: true)
 chat2.system("Extract the color and animal from the message.")
 chat2.schema = {
   name: "extraction",
@@ -82,8 +78,7 @@ puts
 # 3. File handling
 puts "3. File handling (reading text files):"
 readme_path = File.expand_path("../README.md", __dir__)
-chat3 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat3.proxy = true
+chat3 = AI::Chat.new(proxy: true)
 chat3.user("What is this gem about? (one sentence)", file: readme_path)
 response = chat3.generate![:content]
 puts "   #{response}"
@@ -91,16 +86,14 @@ puts
 
 # 4. Conversation memory across instances
 puts "4. Conversation memory across instances:"
-chat4 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat4.proxy = true
+chat4 = AI::Chat.new(proxy: true)
 chat4.user("My name is Alice and I like Ruby programming")
 chat4.generate!
 conv_id = chat4.conversation_id
 puts "conversation_id -> #{conv_id}"
 
 # New chat instance with memory
-chat5 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat5.proxy = true
+chat5 = AI::Chat.new(proxy: true)
 chat5.conversation_id = conv_id
 chat5.user("What's my name and what do I like?")
 response = chat5.generate![:content]
@@ -111,8 +104,7 @@ puts
 puts "5. Mixed content types (text + image)"
 puts "-" * 30
 begin
-  chat5 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-  chat5.proxy = true
+  chat5 = AI::Chat.new(proxy: true)
   chat5.system("You are an image analyst")
   chat5.user("Describe this image", image: "https://picsum.photos/200/300")
   chat5.generate!
@@ -126,8 +118,7 @@ end
 puts
 
 # 6. Web search
-chat6 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat6.proxy = true
+chat6 = AI::Chat.new(proxy: true)
 chat6.web_search = true
 chat6.user("What's the latest Ruby on Rails version released?")
 message = chat6.generate![:content]
@@ -136,8 +127,7 @@ puts
 # 7. Image generation
 puts "Example 7: Image generation"
 puts "-" * 50
-chat7 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat7.proxy = true
+chat7 = AI::Chat.new(proxy: true)
 chat7.image_generation = true
 chat7.image_folder = "./my_generated_images"
 chat7.user("Draw a simple red circle")
@@ -153,8 +143,7 @@ puts
 puts "Example 8: Code interpreter"
 puts "-" * 50
 
-chat8 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat8.proxy = true
+chat8 = AI::Chat.new(proxy: true)
 chat8.code_interpreter = true
 chat8.user("Plot y = 2x + 3 where x is -10 to 10.")
 puts chat8.generate![:content]
@@ -165,8 +154,7 @@ puts
 
 # 9. Background mode
 puts "Example 9: Background mode"
-chat9 = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
-chat9.proxy = true
+chat9 = AI::Chat.new(proxy: true)
 chat9.background = true
 chat9.user("Write a short description about a sci-fi novel about a rat in space.")
 chat9.generate!
@@ -194,9 +182,8 @@ puts "\n" * 2
 
 puts "testing auto-polling"
 puts
-chat9b = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat9b = AI::Chat.new(proxy: true)
 chat9b.background = true
-chat9b.proxy = true
 chat9b.user("Write a short description about a sci-fi novel about a rat in space.")
 chat9b.generate!
 
@@ -208,8 +195,8 @@ puts "Assistant message status: #{message[:status].inspect}"
 
 puts "\n" * 4
 
-puts "10. When an un-official API key is used and proxy is disabled:"
-chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+puts "10. When a proxy key is used without proxy enabled:"
+chat = AI::Chat.new(api_key_env_var: "AICHAT_PROXY_KEY")
 chat.user("What's the capital of Florida?")
 begin
   chat.generate!
@@ -221,9 +208,8 @@ end
 
 puts "\n" * 4
 
-puts "11. When official API key is used and proxy is enabled:"
-chat = AI::Chat.new
-chat.proxy = true
+puts "11. When OpenAI key is used with proxy enabled:"
+chat = AI::Chat.new(proxy: true, api_key_env_var: "OPENAI_API_KEY")
 chat.user("What's the capital of Florida?")
 begin
   chat.generate!
@@ -241,9 +227,8 @@ puts "-" * 60
 puts "A conversation is automatically created on the first generate! call."
 puts
 
-chat = AI::Chat.new(api_key_env_var: "PROXY_API_KEY")
+chat = AI::Chat.new(proxy: true)
 chat.web_search = true
-chat.proxy = true
 puts "Before first generate!: conversation_id = #{chat.conversation_id.inspect}"
 
 chat.user("Search for Ruby programming tutorials and tell me about one")
@@ -294,18 +279,13 @@ puts "\n" * 4
 
 puts "13. Schema Generation:"
 description = "A user profile with name (required), email (required), age (number), and bio (optional text)."
-schema = AI::Chat.generate_schema!(description, api_key_env_var: "PROXY_API_KEY", proxy: true)
+schema = AI::Chat.generate_schema!(description, proxy: true)
 puts
 puts schema
 puts
 puts "Schema can be used to generate structured output"
 
 puts "\n" * 4
-
-puts "=== Proxy Example Complete ==="
-puts
-puts "For comprehensive tests, run: bundle exec ruby examples/all.rb"
-puts "For specific features, see examples/*.rb files"
 
 puts "=== Proxy Example Complete ==="
 puts
