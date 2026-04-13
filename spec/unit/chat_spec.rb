@@ -251,6 +251,17 @@ RSpec.describe AI::Chat do
       )
     end
 
+    it "resets API key validation when proxy is toggled" do
+      client_double = instance_double(OpenAI::Client)
+      allow(OpenAI::Client).to receive(:new).and_return(client_double)
+
+      instance = AI::Chat.new(api_key: "test-key")
+      instance.instance_variable_set(:@api_key_validated, true)
+      instance.proxy = true
+
+      expect(instance.instance_variable_get(:@api_key_validated)).to be(false)
+    end
+
     it "allows explicit override to false even when env default is true" do
       with_env_var("AICHAT_PROXY", "true") do
         client_double = instance_double(OpenAI::Client)

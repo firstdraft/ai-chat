@@ -166,6 +166,7 @@ module AI
     def proxy=(value)
       @proxy = !!value
       @api_key = resolve_api_key
+      @api_key_validated = false
       client_options = {api_key: @api_key}
       client_options[:base_url] = BASE_PROXY_URL if @proxy
       @client = OpenAI::Client.new(**client_options)
