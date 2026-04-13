@@ -65,14 +65,24 @@ RSpec.describe AI::Chat do
     it "raises KeyError when proxy is on but AICHAT_PROXY_KEY is missing" do
       with_env_var("AICHAT_PROXY", "true") do
         with_env_var("AICHAT_PROXY_KEY", nil) do
-          expect { AI::Chat.new }.to raise_error(KeyError, /AICHAT_PROXY_KEY/)
+          expect { AI::Chat.new }.to raise_error(
+            KeyError,
+            "Proxy mode is enabled but AICHAT_PROXY_KEY is not set. " \
+            "Create an environment variable called AICHAT_PROXY_KEY " \
+            "with your API key from Prepend.me."
+          )
         end
       end
     end
 
     it "raises KeyError when proxy is off but OPENAI_API_KEY is missing" do
       with_env_var("OPENAI_API_KEY", nil) do
-        expect { AI::Chat.new }.to raise_error(KeyError, /OPENAI_API_KEY/)
+        expect { AI::Chat.new }.to raise_error(
+          KeyError,
+          "OPENAI_API_KEY is not set. " \
+          "Create an environment variable called OPENAI_API_KEY " \
+          "with your API key from https://platform.openai.com/api-keys."
+        )
       end
     end
 

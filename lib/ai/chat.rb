@@ -254,7 +254,18 @@ module AI
     private
 
     def resolve_api_key
-      @api_key_arg || ENV.fetch(@api_key_env_var_arg || (@proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV))
+      env_var = @api_key_env_var_arg || (@proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV)
+      @api_key_arg || ENV.fetch(env_var) {
+        if @proxy
+          raise KeyError, "Proxy mode is enabled but #{PROXY_KEY_ENV} is not set. " \
+            "Create an environment variable called #{PROXY_KEY_ENV} " \
+            "with your API key from Prepend.me."
+        else
+          raise KeyError, "#{OPENAI_KEY_ENV} is not set. " \
+            "Create an environment variable called #{OPENAI_KEY_ENV} " \
+            "with your API key from https://platform.openai.com/api-keys."
+        end
+      }
     end
 
     class InputClassificationError < StandardError; end
@@ -592,11 +603,11 @@ module AI
     rescue OpenAI::Errors::AuthenticationError
       message = if proxy
         <<~STRING
-          It looks like you're using an invalid API key. Proxying is enabled, so you must use an OpenAI API key from prepend.me. Please disable proxy or update your API key before generating a response.
+          Your API key was not accepted by Prepend.me. Since proxy mode is enabled, you need a valid API key from Prepend.me in the #{PROXY_KEY_ENV} environment variable.
         STRING
       else
         <<~STRING
-          It looks like you're using an invalid API key. Check to make sure your API key is valid before generating a response.
+          Your API key was not accepted by OpenAI. Make sure the #{OPENAI_KEY_ENV} environment variable contains a valid key from https://platform.openai.com/api-keys.
         STRING
       end
       raise WrongAPITokenUsedError, message, cause: nil
