@@ -262,6 +262,24 @@ RSpec.describe AI::Chat do
       expect(instance.instance_variable_get(:@api_key_validated)).to be(false)
     end
 
+    it "does not mutate state when proxy toggle fails" do
+      with_env_var("OPENAI_API_KEY", "openai-key") do
+        with_env_var("AICHAT_PROXY_KEY", nil) do
+          client_double = instance_double(OpenAI::Client)
+          allow(OpenAI::Client).to receive(:new).and_return(client_double)
+
+          instance = AI::Chat.new
+          original_client = instance.client
+          original_api_key = instance.instance_variable_get(:@api_key)
+
+          expect { instance.proxy = true }.to raise_error(KeyError)
+          expect(instance.proxy).to be(false)
+          expect(instance.client).to be(original_client)
+          expect(instance.instance_variable_get(:@api_key)).to eq(original_api_key)
+        end
+      end
+    end
+
     it "allows explicit override to false even when env default is true" do
       with_env_var("AICHAT_PROXY", "true") do
         client_double = instance_double(OpenAI::Client)

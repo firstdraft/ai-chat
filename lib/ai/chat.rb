@@ -164,12 +164,20 @@ module AI
     end
 
     def proxy=(value)
-      @proxy = !!value
-      @api_key = resolve_api_key
+      new_proxy = !!value
+      previous_proxy = @proxy
+      @proxy = new_proxy
+      new_key = resolve_api_key
+      client_options = {api_key: new_key}
+      client_options[:base_url] = BASE_PROXY_URL if new_proxy
+      new_client = OpenAI::Client.new(**client_options)
+
+      @api_key = new_key
       @api_key_validated = false
-      client_options = {api_key: @api_key}
-      client_options[:base_url] = BASE_PROXY_URL if @proxy
-      @client = OpenAI::Client.new(**client_options)
+      @client = new_client
+    rescue => error
+      @proxy = previous_proxy
+      raise
     end
 
     def schema=(value)
