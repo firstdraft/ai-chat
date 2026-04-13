@@ -77,7 +77,7 @@ module AI
       return api_key if api_key
       return ENV.fetch(api_key_env_var) if api_key_env_var
 
-      aichat_api_key = ENV["AICHAT_API_KEY"]
+      aichat_api_key = ENV["AICHAT_PROXY_KEY"]
       return aichat_api_key if aichat_api_key && !aichat_api_key.empty?
 
       ENV.fetch("OPENAI_API_KEY")

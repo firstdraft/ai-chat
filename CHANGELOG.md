@@ -9,23 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Integration API key test fallback**: Updated integration test setup to treat an empty `AICHAT_API_KEY` as missing before falling back to `OPENAI_API_KEY`, matching runtime behavior.
+- **Integration API key test fallback**: Updated integration test setup to treat an empty `AICHAT_PROXY_KEY` as missing before falling back to `OPENAI_API_KEY`, matching runtime behavior.
 
 ## [0.5.7] - 2026-03-02
 
 ### Changed
 
-- **Default API key lookup order**: `AI::Chat.new` and `AI::Chat.generate_schema!` now look for `AICHAT_API_KEY` first, then fall back to `OPENAI_API_KEY` when the first value is missing or empty.
+- **Default API key lookup order**: `AI::Chat.new` and `AI::Chat.generate_schema!` now look for `AICHAT_PROXY_KEY` first, then fall back to `OPENAI_API_KEY` when the first value is missing or empty.
 
 - **Explicit API key override behavior**: Passing `api_key:` still takes highest precedence, and passing `api_key_env_var:` still uses that environment variable exactly.
 
 ### Added
 
-- **Unit coverage for API key precedence**: Added tests covering default env order, empty `AICHAT_API_KEY` fallback, explicit `api_key_env_var:`, and explicit `api_key:` behavior.
+- **Unit coverage for API key precedence**: Added tests covering default env order, empty `AICHAT_PROXY_KEY` fallback, explicit `api_key_env_var:`, and explicit `api_key:` behavior.
 
 ### Updated
 
-- **Integration test setup**: Integration tests now run when either `AICHAT_API_KEY` or `OPENAI_API_KEY` is present.
+- **Integration test setup**: Integration tests now run when either `AICHAT_PROXY_KEY` or `OPENAI_API_KEY` is present.
 
 - **Documentation**: README now documents the new default key lookup order and updates the direct `OpenAI::Client` example to match.
 
