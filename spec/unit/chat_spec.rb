@@ -39,58 +39,58 @@ RSpec.describe AI::Chat do
   end
 
   describe "api key defaults" do
-    it "uses AICHAT_PROXY_KEY before OPENAI_API_KEY by default" do
-      with_env_var("AICHAT_PROXY_KEY", "aichat-key") do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
+    it "uses OPENAI_API_KEY when proxy is off" do
+      with_env_var("OPENAI_API_KEY", "openai-key") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(api_key: "openai-key").and_return(client_double)
+
+        AI::Chat.new
+      end
+    end
+
+    it "uses AICHAT_PROXY_KEY when proxy is on" do
+      with_env_var("AICHAT_PROXY", "true") do
+        with_env_var("AICHAT_PROXY_KEY", "proxy-key") do
           client_double = instance_double(OpenAI::Client)
-          expect(OpenAI::Client).to receive(:new).with(api_key: "aichat-key").and_return(client_double)
+          expect(OpenAI::Client).to receive(:new).with(
+            api_key: "proxy-key",
+            base_url: AI::Chat::BASE_PROXY_URL
+          ).and_return(client_double)
 
           AI::Chat.new
         end
       end
     end
 
-    it "falls back to OPENAI_API_KEY when AICHAT_PROXY_KEY is missing" do
-      with_env_var("AICHAT_PROXY_KEY", nil) do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
-          client_double = instance_double(OpenAI::Client)
-          expect(OpenAI::Client).to receive(:new).with(api_key: "openai-key").and_return(client_double)
-
-          AI::Chat.new
+    it "raises KeyError when proxy is on but AICHAT_PROXY_KEY is missing" do
+      with_env_var("AICHAT_PROXY", "true") do
+        with_env_var("AICHAT_PROXY_KEY", nil) do
+          expect { AI::Chat.new }.to raise_error(KeyError, /AICHAT_PROXY_KEY/)
         end
       end
     end
 
-    it "treats empty AICHAT_PROXY_KEY as missing and falls back to OPENAI_API_KEY" do
-      with_env_var("AICHAT_PROXY_KEY", "") do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
-          client_double = instance_double(OpenAI::Client)
-          expect(OpenAI::Client).to receive(:new).with(api_key: "openai-key").and_return(client_double)
-
-          AI::Chat.new
-        end
+    it "raises KeyError when proxy is off but OPENAI_API_KEY is missing" do
+      with_env_var("OPENAI_API_KEY", nil) do
+        expect { AI::Chat.new }.to raise_error(KeyError, /OPENAI_API_KEY/)
       end
     end
 
-    it "uses only the explicitly provided api_key_env_var when present" do
-      with_env_var("AICHAT_PROXY_KEY", "aichat-key") do
-        with_env_var("CUSTOM_OPENAI_KEY", "custom-key") do
-          client_double = instance_double(OpenAI::Client)
-          expect(OpenAI::Client).to receive(:new).with(api_key: "custom-key").and_return(client_double)
+    it "uses only the explicitly provided api_key_env_var" do
+      with_env_var("CUSTOM_KEY", "custom-key") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(api_key: "custom-key").and_return(client_double)
 
-          AI::Chat.new(api_key_env_var: "CUSTOM_OPENAI_KEY")
-        end
+        AI::Chat.new(api_key_env_var: "CUSTOM_KEY")
       end
     end
 
     it "uses explicit api_key before env vars" do
-      with_env_var("AICHAT_PROXY_KEY", "aichat-key") do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
-          client_double = instance_double(OpenAI::Client)
-          expect(OpenAI::Client).to receive(:new).with(api_key: "direct-key").and_return(client_double)
+      with_env_var("OPENAI_API_KEY", "openai-key") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(api_key: "direct-key").and_return(client_double)
 
-          AI::Chat.new(api_key: "direct-key")
-        end
+        AI::Chat.new(api_key: "direct-key")
       end
     end
   end
@@ -225,47 +225,44 @@ RSpec.describe AI::Chat do
   end
 
   describe ".generate_schema!" do
-    it "uses AICHAT_PROXY_KEY before OPENAI_API_KEY by default" do
-      with_env_var("AICHAT_PROXY_KEY", "aichat-key") do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
+    it "uses OPENAI_API_KEY when proxy is off" do
+      with_env_var("OPENAI_API_KEY", "openai-key") do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(api_key: "openai-key").and_return(client_double)
+
+        AI::Chat.generate_schema!("A tiny schema", location: false)
+      end
+    end
+
+    it "uses AICHAT_PROXY_KEY when proxy is on" do
+      with_env_var("AICHAT_PROXY", "true") do
+        with_env_var("AICHAT_PROXY_KEY", "proxy-key") do
           client_double = schema_client_double
-          expect(OpenAI::Client).to receive(:new).with(api_key: "aichat-key").and_return(client_double)
+          expect(OpenAI::Client).to receive(:new).with(
+            api_key: "proxy-key",
+            base_url: AI::Chat::BASE_PROXY_URL
+          ).and_return(client_double)
 
           AI::Chat.generate_schema!("A tiny schema", location: false)
         end
       end
     end
 
-    it "falls back to OPENAI_API_KEY when AICHAT_PROXY_KEY is empty" do
-      with_env_var("AICHAT_PROXY_KEY", "") do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
-          client_double = schema_client_double
-          expect(OpenAI::Client).to receive(:new).with(api_key: "openai-key").and_return(client_double)
+    it "uses only the explicitly provided api_key_env_var" do
+      with_env_var("CUSTOM_KEY", "custom-key") do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(api_key: "custom-key").and_return(client_double)
 
-          AI::Chat.generate_schema!("A tiny schema", location: false)
-        end
-      end
-    end
-
-    it "uses only the explicitly provided api_key_env_var when present" do
-      with_env_var("AICHAT_PROXY_KEY", "aichat-key") do
-        with_env_var("CUSTOM_OPENAI_KEY", "custom-key") do
-          client_double = schema_client_double
-          expect(OpenAI::Client).to receive(:new).with(api_key: "custom-key").and_return(client_double)
-
-          AI::Chat.generate_schema!("A tiny schema", location: false, api_key_env_var: "CUSTOM_OPENAI_KEY")
-        end
+        AI::Chat.generate_schema!("A tiny schema", location: false, api_key_env_var: "CUSTOM_KEY")
       end
     end
 
     it "uses explicit api_key before env vars" do
-      with_env_var("AICHAT_PROXY_KEY", "aichat-key") do
-        with_env_var("OPENAI_API_KEY", "openai-key") do
-          client_double = schema_client_double
-          expect(OpenAI::Client).to receive(:new).with(api_key: "direct-key").and_return(client_double)
+      with_env_var("OPENAI_API_KEY", "openai-key") do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(api_key: "direct-key").and_return(client_double)
 
-          AI::Chat.generate_schema!("A tiny schema", location: false, api_key: "direct-key")
-        end
+        AI::Chat.generate_schema!("A tiny schema", location: false, api_key: "direct-key")
       end
     end
 
