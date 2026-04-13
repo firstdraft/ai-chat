@@ -23,9 +23,9 @@ module AI
 
     BASE_PROXY_URL = "https://prepend.me/api.openai.com/v1"
 
-    def initialize(api_key: nil, api_key_env_var: nil)
+    def initialize(api_key: nil, api_key_env_var: nil, proxy: nil)
       @api_key = self.class.resolve_api_key(api_key: api_key, api_key_env_var: api_key_env_var)
-      @proxy = ENV["AICHAT_PROXY"] == "true"
+      @proxy = proxy.nil? ? ENV["AICHAT_PROXY"]&.downcase == "true" : !!proxy
       @messages = []
       @reasoning_effort = nil
       @model = "gpt-5.2"
@@ -41,7 +41,11 @@ module AI
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: nil, proxy: nil)
       api_key = resolve_api_key(api_key: api_key, api_key_env_var: api_key_env_var)
-      proxy = ENV["AICHAT_PROXY"] == "true" if proxy.nil?
+      proxy = if proxy.nil?
+        ENV["AICHAT_PROXY"]&.downcase == "true"
+      else
+        !!proxy
+      end
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.read(prompt_path)
 
@@ -169,7 +173,7 @@ module AI
     end
 
     def proxy=(value)
-      @proxy = value
+      @proxy = !!value
       @client = if value
         OpenAI::Client.new(
           api_key: @api_key,

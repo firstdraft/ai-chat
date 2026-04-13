@@ -121,8 +121,22 @@ RSpec.describe AI::Chat do
       end
     end
 
-    it "does not enable proxy for non-exact truthy values" do
+    it "treats AICHAT_PROXY case-insensitively" do
       with_env_var("AICHAT_PROXY", "TRUE") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key")
+
+        expect(instance.proxy).to be(true)
+      end
+    end
+
+    it "does not enable proxy for non-true env values" do
+      with_env_var("AICHAT_PROXY", "yes") do
         client_double = instance_double(OpenAI::Client)
         expect(OpenAI::Client).to receive(:new).with(api_key: "test-key").and_return(client_double)
 
@@ -130,6 +144,55 @@ RSpec.describe AI::Chat do
 
         expect(instance.proxy).to be(false)
       end
+    end
+
+    it "uses proxy: kwarg over env when proxy: true" do
+      with_env_var("AICHAT_PROXY", nil) do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key", proxy: true)
+
+        expect(instance.proxy).to be(true)
+      end
+    end
+
+    it "uses proxy: kwarg over env when proxy: false" do
+      with_env_var("AICHAT_PROXY", "true") do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(api_key: "test-key").and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key", proxy: false)
+
+        expect(instance.proxy).to be(false)
+      end
+    end
+
+    it "coerces truthy proxy: kwarg to boolean" do
+      with_env_var("AICHAT_PROXY", nil) do
+        client_double = instance_double(OpenAI::Client)
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        instance = AI::Chat.new(api_key: "test-key", proxy: "false")
+
+        expect(instance.proxy).to be(true)
+      end
+    end
+
+    it "coerces truthy value to boolean in proxy= setter" do
+      client_double = instance_double(OpenAI::Client)
+      allow(OpenAI::Client).to receive(:new).and_return(client_double)
+
+      instance = AI::Chat.new(api_key: "test-key")
+      instance.proxy = "anything"
+
+      expect(instance.proxy).to be(true)
     end
 
     it "allows explicit override to false even when env default is true" do
@@ -239,6 +302,28 @@ RSpec.describe AI::Chat do
 
         AI::Chat.generate_schema!("A tiny schema", api_key: "test-key", location: false, proxy: true)
       end
+    end
+
+    it "treats AICHAT_PROXY case-insensitively" do
+      with_env_var("AICHAT_PROXY", "True") do
+        client_double = schema_client_double
+        expect(OpenAI::Client).to receive(:new).with(
+          api_key: "test-key",
+          base_url: AI::Chat::BASE_PROXY_URL
+        ).and_return(client_double)
+
+        AI::Chat.generate_schema!("A tiny schema", api_key: "test-key", location: false)
+      end
+    end
+
+    it "coerces truthy proxy kwarg to boolean" do
+      client_double = schema_client_double
+      expect(OpenAI::Client).to receive(:new).with(
+        api_key: "test-key",
+        base_url: AI::Chat::BASE_PROXY_URL
+      ).and_return(client_double)
+
+      AI::Chat.generate_schema!("A tiny schema", api_key: "test-key", location: false, proxy: "false")
     end
   end
 
