@@ -6,7 +6,7 @@ PATH
       base64 (~> 0.1, > 0.1.1)
       json (~> 2.0)
       marcel (~> 1.0)
-      openai (~> 0.43)
+      openai (~> 0.59)
       tty-spinner (~> 0.9.3)
 
 GEM
@@ -66,7 +66,7 @@ GEM
     lint_roller (1.1.0)
     logger (1.7.0)
     marcel (1.1.0)
-    openai (0.43.0)
+    openai (0.59.0)
       base64
       cgi
       connection_pool
