@@ -18,8 +18,8 @@ module AI
   # :reek:IrresponsibleModule
   class Chat
     # :reek:Attribute
-    attr_accessor :background, :code_interpreter, :conversation_id, :image_generation, :image_folder, :messages, :model, :reasoning_effort, :web_search
-    attr_reader :client, :last_response_id, :proxy, :schema, :schema_file, :verbosity
+    attr_accessor :background, :code_interpreter, :conversation_id, :image_folder, :messages, :model, :reasoning_effort, :web_search
+    attr_reader :client, :image_generation, :last_response_id, :proxy, :schema, :schema_file, :verbosity
 
     BASE_PROXY_URL = "https://prepend.me/api.openai.com/v1"
     PROXY_ENV = "AICHAT_PROXY"
@@ -202,6 +202,19 @@ module AI
         @verbosity = value.to_sym
       else
         raise ArgumentError, "Invalid verbosity value:'#{value}'. Must be one of :low, :medium, :high."
+      end
+    end
+
+    def image_generation=(value)
+      case value
+      when true
+        @image_generation = true
+      when false, nil
+        @image_generation = false
+      when Hash
+        @image_generation = value.transform_keys(&:to_sym)
+      else
+        raise ArgumentError, "Invalid image_generation value: #{value.inspect}. Must be true, false, or a Hash of tool options (e.g., { size: \"1536x1024\", quality: \"low\" })."
       end
     end
 
@@ -523,7 +536,8 @@ module AI
         tools_list << {type: "web_search"}
       end
       if image_generation
-        tools_list << {type: "image_generation"}
+        options = image_generation.is_a?(Hash) ? image_generation : {}
+        tools_list << options.merge(type: "image_generation")
       end
       if code_interpreter
         tools_list << {type: "code_interpreter", container: {type: "auto"}}
@@ -577,7 +591,8 @@ module AI
           result = output.result
           image_data = Base64.strict_decode64(result)
 
-          filename = "#{(index + 1).to_s.rjust(3, "0")}.png"
+          extension = image_extension_for(image_data)
+          filename = "#{(index + 1).to_s.rjust(3, "0")}.#{extension}"
           file_path = File.join(subfolder_path, filename)
 
           File.binwrite(file_path, image_data)
@@ -587,6 +602,18 @@ module AI
       end
 
       image_filenames
+    end
+
+    IMAGE_EXTENSIONS_BY_MIME_TYPE = {
+      "image/png" => "png",
+      "image/jpeg" => "jpg",
+      "image/webp" => "webp"
+    }.freeze
+
+    # :reek:UtilityFunction
+    def image_extension_for(bytes)
+      mime_type = Marcel::MimeType.for(StringIO.new(bytes))
+      IMAGE_EXTENSIONS_BY_MIME_TYPE.fetch(mime_type, "png")
     end
 
     def create_images_folder(response_id)

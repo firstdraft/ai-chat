@@ -60,5 +60,16 @@ puts "Assistant: #{c.messages.last[:content]}"
 puts "Black and white image: #{c.messages.last[:images]}"
 puts
 
+puts "Example 4: Configure generation with a Hash of options"
+puts "-" * 50
+d = AI::Chat.new
+d.image_generation = {size: "1536x1024", quality: "low"}
+d.user("Draw a landscape of rolling hills at sunset")
+puts "User: #{d.last[:content]}"
+d.generate!
+puts "Assistant: #{d.messages.last[:content]}"
+puts "Landscape image: #{d.messages.last[:images]}"
+puts
+
 puts "=== Image Generation Examples Complete ==="
 puts
