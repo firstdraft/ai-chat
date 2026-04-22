@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.1] - 2026-04-22
 
 ### Added
 
@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **`image_generation=` validates its argument**: Only `true`, `false`, `nil`, or a `Hash` are now accepted. `nil` is normalized to `false`. Any other value raises `ArgumentError`.
+- **`image_generation=` validates its argument**: Only `true`, `false`, `nil`, or a `Hash` are now accepted. `nil` is normalized to `false`. Any other value raises `ArgumentError`. (Technically breaking: values like truthy strings or integers that silently worked before now raise.)
+
+- **Bumped `openai` runtime dependency from `~> 0.43` to `~> 0.59`**: Picks up the typed `action` field on the image_generation tool, `gpt-5.4` mini/nano model slugs, and assorted upstream SDK transport fixes. No gem code changes were required for the bump — every method we call kept the same signature.
 
 ### Fixed
 
