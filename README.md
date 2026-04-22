@@ -309,6 +309,24 @@ chat.user("Make it even cuter")
 chat.generate!
 ```
 
+### Configuring the Tool
+
+To configure the tool, pass a `Hash` of options instead of `true`:
+
+```ruby
+chat.image_generation = {
+  size: "1536x1024",
+  quality: "low",
+  model: "gpt-image-2"
+}
+```
+
+Supported keys include `size`, `quality`, `model`, `action`, `background`, `moderation`, `output_format`, `output_compression`, `input_image_mask`, and `input_fidelity`. The `Hash` is passed through to the OpenAI [image generation tool](https://platform.openai.com/docs/guides/image-generation), so refer to those docs for the full list of supported values.
+
+The file extension of saved images is chosen automatically from the decoded bytes, so `output_format: "jpeg"` writes a `.jpg` and `output_format: "webp"` writes a `.webp`.
+
+> `partial_images` is not listed above because this gem uses a blocking call to the Responses API. Partial images only stream when `stream: true` is set, which this gem doesn't yet support.
+
 ## Code Interpreter
 
 Enable the code interpreter to let the model write and execute Python code on OpenAI's servers. This is useful for math, data analysis, and generating charts:

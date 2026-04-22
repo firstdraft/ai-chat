@@ -485,6 +485,125 @@ RSpec.describe AI::Chat do
     end
   end
 
+  describe "#image_generation=" do
+    it "accepts true" do
+      chat.image_generation = true
+
+      expect(chat.image_generation).to eq(true)
+    end
+
+    it "accepts false" do
+      chat.image_generation = true
+      chat.image_generation = false
+
+      expect(chat.image_generation).to eq(false)
+    end
+
+    it "normalizes nil to false" do
+      chat.image_generation = true
+      chat.image_generation = nil
+
+      expect(chat.image_generation).to eq(false)
+    end
+
+    it "accepts a Hash of tool options" do
+      options = {size: "1536x1024", quality: "low", model: "gpt-image-2"}
+      chat.image_generation = options
+
+      expect(chat.image_generation).to eq(options)
+    end
+
+    it "accepts an empty Hash" do
+      chat.image_generation = {}
+
+      expect(chat.image_generation).to eq({})
+    end
+
+    it "normalizes string keys to symbols" do
+      chat.image_generation = {"size" => "1536x1024", "quality" => "low"}
+
+      expect(chat.image_generation).to eq({size: "1536x1024", quality: "low"})
+    end
+
+    it "raises ArgumentError for non-boolean, non-Hash values" do
+      expect { chat.image_generation = "yes" }.to raise_error(
+        ArgumentError,
+        /Invalid image_generation value: "yes"\. Must be true, false, or a Hash of tool options/
+      )
+    end
+
+    it "raises ArgumentError for integers" do
+      expect { chat.image_generation = 1 }.to raise_error(ArgumentError)
+    end
+
+    it "raises ArgumentError for arrays" do
+      expect { chat.image_generation = [1, 2, 3] }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "#tools (via image_generation)" do
+    it "omits the tool when image_generation is false" do
+      expect(chat.send(:tools)).to eq([])
+    end
+
+    it "emits a bare tool spec when image_generation is true" do
+      chat.image_generation = true
+
+      expect(chat.send(:tools)).to eq([{type: "image_generation"}])
+    end
+
+    it "merges Hash options into the tool spec" do
+      chat.image_generation = {size: "1536x1024", quality: "low"}
+
+      expect(chat.send(:tools)).to eq([
+        {size: "1536x1024", quality: "low", type: "image_generation"}
+      ])
+    end
+
+    it "forces type: image_generation even when the Hash tries to override it" do
+      chat.image_generation = {type: "something_else", size: "1024x1024"}
+
+      tool = chat.send(:tools).first
+      expect(tool[:type]).to eq("image_generation")
+      expect(tool[:size]).to eq("1024x1024")
+    end
+
+    it "forces type: image_generation when the Hash uses a string-keyed type" do
+      chat.image_generation = {"type" => "something_else", "size" => "1024x1024"}
+
+      tool = chat.send(:tools).first
+      expect(tool[:type]).to eq("image_generation")
+      expect(tool).not_to have_key("type")
+      expect(tool[:size]).to eq("1024x1024")
+    end
+  end
+
+  describe "#image_extension_for (private helper)" do
+    it "returns png for PNG bytes" do
+      png = "\x89PNG\r\n\x1a\n\x00".b
+
+      expect(chat.send(:image_extension_for, png)).to eq("png")
+    end
+
+    it "returns jpg for JPEG bytes" do
+      jpeg = "\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01".b
+
+      expect(chat.send(:image_extension_for, jpeg)).to eq("jpg")
+    end
+
+    it "returns webp for WebP bytes" do
+      webp = "RIFF\x00\x00\x00\x00WEBP".b
+
+      expect(chat.send(:image_extension_for, webp)).to eq("webp")
+    end
+
+    it "falls back to png for unrecognized bytes" do
+      garbage = "not an image at all".b
+
+      expect(chat.send(:image_extension_for, garbage)).to eq("png")
+    end
+  end
+
   describe "#inspectable_attributes" do
     it "excludes :response key from displayed messages" do
       chat.add("Hello", role: "user")
@@ -546,6 +665,16 @@ RSpec.describe AI::Chat do
       expect(attr_names).to include(:@proxy)
       expect(attr_names).to include(:@image_generation)
       expect(attr_names).to include(:@image_folder)
+    end
+
+    it "includes @image_generation when set to a Hash of options" do
+      chat.image_generation = {size: "1536x1024"}
+
+      attrs = chat.inspectable_attributes
+      entry = attrs.find { |name, _| name == :@image_generation }
+
+      expect(entry).not_to be_nil
+      expect(entry[1]).to eq({size: "1536x1024"})
     end
 
     it "excludes optional state when not set" do

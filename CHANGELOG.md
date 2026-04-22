@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Hash options for `image_generation=`**: Pass a `Hash` of tool options (e.g., `chat.image_generation = { size: "1536x1024", quality: "low", model: "gpt-image-2" }`) to configure the OpenAI Responses API image generation tool. Useful for selecting a specific GPT Image model, changing size/quality, forcing generate-vs-edit mode with `action:`, masked edits via `input_image_mask:`, and the rest of the options from OpenAI's image generation docs. `chat.image_generation = true` still works and continues to use OpenAI's defaults.
+
+### Changed
+
+- **`image_generation=` validates its argument**: Only `true`, `false`, `nil`, or a `Hash` are now accepted. `nil` is normalized to `false`. Any other value raises `ArgumentError`.
+
+### Fixed
+
+- **Saved images now use the correct file extension**: Generated images are sniffed with Marcel and saved as `.png`, `.jpg`, or `.webp` based on the decoded bytes. Previously every image was written to `001.png` regardless of `output_format`, which produced misnamed files when callers asked for JPEG or WebP.
+
 ## [0.6.0] - 2026-04-13
 
 ### Breaking
