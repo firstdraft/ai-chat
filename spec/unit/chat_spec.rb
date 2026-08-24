@@ -758,3 +758,48 @@ RSpec.describe AI::Chat do
     end
   end
 end
+
+RSpec.describe AI::Chat, "request parameters" do
+  let(:chat) { AI::Chat.new(api_key: "test-key") }
+  let(:responses) { double("responses") }
+
+  before do
+    chat.conversation_id = "conv_123"
+    allow(chat).to receive(:client).and_return(double("client", responses: responses))
+    allow(responses).to receive(:create).and_return(double("response"))
+  end
+
+  it "defaults to gpt-5.6-terra" do
+    expect(chat.model).to eq("gpt-5.6-terra")
+  end
+
+  it "defaults reasoning_effort to \"none\"" do
+    expect(chat.reasoning_effort).to eq("none")
+  end
+
+  it "sends reasoning effort none without a summary by default" do
+    chat.send(:create_response)
+
+    expect(responses).to have_received(:create).with(
+      hash_including(model: "gpt-5.6-terra", reasoning: {effort: "none"})
+    )
+  end
+
+  it "requests a reasoning summary when reasoning_effort is set" do
+    chat.reasoning_effort = "high"
+    chat.send(:create_response)
+
+    expect(responses).to have_received(:create).with(
+      hash_including(reasoning: {effort: "high", summary: "auto"})
+    )
+  end
+
+  it "omits the reasoning parameter when reasoning_effort is nil" do
+    chat.reasoning_effort = nil
+    chat.send(:create_response)
+
+    expect(responses).to have_received(:create) do |params|
+      expect(params).not_to have_key(:reasoning)
+    end
+  end
+end

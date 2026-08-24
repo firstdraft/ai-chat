@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Default model**: Changed from `gpt-5.2` to `gpt-5.6-terra`, the cost-balanced tier of OpenAI's GPT-5.6 family. Pricing is roughly the same as `gpt-5.2` ($2/$12 vs $1.75/$14 per 1M input/output tokens) with a newer model and a 1M-token context window. `generate_schema!` uses the same model.
+
+- **Default `reasoning_effort` is now `"none"` instead of `nil`**: GPT-5.5 and newer models fall back to `"medium"` reasoning when the `reasoning` parameter is omitted, so keeping the old `nil` default would have silently made every default call slower and more expensive. The gem now sends `reasoning: { effort: "none" }` by default, which matches the previous behavior on `gpt-5.2`. Setting `reasoning_effort = nil` still omits the parameter entirely, which you will need for models that do not accept it (e.g., `gpt-4o`).
+
+- **No reasoning summary requested when `reasoning_effort` is `"none"`**: `summary: "auto"` is only sent alongside a non-`"none"` effort.
+
+- **Requires Ruby 3.3 or newer** (was 3.2). Ruby 3.2 reached end-of-life on March 31, 2026, and newer versions of the `openai` gem require 3.3+. CI now runs on Ruby 3.3. (Breaking for Ruby 3.2 users.)
+
+- **Bumped `openai` runtime dependency from `~> 0.59` to `~> 0.80`**: Picks up the GPT-5.6 model slugs and a summer's worth of upstream SDK fixes. No gem code changes were required for the bump.
+
 ## [0.6.1] - 2026-04-22
 
 ### Added

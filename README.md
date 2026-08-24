@@ -56,7 +56,7 @@ ap response
 # => {
 #           :role => "assistant",
 #        :content => "Matz is nice and so we are nice.",
-#       :response => { id: "resp_abc...", model: "gpt-5.2", ... }
+#       :response => { id: "resp_abc...", model: "gpt-5.6-terra", ... }
 #    }
 
 ap chat.messages
@@ -68,7 +68,7 @@ ap chat.messages
 #        {
 #               :role => "assistant",
 #            :content => "Matz is nice and so we are nice.",
-#           :response => { id: "resp_abc...", model: "gpt-5.2", ... }
+#           :response => { id: "resp_abc...", model: "gpt-5.6-terra", ... }
 #        }
 #    ]
 ```
@@ -131,11 +131,11 @@ chat.add("Here's what I think...", role: "assistant")
 
 ### Model
 
-The gem defaults to `gpt-5.2`. You can change it:
+The gem defaults to `gpt-5.6-terra`. You can change it:
 
 ```ruby
 chat = AI::Chat.new
-chat.model = "gpt-4o"
+chat.model = "gpt-5.6-luna"
 ```
 
 ### API Key
@@ -403,13 +403,15 @@ Control how much reasoning the model does before responding:
 
 ```ruby
 chat = AI::Chat.new
-chat.reasoning_effort = "high"  # "low", "medium", or "high"
+chat.reasoning_effort = "high"  # "none", "low", "medium", "high", "xhigh", or "max"
 
 chat.user("Explain the tradeoffs between microservices and monoliths.")
 chat.generate!
 ```
 
-By default, `reasoning_effort` is `nil` (no reasoning parameter is sent). For `gpt-5.2`, this is equivalent to no reasoning.
+By default, `reasoning_effort` is `"none"`, so the model answers directly without spending reasoning tokens. This matters because GPT-5.5 and newer models (including the default `gpt-5.6-terra`) fall back to `"medium"` reasoning when the parameter is omitted, which is slower and more expensive.
+
+Set `reasoning_effort = nil` to omit the reasoning parameter entirely — you will need this if you switch to a model that does not support reasoning (e.g., `gpt-4o`) or one that predates the `"none"` option.
 
 ### Verbosity
 
@@ -474,7 +476,7 @@ chat.generate!
 
 response = chat.last[:response]
 response[:id]     # => "resp_abc123..."
-response[:model]  # => "gpt-5.2"
+response[:model]  # => "gpt-5.6-terra"
 response[:usage]  # => { input_tokens: 5, output_tokens: 7, total_tokens: 12 }
 ```
 
