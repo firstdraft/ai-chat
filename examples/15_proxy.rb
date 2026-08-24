@@ -10,7 +10,7 @@ require "amazing_print"
 
 unless ENV["AICHAT_PROXY_KEY"]
   puts "Skipping proxy tests - set AICHAT_PROXY_KEY environment variable to run these examples"
-  exit 0
+  return # not exit: all.rb require_relatives this file, and exit would skip the remaining examples
 end
 
 puts "\n=== AI::Chat Proxy Examples ==="
