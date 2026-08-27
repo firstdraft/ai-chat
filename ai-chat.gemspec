@@ -18,8 +18,8 @@ Gem::Specification.new do |spec|
     "source_code_uri" => "https://github.com/firstdraft/ai-chat"
   }
 
-  spec.required_ruby_version = ">= 3.2"
-  spec.add_runtime_dependency "openai", "~> 0.59"
+  spec.required_ruby_version = ">= 3.3"
+  spec.add_runtime_dependency "openai", "~> 0.80"
   spec.add_runtime_dependency "marcel", "~> 1.0"
   spec.add_runtime_dependency "base64", "~> 0.1", "> 0.1.1"
   spec.add_runtime_dependency "json", "~> 2.0"

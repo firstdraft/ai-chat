@@ -32,8 +32,8 @@ module AI
       @proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
       @api_key = resolve_api_key
       @messages = []
-      @reasoning_effort = nil
-      @model = "gpt-5.2"
+      @reasoning_effort = "none"
+      @model = "gpt-5.6-terra"
       client_options = {api_key: @api_key}
       client_options[:base_url] = BASE_PROXY_URL if @proxy
       @client = OpenAI::Client.new(**client_options)
@@ -57,7 +57,7 @@ module AI
 
       client = OpenAI::Client.new(**options)
       response = client.responses.create(
-        model: "gpt-5.2",
+        model: "gpt-5.6-terra",
         input: [
           {role: :system, content: system_prompt},
           {role: :user, content: description}
@@ -307,6 +307,13 @@ module AI
       end
     end
 
+    # Reasoning summaries are only meaningful when the model actually reasons.
+    def reasoning_parameters
+      params = {effort: reasoning_effort}
+      params[:summary] = "auto" unless reasoning_effort.to_s == "none"
+      params
+    end
+
     def create_conversation
       conversation = client.conversations.create
       self.conversation_id = conversation.id
@@ -321,7 +328,7 @@ module AI
       parameters[:background] = background if background
       parameters[:tools] = tools unless tools.empty?
       parameters[:text] = schema if schema
-      parameters[:reasoning] = {effort: reasoning_effort, summary: "auto"} if reasoning_effort
+      parameters[:reasoning] = reasoning_parameters if reasoning_effort
 
       create_conversation unless conversation_id
       parameters[:conversation] = conversation_id

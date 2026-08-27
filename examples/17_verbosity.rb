@@ -79,6 +79,7 @@ puts "6. Supports verbosity = :medium for gpt-4.1-nano"
 puts "-" * 30
 chat6 = AI::Chat.new
 chat6.model = "gpt-4.1-nano"
+chat6.reasoning_effort = nil # gpt-4.1 models reject the reasoning parameter
 chat6.verbosity = :medium
 chat6.user("How high do planes typically fly?")
 response = chat6.generate![:content]
@@ -91,6 +92,7 @@ puts "7. Fails verbosity = :low for gpt-4.1-nano"
 puts "-" * 30
 chat7 = AI::Chat.new
 chat7.model = "gpt-4.1-nano"
+chat7.reasoning_effort = nil
 chat7.verbosity = :low
 chat7.user("How high do planes typically fly?")
 begin
