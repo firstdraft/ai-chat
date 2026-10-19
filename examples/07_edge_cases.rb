@@ -17,11 +17,11 @@ begin
   chat.user("Hello")
   chat.generate!
   puts "✗ Should have raised an error"
-rescue OpenAI::Errors::BadRequestError => e
-  if e.message.include?("does not exist")
+rescue OpenAI::Errors::NotFoundError => e
+  if e.body.dig(:error, :code) == "model_not_found"
     puts "✓ Invalid model error correctly propagated"
   else
-    puts "✗ Error propagated but message unclear: #{e.message[0..80]}..."
+    puts "✗ Error propagated but code unclear: #{e.body.inspect[0..80]}..."
   end
 rescue => e
   puts "✗ Unexpected error type: #{e.class} - #{e.message[0..80]}..."
