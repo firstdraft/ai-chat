@@ -35,7 +35,9 @@ module AI
       "#{inspect}\n"
     end
 
+    # Same direct write as AI::Message#pretty_print, for the same reasons.
     def pretty_print(q)
+      q.flush
       q.output << inspect
     end
 

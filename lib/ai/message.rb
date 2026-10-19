@@ -11,8 +11,11 @@ module AI
     end
 
     # IRB's ColorPrinter calls pretty_print and re-colorizes text,
-    # which escapes our ANSI codes. Write directly to output to bypass.
+    # which escapes our ANSI codes. Write directly to output to bypass,
+    # but flush first: inside an Array, PP is still buffering the "[" and
+    # earlier separators, so an unflushed write lands ahead of them.
     def pretty_print(q)
+      q.flush
       q.output << inspect
     end
 

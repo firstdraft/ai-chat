@@ -68,11 +68,35 @@ RSpec.describe AI::Message do
     end
   end
 
+  describe "printing an Array of messages with pp" do
+    before { allow($stdout).to receive(:tty?).and_return(false) }
+
+    it "keeps each separator between the messages it separates" do
+      messages = [
+        AI::Message[role: "user", content: "Hello"],
+        AI::Message[role: "assistant", content: "Hi!", response: {id: "resp_1"}]
+      ]
+
+      expect(PP.pp(messages, +"")).to eq(<<~TEXT)
+        [{
+               role: "user",
+            content: "Hello"
+        }, {
+                role: "assistant",
+             content: "Hi!",
+            response: {
+                id: "resp_1"
+            }
+        }]
+      TEXT
+    end
+  end
+
   describe "#pretty_print" do
     it "writes directly to output to bypass IRB colorization" do
       message = AI::Message[role: "user", content: "Hello"]
       output = StringIO.new
-      mock_q = double("PrettyPrint", output: output)
+      mock_q = double("PrettyPrint", output: output, flush: nil)
 
       message.pretty_print(mock_q)
 

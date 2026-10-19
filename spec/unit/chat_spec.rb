@@ -743,6 +743,51 @@ RSpec.describe AI::Chat do
     it "returns a String" do
       expect(chat.inspect).to be_a(String)
     end
+
+    # Lessons show this output verbatim, so pin the exact layout.
+    context "when not writing to a terminal" do
+      before { allow($stdout).to receive(:tty?).and_return(false) }
+
+      it "lists a new chat's attributes one per line" do
+        new_chat = AI::Chat.new(api_key: "test-key", proxy: false)
+
+        expect(new_chat.inspect).to eq(<<~TEXT.chomp)
+          #<AI::Chat
+            @model: "gpt-6-luna"
+            @reasoning_effort: "low"
+            @conversation_id: nil
+            @messages: []
+            @verbosity: :medium
+          >
+        TEXT
+      end
+
+      it "lists messages by index with aligned keys" do
+        proxied_chat = AI::Chat.new(api_key: "test-key", proxy: true)
+        proxied_chat.system("You are an assistant that talks like Shakespeare.")
+        proxied_chat.user("What is the motto of Ruby lang?")
+
+        expect(proxied_chat.inspect).to eq(<<~TEXT.chomp)
+          #<AI::Chat
+            @model: "gpt-6-luna"
+            @reasoning_effort: "low"
+            @conversation_id: nil
+            @messages: [
+              [0] {
+                     role: "system",
+                  content: "You are an assistant that talks like Shakespeare."
+              },
+              [1] {
+                     role: "user",
+                  content: "What is the motto of Ruby lang?"
+              }
+          ]
+            @proxy: true
+            @verbosity: :medium
+          >
+        TEXT
+      end
+    end
   end
 
   describe "#pretty_inspect" do
