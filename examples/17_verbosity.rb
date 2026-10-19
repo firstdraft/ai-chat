@@ -45,8 +45,8 @@ puts "4. Raises error for unsupported verbosity values"
 puts "-" * 30
 chat4 = AI::Chat.new
 chat4.user("How high do planes typically fly?")
-  begin
-    chat4.verbosity = :extreme
+begin
+  chat4.verbosity = :extreme
   puts "✗ Failed to raise ArgumentError for invalid verbosity: #{chat4.verbosity}"
 rescue ArgumentError => e
   puts "✓ Raises Argument error correctly: #{e.message}"
@@ -66,9 +66,9 @@ chat5.schema_file = path
 chat5.system("Extract the profile information from the user message. Describe it like a 90's robot.")
 chat5.user("My name is Bryan. I like to skateboard and be cool. I'm seventeen and a quarter. You can reach me at bryan@example.com.")
 puts chat5.last[:content]
-puts 
+puts
 begin
-  response = chat5.generate![:content]
+  chat5.generate!
   puts "✓ Generates structured output response with verbosity"
 rescue => e
   puts "✗ Failed to generate structured output response with verbosity: #{e.message}"
@@ -96,7 +96,7 @@ chat7.reasoning_effort = nil
 chat7.verbosity = :low
 chat7.user("How high do planes typically fly?")
 begin
-  response = chat7.generate![:content]
+  chat7.generate!
   puts "✗ Failed to raise error when setting :low verbosity on unsupported model."
 rescue OpenAI::Errors::BadRequestError => e
   puts "✓ Successfully raises error on for unsupported verbosity for older model: #{e.message}"

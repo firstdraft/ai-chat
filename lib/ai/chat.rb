@@ -46,7 +46,7 @@ module AI
 
     def self.generate_schema!(description, location: "schema.json", api_key: nil, api_key_env_var: nil, proxy: nil)
       proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
-      api_key = api_key || ENV.fetch(api_key_env_var || (proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV))
+      api_key ||= ENV.fetch(api_key_env_var || (proxy ? PROXY_KEY_ENV : OPENAI_KEY_ENV))
       prompt_path = File.expand_path("../prompts/schema_generator.md", __dir__)
       system_prompt = File.read(prompt_path)
 
@@ -175,7 +175,7 @@ module AI
       @api_key = new_key
       @api_key_validated = false
       @client = new_client
-    rescue => error
+    rescue
       @proxy = previous_proxy
       raise
     end
