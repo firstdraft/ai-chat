@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`pp` of an Array of messages**: `pp chat.messages` (and IRB's echo of `chat.messages`) printed `},{` and `}{` between messages and piled the leftover separators up before the closing bracket (`} , ]`). Messages now print as `[{...}, {...}]`, matching `p`. `AI::Items` had the same problem inside an Array and gets the same fix.
+
 ## [0.8.0] - 2026-10-19
 
 ### Changed

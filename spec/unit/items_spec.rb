@@ -61,6 +61,12 @@ RSpec.describe AI::Items do
       expect(out).to include("Conversation: conv_abc123")
       expect(out).to include("Items: 2")
     end
+
+    it "keeps separators in place inside an Array" do
+      out = PP.pp([items, items], +"")
+
+      expect(out).to eq("[#{items.inspect}, #{items.inspect}]\n")
+    end
   end
 
   describe "#to_html" do
