@@ -56,7 +56,7 @@ ap response
 # => {
 #           :role => "assistant",
 #        :content => "Matz is nice and so we are nice.",
-#       :response => { id: "resp_abc...", model: "gpt-5.6-terra", ... }
+#       :response => { id: "resp_abc...", model: "gpt-6-luna", ... }
 #    }
 
 ap chat.messages
@@ -68,7 +68,7 @@ ap chat.messages
 #        {
 #               :role => "assistant",
 #            :content => "Matz is nice and so we are nice.",
-#           :response => { id: "resp_abc...", model: "gpt-5.6-terra", ... }
+#           :response => { id: "resp_abc...", model: "gpt-6-luna", ... }
 #        }
 #    ]
 ```
@@ -131,11 +131,11 @@ chat.add("Here's what I think...", role: "assistant")
 
 ### Model
 
-The gem defaults to `gpt-5.6-terra`. You can change it:
+The gem defaults to `gpt-6-luna`. You can change it:
 
 ```ruby
 chat = AI::Chat.new
-chat.model = "gpt-5.6-luna"
+chat.model = "gpt-6.1-sol"
 ```
 
 ### API Key
@@ -409,9 +409,9 @@ chat.user("Explain the tradeoffs between microservices and monoliths.")
 chat.generate!
 ```
 
-By default, `reasoning_effort` is `"none"`, so the model answers directly without spending reasoning tokens. This matters because GPT-5.5 and newer models (including the default `gpt-5.6-terra`) fall back to `"medium"` reasoning when the parameter is omitted, which is slower and more expensive.
+By default, `reasoning_effort` is `"low"`, so the model does a little reasoning before it answers. `"low"` is accepted by all of OpenAI's current flagship models (`gpt-6-luna`, `gpt-6.1-sol`, and `gpt-6-astra`), while some of them reject `"none"`, so you can switch models without also changing the effort. The gem always sends an effort because GPT-5.5 and newer models fall back to `"medium"` when the parameter is omitted, which is slower and more expensive.
 
-Set `reasoning_effort = nil` to omit the reasoning parameter entirely — you will need this if you switch to a model that does not support reasoning (e.g., `gpt-4o`) or one that predates the `"none"` option.
+Set `reasoning_effort = "none"` for the fastest replies on models that support it (such as `gpt-6-luna`). Set `reasoning_effort = nil` to omit the reasoning parameter entirely — you will need this if you switch to a model that does not support reasoning (e.g., `gpt-4o`).
 
 ### Verbosity
 
@@ -476,7 +476,7 @@ chat.generate!
 
 response = chat.last[:response]
 response[:id]     # => "resp_abc123..."
-response[:model]  # => "gpt-5.6-terra"
+response[:model]  # => "gpt-6-luna"
 response[:usage]  # => { input_tokens: 5, output_tokens: 7, total_tokens: 12 }
 ```
 

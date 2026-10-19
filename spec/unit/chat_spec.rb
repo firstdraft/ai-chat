@@ -769,19 +769,28 @@ RSpec.describe AI::Chat, "request parameters" do
     allow(responses).to receive(:create).and_return(double("response"))
   end
 
-  it "defaults to gpt-5.6-terra" do
-    expect(chat.model).to eq("gpt-5.6-terra")
+  it "defaults to gpt-6-luna" do
+    expect(chat.model).to eq("gpt-6-luna")
   end
 
-  it "defaults reasoning_effort to \"none\"" do
-    expect(chat.reasoning_effort).to eq("none")
+  it "defaults reasoning_effort to \"low\"" do
+    expect(chat.reasoning_effort).to eq("low")
   end
 
-  it "sends reasoning effort none without a summary by default" do
+  it "sends reasoning effort low with a summary by default" do
     chat.send(:create_response)
 
     expect(responses).to have_received(:create).with(
-      hash_including(model: "gpt-5.6-terra", reasoning: {effort: "none"})
+      hash_including(model: "gpt-6-luna", reasoning: {effort: "low", summary: "auto"})
+    )
+  end
+
+  it "sends reasoning effort none without a summary" do
+    chat.reasoning_effort = "none"
+    chat.send(:create_response)
+
+    expect(responses).to have_received(:create).with(
+      hash_including(reasoning: {effort: "none"})
     )
   end
 

@@ -32,8 +32,8 @@ module AI
       @proxy = proxy.nil? ? ENV[PROXY_ENV]&.downcase == "true" : !!proxy
       @api_key = resolve_api_key
       @messages = []
-      @reasoning_effort = "none"
-      @model = "gpt-5.6-terra"
+      @reasoning_effort = "low"
+      @model = "gpt-6-luna"
       client_options = {api_key: @api_key}
       client_options[:base_url] = BASE_PROXY_URL if @proxy
       @client = OpenAI::Client.new(**client_options)
@@ -57,7 +57,7 @@ module AI
 
       client = OpenAI::Client.new(**options)
       response = client.responses.create(
-        model: "gpt-5.6-terra",
+        model: "gpt-6-luna",
         input: [
           {role: :system, content: system_prompt},
           {role: :user, content: description}
