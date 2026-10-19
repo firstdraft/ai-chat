@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Default model**: Changed from `gpt-5.6-terra` to `gpt-6-luna`, the most efficient tier of OpenAI's GPT-6 family. It costs far less ($0.10/$0.50 vs $2/$12 per 1M input/output tokens) and answered a sample prompt about twice as fast in our testing. `generate_schema!` uses the same model.
+
+- **Default `reasoning_effort` is now `"low"` instead of `"none"`**: `gpt-6.1-sol` and `gpt-6-astra` reject `"none"` with a 400 error, so switching `model` to one of them used to fail unless you also changed `reasoning_effort`. `"low"` is accepted by all of OpenAI's current flagship models. Since the effort is no longer `"none"`, a reasoning summary (`summary: "auto"`) is now requested by default too. Set `reasoning_effort = "none"` to get the previous behavior on models that support it.
+
 ## [0.7.0] - 2026-08-24
 
 ### Changed
