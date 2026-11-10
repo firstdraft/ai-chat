@@ -745,8 +745,8 @@ RSpec.describe AI::Chat do
     end
 
     # Lessons show this output verbatim, so pin the exact layout.
-    context "when not writing to a terminal" do
-      before { allow($stdout).to receive(:tty?).and_return(false) }
+    context "even when $stdout is a terminal" do
+      before { allow($stdout).to receive(:tty?).and_return(true) }
 
       it "lists a new chat's attributes one per line" do
         new_chat = AI::Chat.new(api_key: "test-key", proxy: false)
@@ -794,6 +794,40 @@ RSpec.describe AI::Chat do
     it "returns a String ending with newline" do
       expect(chat.pretty_inspect).to be_a(String)
       expect(chat.pretty_inspect).to end_with("\n")
+    end
+  end
+
+  describe "color" do
+    before do
+      require "irb/color_printer"
+      allow($stdout).to receive(:tty?).and_return(true)
+    end
+
+    it "#inspect has no escape codes, even when $stdout is a terminal" do
+      expect(chat.inspect).not_to include("\e[")
+    end
+
+    it "colors IRB's output when IRB's color is on" do
+      allow(IRB::Color).to receive(:colorable?).and_return(true)
+      allow(AmazingPrint).to receive(:force_colors).and_return(true) # skip its TERM check
+      out = +""
+      IRB::ColorPrinter.pp(chat, out, 80, colorize: true)
+
+      expect(out).to include("\e[")
+    end
+
+    # IRB always passes colorize: true; --nocolorize and a dumb terminal
+    # show up as IRB::Color.colorable? returning false.
+    it "leaves IRB's output plain when IRB's color is off" do
+      allow(IRB::Color).to receive(:colorable?).and_return(false)
+      out = +""
+      IRB::ColorPrinter.pp(chat, out, 80, colorize: true)
+
+      expect(out).not_to include("\e[")
+    end
+
+    it "leaves plain pp output plain" do
+      expect(PP.pp(chat, +"")).not_to include("\e[")
     end
   end
 

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Escape codes in the Better Errors console**: inspecting an `AI::Message`, `AI::Chat`, or `AI::Items` in the Better Errors console in the browser showed raw ANSI color codes around every key and value (`[0;36mrole: [0m [0;33m"assistant" [0m`). `inspect` added color whenever `$stdout` was a terminal, and a Rails server started from a terminal always has one, so the codes ended up in web pages, log files, and ERB too. `inspect` now always returns plain text; color is added only when printing to IRB (including `rails console`) or Pry with color turned on.
+
 ## [0.8.1] - 2026-10-19
 
 ### Fixed
