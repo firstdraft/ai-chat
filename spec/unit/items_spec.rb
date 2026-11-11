@@ -102,8 +102,11 @@ RSpec.describe AI::Items do
       expect(out).to include("\e[")
     end
 
-    # IRB always passes colorize: true; --nocolorize and a dumb terminal
-    # show up as IRB::Color.colorable? returning false.
+    # IRB always passes colorize: true, so its color setting reaches us
+    # only through IRB::Color.colorable?, which is false when IRB runs
+    # with --nocolorize, when stdout isn't a terminal, or when TERM is
+    # unset or "dumb" (what a terminal reports when it can't handle
+    # escape codes, like an Emacs shell buffer).
     it "leaves IRB's output plain when IRB's color is off" do
       allow(IRB::Color).to receive(:colorable?).and_return(false)
       out = +""
