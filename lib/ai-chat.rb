@@ -14,6 +14,25 @@ module AI
     AmazingPrint::Inspector.new(**options).awesome(object)
   end
 
+  # Whether pretty_print is drawing into a console that shows color: IRB
+  # (and so rails console) or Pry, with that console's color setting on.
+  # IRB always hands its printer colorize: true and leaves the real decision
+  # (a color terminal, and no --nocolorize) to IRB::Color.colorable?.
+  #
+  # inspect never adds color, because its String also ends up in places that
+  # can't read terminal escape codes: the Better Errors console in the
+  # browser, log files, ERB. Asking $stdout.tty? doesn't tell those apart: a
+  # Rails server started from a terminal has a TTY on $stdout, too.
+  def self.color_printer?(q)
+    if defined?(IRB::ColorPrinter) && q.is_a?(IRB::ColorPrinter)
+      q.instance_variable_get(:@colorize) != false && IRB::Color.colorable?
+    elsif defined?(Pry::ColorPrinter) && q.is_a?(Pry::ColorPrinter)
+      Pry.config.color
+    else
+      false
+    end
+  end
+
   # Recursively truncate base64 data URIs in nested structures for cleaner output
   def self.truncate_data_uris(obj)
     case obj

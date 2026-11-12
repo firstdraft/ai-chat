@@ -28,7 +28,7 @@ module AI
     end
 
     def inspect
-      build_output(html: false, plain: !$stdout.tty?)
+      build_output(html: false, plain: true)
     end
 
     def pretty_inspect
@@ -38,7 +38,7 @@ module AI
     # Same direct write as AI::Message#pretty_print, for the same reasons.
     def pretty_print(q)
       q.flush
-      q.output << inspect
+      q.output << build_output(html: false, plain: !AI.color_printer?(q))
     end
 
     def method_missing(method_name, *args, &block)

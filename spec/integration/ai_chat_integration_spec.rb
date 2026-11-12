@@ -168,7 +168,7 @@ RSpec.describe "AI::Chat Integration", :integration do
 
   describe "image handling" do
     context "with a test image URL" do
-      let(:test_image_url) { "https://picsum.photos/200/300" }
+      let(:test_image_url) { "https://raw.githubusercontent.com/firstdraft/ai-chat/main/spec/fixtures/test1.jpg" }
 
       it "accepts image URLs" do
         chat = AI::Chat.new

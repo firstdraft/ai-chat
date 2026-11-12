@@ -69,7 +69,7 @@ RSpec.describe AI::Message do
   end
 
   describe "printing an Array of messages with pp" do
-    before { allow($stdout).to receive(:tty?).and_return(false) }
+    before { allow($stdout).to receive(:tty?).and_return(true) }
 
     it "keeps each separator between the messages it separates" do
       messages = [
@@ -101,6 +101,45 @@ RSpec.describe AI::Message do
       message.pretty_print(mock_q)
 
       expect(output.string).to eq(message.inspect)
+    end
+  end
+
+  describe "color" do
+    let(:message) { AI::Message[role: "assistant", content: {carbs: 125}, status: :completed] }
+
+    before do
+      require "irb/color_printer"
+      allow($stdout).to receive(:tty?).and_return(true)
+    end
+
+    it "#inspect has no escape codes, even when $stdout is a terminal" do
+      expect(message.inspect).not_to include("\e[")
+    end
+
+    it "colors IRB's output when IRB's color is on" do
+      allow(IRB::Color).to receive(:colorable?).and_return(true)
+      allow(AmazingPrint).to receive(:force_colors).and_return(true) # skip its TERM check
+      out = +""
+      IRB::ColorPrinter.pp(message, out, 80, colorize: true)
+
+      expect(out).to include("\e[")
+    end
+
+    # IRB always passes colorize: true, so its color setting reaches us
+    # only through IRB::Color.colorable?, which is false when IRB runs
+    # with --nocolorize, when stdout isn't a terminal, or when TERM is
+    # unset or "dumb" (what a terminal reports when it can't handle
+    # escape codes, like an Emacs shell buffer).
+    it "leaves IRB's output plain when IRB's color is off" do
+      allow(IRB::Color).to receive(:colorable?).and_return(false)
+      out = +""
+      IRB::ColorPrinter.pp(message, out, 80, colorize: true)
+
+      expect(out).not_to include("\e[")
+    end
+
+    it "leaves plain pp output plain" do
+      expect(PP.pp(message, +"")).not_to include("\e[")
     end
   end
 end

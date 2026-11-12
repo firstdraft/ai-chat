@@ -3,20 +3,21 @@
 module AI
   class Message < Hash
     def inspect
-      AI.amazing_print(display_hash, plain: !$stdout.tty?, index: false)
+      formatted(plain: true)
     end
 
     def pretty_inspect
       "#{inspect}\n"
     end
 
-    # IRB's ColorPrinter calls pretty_print and re-colorizes text,
-    # which escapes our ANSI codes. Write directly to output to bypass,
+    # The console's path, and so the only place color is added (see
+    # AI.color_printer?). IRB's ColorPrinter re-colorizes text, which
+    # escapes our ANSI codes, so write directly to output to bypass it,
     # but flush first: inside an Array, PP is still buffering the "[" and
     # earlier separators, so an unflushed write lands ahead of them.
     def pretty_print(q)
       q.flush
-      q.output << inspect
+      q.output << formatted(plain: !AI.color_printer?(q))
     end
 
     def to_html
@@ -24,6 +25,10 @@ module AI
     end
 
     private
+
+    def formatted(plain:)
+      AI.amazing_print(display_hash, plain: plain, index: false)
+    end
 
     def display_hash
       AI.truncate_data_uris(to_h)

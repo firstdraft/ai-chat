@@ -262,7 +262,13 @@ module AI
     end
 
     def inspect
-      AI.amazing_print(self, plain: !$stdout.tty?, multiline: true)
+      AI.amazing_print(self, plain: true, multiline: true)
+    end
+
+    # Same direct write as AI::Message#pretty_print, for the same reasons.
+    def pretty_print(q)
+      q.flush
+      q.output << AI.amazing_print(self, plain: !AI.color_printer?(q), multiline: true)
     end
 
     def to_html
